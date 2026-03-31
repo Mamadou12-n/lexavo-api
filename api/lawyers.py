@@ -41,8 +41,9 @@ def seed_demo_lawyers() -> int:
     Returns number of lawyers seeded.
     Only seeds if the lawyers table is empty.
     """
-    if count_lawyers() > 0:
-        return 0
+    existing = count_lawyers()
+    if existing >= 25:
+        return 0  # deja peuple avec les 25 avocats
 
     # 25 avocats couvrant les 11 barreaux principaux et les 15 branches du droit
     # Donnees de demonstration — les emails @lexavo-demo.be ne sont pas reels
