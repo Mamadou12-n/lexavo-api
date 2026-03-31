@@ -203,7 +203,8 @@ class IndexStats(BaseModel):
 
 class CheckoutRequest(BaseModel):
     """Corps de la requete POST /billing/checkout."""
-    plan: str = Field(..., description="Plan choisi : 'pro' ou 'cabinet'")
+    plan: str = Field(..., description="Plan choisi : basic, pro, business, firm_s, firm_m")
+    billing: str = Field(default="monthly", description="Frequence : monthly ou annual")
 
 
 class CheckoutResponse(BaseModel):
@@ -225,13 +226,19 @@ class SubscriptionResponse(BaseModel):
     questions_limit: int = Field(description="-1 = illimite")
     questions_remaining: Optional[int] = None
     current_period_end: Optional[str] = None
+    beta: bool = Field(default=False, description="True si periode beta active")
+    beta_end: Optional[str] = Field(default=None, description="Date de fin de beta (YYYY-MM-DD)")
 
 
 class PlanInfo(BaseModel):
     """Info sur un plan tarifaire."""
     key: str
     label: str
-    price_monthly: int
+    subtitle: str = ""
+    price_monthly: float = Field(description="-1 = sur devis, 0 = gratuit")
+    price_annual: Optional[float] = Field(default=None, description="Prix annuel (2 mois offerts)")
+    founding_price: Optional[float] = Field(default=None, description="Prix Founding Member (beta)")
+    max_users: int = Field(default=1, description="-1 = illimite")
     questions_per_month: int = Field(description="-1 = illimite")
     features: List[str]
 
@@ -239,6 +246,8 @@ class PlanInfo(BaseModel):
 class PlansResponse(BaseModel):
     """Liste des plans disponibles."""
     plans: List[PlanInfo]
+    beta_active: bool = False
+    beta_end: Optional[str] = None
 
 
 # ─── Shield models ───────────────────────────────────────────────────────

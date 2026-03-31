@@ -1,6 +1,8 @@
 """
 Stripe billing for Lexavo — Subscriptions & Checkout.
-Plans: free (5 questions/mois), pro (29€/mois), cabinet (99€/mois).
+6 tiers : free, basic (4,99€), pro (49,99€), business (79,99€),
+          firm_s (149,99€), firm_m (299,99€), enterprise (sur devis).
+Beta : gratuit pour tous jusqu'au 1er octobre 2026.
 """
 
 import os
@@ -27,51 +29,160 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 FRONTEND_URL = os.getenv("LEXAVO_FRONTEND_URL", "http://localhost:8081")
 
+# Beta : gratuit pour tous jusqu'a cette date (YYYY-MM-DD)
+BETA_END_DATE = os.getenv("LEXAVO_BETA_END", "2026-10-01")
+
+def is_beta_active() -> bool:
+    """True tant qu'on est dans la periode beta (gratuit pour tous)."""
+    try:
+        end = datetime.strptime(BETA_END_DATE, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) < end
+    except ValueError:
+        return False
+
 # ─── Plans ───────────────────────────────────────────────────────────────────
+# Prix en .99 — pricing psychologique
 PLANS = {
     "free": {
-        "label": "Gratuit",
+        "label": "Lexavo Free",
+        "subtitle": "Etudiants en droit",
         "price_monthly": 0,
-        "questions_per_month": 5,
-        "features": ["5 questions/mois", "3 branches du droit", "Sources de base"],
-    },
-    "pro": {
-        "label": "Pro",
-        "price_monthly": 29,
-        "questions_per_month": -1,  # illimite
-        "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", ""),
+        "price_annual": 0,
+        "questions_per_month": 3,
+        "max_users": 1,
         "features": [
-            "Questions illimitees",
-            "15 branches du droit",
-            "Toutes les sources",
-            "Historique complet",
-            "Annuaire avocats premium",
+            "3 questions / mois",
+            "Recherche vectorielle",
+            "Acces a la base juridique",
+            "Lexavo Score",
         ],
     },
-    "cabinet": {
-        "label": "Cabinet",
-        "price_monthly": 99,
-        "questions_per_month": -1,  # illimite
-        "stripe_price_id": os.getenv("STRIPE_PRICE_CABINET", ""),
+    "basic": {
+        "label": "Lexavo Basic",
+        "subtitle": "Particuliers",
+        "price_monthly": 4.99,
+        "price_annual": 49.99,
+        "founding_price": 3.99,
+        "questions_per_month": -1,
+        "max_users": 1,
+        "stripe_price_id": os.getenv("STRIPE_PRICE_BASIC", ""),
+        "stripe_price_annual_id": os.getenv("STRIPE_PRICE_BASIC_ANNUAL", ""),
+        "features": [
+            "Chat IA illimite",
+            "15 branches du droit",
+            "3 modeles de contrats / mois",
+            "Alertes legislatives de base",
+            "Lexavo Score",
+            "Historique complet",
+        ],
+    },
+    "pro": {
+        "label": "Lexavo Pro",
+        "subtitle": "Avocats & juristes",
+        "price_monthly": 49.99,
+        "price_annual": 499.99,
+        "founding_price": 39.99,
+        "questions_per_month": -1,
+        "max_users": 1,
+        "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", ""),
+        "stripe_price_annual_id": os.getenv("STRIPE_PRICE_PRO_ANNUAL", ""),
+        "features": [
+            "Tout Basic inclus",
+            "Base documentaire complete",
+            "Generation de documents illimitee",
+            "Analyse de contrats (Shield)",
+            "Label Avocat certifie Lexavo",
+            "Leads qualifies via l'app",
+            "Statistiques profil",
+            "Support prioritaire (48h)",
+        ],
+    },
+    "business": {
+        "label": "Lexavo Business",
+        "subtitle": "PME (jusqu'a 5 utilisateurs)",
+        "price_monthly": 79.99,
+        "price_annual": 799.99,
+        "founding_price": 59.99,
+        "questions_per_month": -1,
+        "max_users": 5,
+        "stripe_price_id": os.getenv("STRIPE_PRICE_BUSINESS", ""),
+        "stripe_price_annual_id": os.getenv("STRIPE_PRICE_BUSINESS_ANNUAL", ""),
         "features": [
             "Tout Pro inclus",
-            "Multi-utilisateurs (5 comptes)",
-            "Acces API",
-            "Analytics & rapports",
+            "Jusqu'a 5 utilisateurs",
+            "Analyse de contrats illimitee",
+            "Generation de documents illimitee",
+            "Alertes RGPD et conformite",
+            "Export PDF & rapports",
             "Support prioritaire",
+        ],
+    },
+    "firm_s": {
+        "label": "Lexavo Firm",
+        "subtitle": "Petit cabinet (2-10 avocats)",
+        "price_monthly": 149.99,
+        "price_annual": None,  # sur devis pour annuel
+        "questions_per_month": -1,
+        "max_users": 10,
+        "stripe_price_id": os.getenv("STRIPE_PRICE_FIRM_S", ""),
+        "features": [
+            "Tout Business inclus",
+            "Jusqu'a 10 utilisateurs",
+            "Documents de marque (logo cabinet)",
+            "Tableau de bord gestion dossiers",
+            "Formation et onboarding inclus",
+            "Analytics avances",
+            "Support dedie",
+        ],
+    },
+    "firm_m": {
+        "label": "Lexavo Firm+",
+        "subtitle": "Cabinet moyen (10-30 avocats)",
+        "price_monthly": 299.99,
+        "price_annual": None,
+        "questions_per_month": -1,
+        "max_users": 30,
+        "stripe_price_id": os.getenv("STRIPE_PRICE_FIRM_M", ""),
+        "features": [
+            "Tout Firm inclus",
+            "Jusqu'a 30 utilisateurs",
+            "API acces complet",
+            "Integrations sur mesure",
+            "Account manager dedie",
+        ],
+    },
+    "enterprise": {
+        "label": "Lexavo Enterprise",
+        "subtitle": "Grandes entreprises & directions juridiques",
+        "price_monthly": -1,  # sur devis
+        "price_annual": None,
+        "questions_per_month": -1,
+        "max_users": -1,  # illimite
+        "features": [
+            "Tout Firm+ inclus",
+            "Utilisateurs illimites",
+            "SLA garanti",
+            "Deploiement on-premise possible",
+            "Formation equipe complete",
+            "Support 24/7",
         ],
     },
 }
 
+# Plans payants pouvant etre achetes via Stripe checkout
+PAID_PLANS = {"basic", "pro", "business", "firm_s", "firm_m"}
+
 
 # ─── Checkout ────────────────────────────────────────────────────────────────
 
-def create_checkout_session(user_id: int, plan: str) -> dict:
-    """Create a Stripe Checkout Session for subscription."""
-    if plan not in ("pro", "cabinet"):
+def create_checkout_session(user_id: int, plan: str, billing: str = "monthly") -> dict:
+    """Create a Stripe Checkout Session for subscription.
+    billing: 'monthly' ou 'annual'.
+    """
+    if plan not in PAID_PLANS:
         raise HTTPException(
             status_code=400,
-            detail="Plan invalide. Choisissez 'pro' ou 'cabinet'.",
+            detail=f"Plan invalide. Choisissez parmi : {', '.join(sorted(PAID_PLANS))}.",
         )
 
     if not stripe.api_key:
@@ -81,7 +192,10 @@ def create_checkout_session(user_id: int, plan: str) -> dict:
         )
 
     plan_config = PLANS[plan]
-    price_id = plan_config.get("stripe_price_id", "")
+    if billing == "annual":
+        price_id = plan_config.get("stripe_price_annual_id", "") or plan_config.get("stripe_price_id", "")
+    else:
+        price_id = plan_config.get("stripe_price_id", "")
     if not price_id:
         raise HTTPException(
             status_code=503,
@@ -278,7 +392,20 @@ def check_quota(user_id: int) -> dict:
     """
     Check if user can ask a question.
     Returns quota info. Raises HTTPException if quota exceeded.
+    Pendant la beta, tout le monde a un acces illimite.
     """
+    # Beta = illimite pour tous
+    if is_beta_active():
+        sub = get_subscription(user_id)
+        return {
+            "allowed": True,
+            "plan": sub.get("plan", "free") if sub else "free",
+            "questions_used": sub.get("questions_used", 0) if sub else 0,
+            "questions_limit": -1,
+            "beta": True,
+            "beta_end": BETA_END_DATE,
+        }
+
     sub = get_subscription(user_id)
     plan = sub.get("plan", "free") if sub else "free"
     plan_config = PLANS.get(plan, PLANS["free"])
@@ -300,7 +427,7 @@ def check_quota(user_id: int) -> dict:
             status_code=429,
             detail={
                 "error": "Quota mensuel atteint",
-                "message": f"Vous avez utilise vos {limit} questions gratuites ce mois-ci. Passez au plan Pro pour des questions illimitees.",
+                "message": f"Vous avez utilise vos {limit} questions gratuites ce mois-ci. Passez au plan Basic (4,99€/mois) pour un acces illimite.",
                 "plan": plan,
                 "questions_used": questions_used,
                 "questions_limit": limit,

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+  body { margin:0; padding:0; background:#F8FAFC; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .container { max-width:600px; margin:0 auto; background:#FFF; border-radius:12px; overflow:hidden; }
+  .header { background:#1C2B3A; padding:32px 24px; text-align:center; }
+  .header h1 { color:#FFF; font-size:22px; margin:0 0 8px; }
+  .header p { color:rgba(255,255,255,0.7); font-size:13px; margin:0; }
+  .body { padding:28px 24px; }
+  .body h2 { color:#1C2B3A; font-size:18px; margin:0 0 12px; }
+  .body p { color:#475569; font-size:14px; line-height:1.7; margin:0 0 16px; }
+  .plans { background:#F1F5F9; border-radius:10px; padding:20px; margin:20px 0; }
+  .plan-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #E2E8F0; }
+  .plan-row:last-child { border:none; }
+  .plan-name { font-weight:700; color:#1C2B3A; font-size:14px; }
+  .plan-price { color:#C45A2D; font-weight:700; font-size:14px; }
+  .cta { display:inline-block; background:#C45A2D; color:#FFF; text-decoration:none; padding:14px 32px; border-radius:10px; font-weight:700; font-size:15px; margin:16px 0; }
+  .footer { background:#F8FAFC; padding:20px 24px; text-align:center; border-top:1px solid #E2E8F0; }
+  .footer p { color:#94A3B8; font-size:11px; margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Lexavo evolue</h1>
+    <p>Le droit belge dans votre poche</p>
+  </div>
+  <div class="body">
+    <h2>Bonjour {{NAME}},</h2>
+    <p>
+      Merci de faire partie des premiers utilisateurs de Lexavo.
+      Votre confiance nous a permis de construire un outil juridique
+      que des centaines de personnes utilisent chaque jour.
+    </p>
+    <p>
+      Dans les prochaines semaines, Lexavo lance ses formules d'abonnement.
+      Voici ce qui vous attend :
+    </p>
+    <div class="plans">
+      <div class="plan-row">
+        <span class="plan-name">Lexavo Free</span>
+        <span class="plan-price">Gratuit</span>
+      </div>
+      <div class="plan-row">
+        <span class="plan-name">Lexavo Basic</span>
+        <span class="plan-price">4,99 EUR/mois</span>
+      </div>
+      <div class="plan-row">
+        <span class="plan-name">Lexavo Pro</span>
+        <span class="plan-price">49,99 EUR/mois</span>
+      </div>
+      <div class="plan-row">
+        <span class="plan-name">Lexavo Business</span>
+        <span class="plan-price">79,99 EUR/mois</span>
+      </div>
+    </div>
+    <p>
+      Vous ne perdez rien : votre historique, vos conversations et vos
+      documents restent intacts. Continuez a profiter de Lexavo
+      en toute serenite.
+    </p>
+    <p>
+      On vous recontactera avec tous les details. En attendant,
+      profitez de votre acces complet.
+    </p>
+    <p style="color:#94A3B8;font-size:12px;">
+      L'equipe Lexavo
+    </p>
+  </div>
+  <div class="footer">
+    <p>Lexavo SRL - Droit belge accessible a tous</p>
+    <p>Cet email a ete envoye a {{EMAIL}}</p>
+  </div>
+</div>
+</body>
+</html>

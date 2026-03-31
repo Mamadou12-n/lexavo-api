@@ -229,6 +229,17 @@ CREATE TABLE IF NOT EXISTS push_tokens (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, token)
 );
+
+CREATE TABLE IF NOT EXISTS beta_notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    milestone TEXT NOT NULL,
+    email_to TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'sent',
+    error_msg TEXT,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, milestone)
+);
 """
 
 _PG_INDEXES = """
@@ -246,6 +257,9 @@ CREATE INDEX IF NOT EXISTS idx_alert_prefs_user ON alert_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_proof_cases_user ON proof_cases(user_id);
 CREATE INDEX IF NOT EXISTS idx_proof_entries_case ON proof_entries(case_id);
 CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_beta_notif_user ON beta_notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_beta_notif_milestone ON beta_notifications(milestone);
+CREATE INDEX IF NOT EXISTS idx_beta_notif_status ON beta_notifications(status);
 """
 
 _SQLITE_SCHEMA = """
@@ -351,6 +365,18 @@ CREATE TABLE IF NOT EXISTS push_tokens (
     created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, token)
+);
+
+CREATE TABLE IF NOT EXISTS beta_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    milestone TEXT NOT NULL,
+    email_to TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'sent',
+    error_msg TEXT,
+    sent_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, milestone)
 );
 """ + _PG_INDEXES
 

@@ -495,39 +495,50 @@ def add_message(
 @app.get("/billing/plans", response_model=PlansResponse)
 def list_plans():
     """Liste les plans tarifaires disponibles."""
-    from api.stripe_billing import PLANS
+    from api.stripe_billing import PLANS, is_beta_active, BETA_END_DATE
     plans = [
         PlanInfo(
             key=key,
             label=cfg["label"],
+            subtitle=cfg.get("subtitle", ""),
             price_monthly=cfg["price_monthly"],
+            price_annual=cfg.get("price_annual"),
+            founding_price=cfg.get("founding_price"),
+            max_users=cfg.get("max_users", 1),
             questions_per_month=cfg["questions_per_month"],
             features=cfg["features"],
         )
         for key, cfg in PLANS.items()
     ]
-    return PlansResponse(plans=plans)
+    return PlansResponse(
+        plans=plans,
+        beta_active=is_beta_active(),
+        beta_end=BETA_END_DATE if is_beta_active() else None,
+    )
 
 
 @app.get("/billing/subscription", response_model=SubscriptionResponse)
 def get_my_subscription(current_user: dict = Depends(_get_current_user)):
     """Etat de l'abonnement de l'utilisateur connecte."""
     from api.database import get_subscription
-    from api.stripe_billing import PLANS
+    from api.stripe_billing import PLANS, is_beta_active, BETA_END_DATE
 
     sub = get_subscription(current_user["id"])
     plan = sub.get("plan", "free") if sub else "free"
     plan_config = PLANS.get(plan, PLANS["free"])
     limit = plan_config["questions_per_month"]
     used = sub.get("questions_used", 0) if sub else 0
+    beta = is_beta_active()
 
     return SubscriptionResponse(
         plan=plan,
         status=sub.get("status", "active") if sub else "active",
         questions_used=used,
-        questions_limit=limit,
-        questions_remaining=(limit - used) if limit > 0 else None,
+        questions_limit=-1 if beta else limit,
+        questions_remaining=None if (beta or limit == -1) else (limit - used),
         current_period_end=sub.get("current_period_end") if sub else None,
+        beta=beta,
+        beta_end=BETA_END_DATE if beta else None,
     )
 
 
@@ -538,7 +549,7 @@ def create_checkout(
 ):
     """Creer une session Stripe Checkout pour s'abonner a un plan payant."""
     from api.stripe_billing import create_checkout_session
-    result = create_checkout_session(current_user["id"], request.plan)
+    result = create_checkout_session(current_user["id"], request.plan, request.billing)
     return CheckoutResponse(**result)
 
 

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+  body { margin:0; padding:0; background:#F8FAFC; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .container { max-width:600px; margin:0 auto; background:#FFF; border-radius:12px; overflow:hidden; }
+  .header { background:#1C2B3A; padding:32px 24px; text-align:center; }
+  .header h1 { color:#FFF; font-size:22px; margin:0 0 8px; }
+  .header p { color:rgba(255,255,255,0.7); font-size:13px; margin:0; }
+  .body { padding:28px 24px; }
+  .body h2 { color:#1C2B3A; font-size:18px; margin:0 0 12px; }
+  .body p { color:#475569; font-size:14px; line-height:1.7; margin:0 0 16px; }
+  .status { background:#F0FDF4; border:2px solid #22C55E; border-radius:12px; padding:20px; margin:20px 0; text-align:center; }
+  .status .icon { font-size:28px; display:block; margin-bottom:8px; }
+  .status .text { font-size:14px; color:#166534; font-weight:600; }
+  .plans { margin:20px 0; }
+  .plan-btn { display:block; background:#1C2B3A; color:#FFF; text-decoration:none; padding:14px 24px; border-radius:10px; margin:8px 0; text-align:center; font-weight:700; font-size:14px; }
+  .plan-btn.highlight { background:#C45A2D; }
+  .plan-price { font-size:12px; font-weight:400; opacity:0.8; }
+  .footer { background:#F8FAFC; padding:20px 24px; text-align:center; border-top:1px solid #E2E8F0; }
+  .footer p { color:#94A3B8; font-size:11px; margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Lexavo est officiellement lance</h1>
+    <p>Merci d'avoir fait partie de l'aventure</p>
+  </div>
+  <div class="body">
+    <h2>Bonjour {{NAME}},</h2>
+    <div class="status">
+      <span class="icon">&#127881;</span>
+      <span class="text">Votre compte passe au plan Free (3 questions/mois)</span>
+    </div>
+    <p>
+      La phase beta est terminee. Merci d'avoir ete parmi les premiers
+      a utiliser Lexavo — vos retours ont ete precieux.
+    </p>
+    <p>
+      Votre compte est maintenant sur le plan <strong>Free</strong>.
+      Vous gardez acces a la base juridique avec 3 questions par mois.
+      Pour continuer avec un acces illimite, choisissez le plan
+      qui vous convient :
+    </p>
+    <div class="plans">
+      <a href="#" class="plan-btn">
+        Lexavo Basic <span class="plan-price">— 4,99 EUR/mois</span>
+      </a>
+      <a href="#" class="plan-btn highlight">
+        Lexavo Pro <span class="plan-price">— 49,99 EUR/mois (Populaire)</span>
+      </a>
+      <a href="#" class="plan-btn">
+        Lexavo Business <span class="plan-price">— 79,99 EUR/mois (PME)</span>
+      </a>
+    </div>
+    <p>
+      Votre historique, vos conversations et vos documents
+      restent intacts quel que soit votre choix.
+    </p>
+    <p style="color:#94A3B8;font-size:12px;">
+      L'equipe Lexavo
+    </p>
+  </div>
+  <div class="footer">
+    <p>Lexavo SRL - Droit belge accessible a tous</p>
+    <p>Cet email a ete envoye a {{EMAIL}}</p>
+  </div>
+</div>
+</body>
+</html>
