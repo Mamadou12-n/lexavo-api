@@ -1,5 +1,6 @@
 """Lexavo Emergency — Bouton rouge, avocat en 2h.
-Situation urgente -> formulaire rapide -> notification avocat -> 49 EUR."""
+Situation urgente -> formulaire rapide -> notification avocat -> 49 EUR.
+Persiste en base de donnees (PostgreSQL/SQLite)."""
 
 import logging
 from datetime import datetime
@@ -36,8 +37,20 @@ def create_emergency_request(
     if not cat:
         cat = {"id": "autre", "label": "Autre", "priority": "medium"}
 
+    # Persister en DB
+    from api.database import create_emergency_request as db_create
+    db_record = db_create(
+        user_id=user_id,
+        category=cat["id"],
+        priority=cat["priority"],
+        description=description.strip(),
+        phone=phone.strip(),
+        city=city.strip(),
+    )
+
     return {
-        "request_id": f"URG-{datetime.now().strftime('%Y%m%d%H%M')}-{user_id}",
+        "request_id": f"URG-{db_record['id']}",
+        "id": db_record["id"],
         "user_id": user_id,
         "category": cat["id"],
         "category_label": cat["label"],
@@ -48,6 +61,6 @@ def create_emergency_request(
         "status": "pending",
         "price_cents": EMERGENCY_PRICE_CENTS,
         "estimated_callback": "Dans les 2 heures",
-        "created_at": datetime.now().isoformat(),
+        "created_at": str(db_record.get("created_at", datetime.now().isoformat())),
         "disclaimer": "Service de mise en relation urgente. L'avocat exerce sous sa propre responsabilite.",
     }

@@ -30,7 +30,8 @@ if not SECRET_KEY:
     SECRET_KEY = secrets.token_hex(32)  # cle ephemere, securisee mais non persistante
 
 ALGORITHM = "HS256"
-TOKEN_EXPIRY_DAYS = 7
+ACCESS_TOKEN_EXPIRY_HOURS = 1       # JWT court — 1h
+REFRESH_TOKEN_EXPIRY_DAYS = 30      # refresh token long — 30 jours
 
 # FastAPI security scheme
 security = HTTPBearer()
@@ -63,14 +64,20 @@ def verify_password(password: str, password_hash: str) -> bool:
 # ─── JWT tokens ──────────────────────────────────────────────────────────────
 
 def create_token(user_id: int, email: str) -> str:
-    """Create a JWT token with 7-day expiry."""
+    """Create a short-lived JWT access token (1h)."""
     payload = {
         "sub": str(user_id),
         "email": email,
+        "type": "access",
         "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRY_DAYS),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRY_HOURS),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_refresh_token(user_id: int) -> str:
+    """Create a long-lived refresh token (30 days). Stored as opaque string."""
+    return secrets.token_urlsafe(48)
 
 
 def decode_token(token: str) -> dict:
@@ -162,7 +169,14 @@ def register_user(email: str, password: str, name: str, language: str = "fr") ->
         )
 
     token = create_token(user["id"], user["email"])
-    return {"user": user, "token": token}
+    refresh = create_refresh_token(user["id"])
+
+    # Persister le refresh token en DB
+    from api.database import save_refresh_token
+    expires = (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    save_refresh_token(user["id"], refresh, expires)
+
+    return {"user": user, "token": token, "refresh_token": refresh}
 
 
 def login_user(email: str, password: str) -> dict:
@@ -185,4 +199,10 @@ def login_user(email: str, password: str) -> dict:
     # Return user without password_hash
     safe_user = {k: v for k, v in user.items() if k != "password_hash"}
     token = create_token(safe_user["id"], safe_user["email"])
-    return {"user": safe_user, "token": token}
+    refresh = create_refresh_token(safe_user["id"])
+
+    from api.database import save_refresh_token
+    expires = (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    save_refresh_token(safe_user["id"], refresh, expires)
+
+    return {"user": safe_user, "token": token, "refresh_token": refresh}

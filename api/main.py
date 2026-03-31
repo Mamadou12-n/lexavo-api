@@ -25,6 +25,7 @@ Endpoints :
 import os
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -336,6 +337,44 @@ def me(current_user: dict = Depends(_get_current_user)):
     return UserResponse(**current_user)
 
 
+@app.post("/auth/refresh")
+def refresh_token_endpoint(request: dict):
+    """Echange un refresh token contre un nouveau access token + nouveau refresh token."""
+    from api.database import get_refresh_token, delete_refresh_token, save_refresh_token, get_user_by_id
+    from api.auth import create_token, create_refresh_token, REFRESH_TOKEN_EXPIRY_DAYS
+
+    rt = request.get("refresh_token", "")
+    if not rt:
+        raise HTTPException(status_code=400, detail="refresh_token requis.")
+
+    stored = get_refresh_token(rt)
+    if not stored:
+        raise HTTPException(status_code=401, detail="Refresh token invalide ou expire.")
+
+    # Verifier expiration
+    expires_str = str(stored["expires_at"])[:19]
+    try:
+        expires = datetime.strptime(expires_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires:
+            delete_refresh_token(rt)
+            raise HTTPException(status_code=401, detail="Refresh token expire.")
+    except ValueError:
+        pass
+
+    user = get_user_by_id(stored["user_id"])
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur introuvable.")
+
+    # Rotation : supprimer l'ancien, creer un nouveau
+    delete_refresh_token(rt)
+    new_access = create_token(user["id"], user["email"])
+    new_refresh = create_refresh_token(user["id"])
+    new_expires = (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    save_refresh_token(user["id"], new_refresh, new_expires)
+
+    return {"token": new_access, "refresh_token": new_refresh, "user": user}
+
+
 # ─── Lawyer Endpoints ───────────────────────────────────────────────────────
 
 @app.get("/lawyers", response_model=LawyerListResponse)
@@ -383,6 +422,24 @@ def list_conversations(current_user: dict = Depends(_get_current_user)):
         conversations=[ConversationResponse(**c) for c in convs],
         total=len(convs),
     )
+
+
+@app.delete("/conversations/{conversation_id}")
+def delete_conversation_endpoint(
+    conversation_id: int,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Supprimer une conversation et tous ses messages (cascade)."""
+    from api.database import get_conversation_by_id, delete_conversation
+
+    conv = get_conversation_by_id(conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation introuvable.")
+    if conv["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Acces refuse.")
+
+    delete_conversation(conversation_id)
+    return {"status": "deleted", "conversation_id": conversation_id}
 
 
 @app.get("/conversations/{conversation_id}/messages", response_model=MessageListResponse)

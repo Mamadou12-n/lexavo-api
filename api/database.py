@@ -171,6 +171,27 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS emergency_requests (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    category TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'medium',
+    description TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    city TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'assigned', 'completed', 'cancelled')),
+    price_cents INTEGER NOT NULL DEFAULT 4900,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS alert_preferences (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -218,6 +239,9 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_lawyers_city ON lawyers(city);
 CREATE INDEX IF NOT EXISTS idx_shield_user ON shield_analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_emergency_user ON emergency_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_alert_prefs_user ON alert_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_proof_cases_user ON proof_cases(user_id);
 CREATE INDEX IF NOT EXISTS idx_proof_entries_case ON proof_entries(case_id);
@@ -280,6 +304,23 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
     email TEXT UNIQUE NOT NULL, domains TEXT NOT NULL DEFAULT '[]',
     token TEXT NOT NULL, confirmed INTEGER DEFAULT 0,
     subscribed_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL, token TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS emergency_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL, category TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'medium',
+    description TEXT NOT NULL, phone TEXT NOT NULL, city TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'assigned', 'completed', 'cancelled')),
+    price_cents INTEGER NOT NULL DEFAULT 4900,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS alert_preferences (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -838,3 +879,80 @@ def backup_database(backup_dir: str = None) -> str:
             return backup_path
         finally:
             conn.close()
+
+
+# ─── Emergency Requests CRUD ────────────────────────────────────────────────
+
+def create_emergency_request(user_id: int, category: str, priority: str,
+                              description: str, phone: str, city: str) -> dict:
+    conn = _get_conn()
+    try:
+        new_id = _insert_returning_id(
+            conn,
+            f"""INSERT INTO emergency_requests (user_id, category, priority, description, phone, city)
+                VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH})""",
+            (user_id, category, priority, description, phone, city),
+        )
+        conn.commit()
+        return _fetchone(conn, f"SELECT * FROM emergency_requests WHERE id = {PH}", (new_id,))
+    finally:
+        conn.close()
+
+
+def list_emergency_requests(user_id: int) -> list:
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"SELECT * FROM emergency_requests WHERE user_id = {PH} ORDER BY created_at DESC", (user_id,))
+    finally:
+        conn.close()
+
+
+# ─── Refresh Tokens CRUD ────────────────────────────────────────────────────
+
+def save_refresh_token(user_id: int, token: str, expires_at: str) -> None:
+    conn = _get_conn()
+    try:
+        _execute(conn, f"INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ({PH}, {PH}, {PH})",
+                 (user_id, token, expires_at))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_refresh_token(token: str) -> Optional[dict]:
+    conn = _get_conn()
+    try:
+        return _fetchone(conn, f"SELECT * FROM refresh_tokens WHERE token = {PH}", (token,))
+    finally:
+        conn.close()
+
+
+def delete_refresh_token(token: str) -> bool:
+    conn = _get_conn()
+    try:
+        cur = _execute(conn, f"DELETE FROM refresh_tokens WHERE token = {PH}", (token,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def delete_user_refresh_tokens(user_id: int) -> None:
+    conn = _get_conn()
+    try:
+        _execute(conn, f"DELETE FROM refresh_tokens WHERE user_id = {PH}", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ─── Conversations DELETE ────────────────────────────────────────────────────
+
+def delete_conversation(conversation_id: int) -> bool:
+    conn = _get_conn()
+    try:
+        cur = _execute(conn, f"DELETE FROM conversations WHERE id = {PH}", (conversation_id,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
