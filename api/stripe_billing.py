@@ -155,8 +155,11 @@ def create_portal_session(user_id: int) -> dict:
 def handle_webhook(payload: bytes, sig_header: str) -> dict:
     """Process Stripe webhook events."""
     if not STRIPE_WEBHOOK_SECRET:
-        log.warning("STRIPE_WEBHOOK_SECRET non configure — webhook ignore.")
-        return {"status": "ignored"}
+        log.error("STRIPE_WEBHOOK_SECRET non configure — webhook rejete par securite.")
+        raise HTTPException(
+            status_code=503,
+            detail="Webhook Stripe non configure. Contactez l'administrateur.",
+        )
 
     try:
         event = stripe.Webhook.construct_event(

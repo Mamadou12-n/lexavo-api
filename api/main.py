@@ -30,6 +30,9 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -53,6 +56,9 @@ from api.models import (
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("api")
+
+# ─── Rate limiter ──────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
 
 # ─── App FastAPI ──────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -91,11 +97,22 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # ─── Startup : init DB + seed ───────────────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
+    # ─── Validation config critique ────────────────────────────────────────
+    missing = []
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        missing.append("ANTHROPIC_API_KEY")
+    if not os.getenv("LEXAVO_JWT_SECRET"):
+        log.warning("LEXAVO_JWT_SECRET non defini — cle ephemere generee (tokens ne survivront pas au redemarrage)")
+    for key in missing:
+        log.warning(f"Variable d'environnement manquante : {key} — /ask ne fonctionnera pas")
+
     from api.database import init_db
     from api.lawyers import seed_demo_lawyers
     init_db()
@@ -142,9 +159,21 @@ def stats():
     return IndexStats(**data)
 
 
+@app.post("/admin/backup")
+def admin_backup(current_user: dict = Depends(_get_current_user)):
+    """Cree un backup SQLite. Reserve aux admins (user_id=1 pour le MVP)."""
+    if current_user["id"] != 1:
+        raise HTTPException(403, "Acces reserve a l'administrateur.")
+    from api.database import backup_database
+    path = backup_database()
+    return {"status": "ok", "backup_path": path}
+
+
 @app.post("/ask", response_model=AskResponse)
+@limiter.limit("10/minute")
 def ask_endpoint(
-    request: AskRequest,
+    request: Request,
+    body: AskRequest,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -169,13 +198,13 @@ def ask_endpoint(
 
     try:
         result = ask(
-            question=request.question,
-            top_k=request.top_k,
-            source_filter=request.source_filter,
-            model=request.model,
+            question=body.question,
+            top_k=body.top_k,
+            source_filter=body.source_filter,
+            model=body.model,
             anthropic_api_key=api_key,
-            branch=request.branch,
-            region=request.region,
+            branch=body.branch,
+            region=body.region,
         )
     except RuntimeError as e:
         raise HTTPException(
@@ -815,10 +844,15 @@ def alerts_save_preferences(
     request: dict,
     current_user: dict = Depends(_get_current_user),
 ):
-    """Sauvegarde les preferences d'alertes de l'utilisateur."""
-    from api.features.alerts import save_preferences
+    """Sauvegarde les preferences d'alertes de l'utilisateur (persistees en DB)."""
+    from api.database import update_alert_preferences
     domains = request.get("domains", [])
-    return save_preferences(user_id=current_user["id"], domains=domains)
+    frequency = request.get("frequency")
+    enabled = request.get("enabled")
+    prefs = update_alert_preferences(
+        user_id=current_user["id"], domains=domains, frequency=frequency, enabled=enabled,
+    )
+    return prefs
 
 
 @app.get("/alerts/feed")
@@ -826,11 +860,13 @@ def alerts_feed(
     current_user: dict = Depends(_get_current_user),
     limit: int = Query(default=10, ge=1, le=50),
 ):
-    """Retourne le fil d'alertes legislatives personnalise."""
+    """Retourne le fil d'alertes legislatives personnalise selon les preferences DB."""
     from api.features.alerts import get_alert_feed
-    # TODO: charger les preferences depuis la DB
-    feed = get_alert_feed(domains=[], limit=limit)
-    return {"alerts": feed, "total": len(feed)}
+    from api.database import get_alert_preferences
+    prefs = get_alert_preferences(current_user["id"])
+    domains = prefs.get("domains", [])
+    feed = get_alert_feed(domains=domains, limit=limit)
+    return {"alerts": feed, "total": len(feed), "preferences": prefs}
 
 
 # ─── Litigation Endpoints ─────────────────────────────────────────────────
@@ -919,40 +955,63 @@ def proof_create(
     request: dict,
     current_user: dict = Depends(_get_current_user),
 ):
-    """Cree un nouveau dossier de preuves."""
-    from api.features.proof import create_case
-    try:
-        result = create_case(
-            user_id=current_user["id"],
-            title=request.get("title", ""),
-            category=request.get("category", "general"),
-            description=request.get("description", ""),
-        )
-        return result
-    except ValueError as e:
-        raise HTTPException(400, str(e))
+    """Cree un nouveau dossier de preuves (persiste en DB)."""
+    from api.database import create_proof_case
+    title = request.get("title", "")
+    if not title or len(title.strip()) < 3:
+        raise HTTPException(400, "Le titre du dossier doit contenir au moins 3 caracteres.")
+    result = create_proof_case(
+        user_id=current_user["id"],
+        title=title.strip(),
+        description=request.get("description", ""),
+    )
+    return result
+
+
+@app.get("/proof/cases")
+def proof_list(current_user: dict = Depends(_get_current_user)):
+    """Liste les dossiers de preuves de l'utilisateur."""
+    from api.database import list_proof_cases
+    cases = list_proof_cases(current_user["id"])
+    return {"cases": cases, "total": len(cases)}
 
 
 @app.post("/proof/{case_id}/add-entry")
 def proof_add_entry(
-    case_id: str,
+    case_id: int,
     request: dict,
     current_user: dict = Depends(_get_current_user),
 ):
-    """Ajoute une entree a un dossier de preuves."""
-    from api.features.proof import add_entry
-    # TODO: charger le case depuis la DB par case_id
-    case = {"case_id": case_id, "entries": [], "status": "open"}
-    try:
-        entry = add_entry(
-            case=case,
-            entry_type=request.get("type", "fait"),
-            content=request.get("content", ""),
-            evidence_description=request.get("evidence_description"),
-        )
-        return entry
-    except ValueError as e:
-        raise HTTPException(400, str(e))
+    """Ajoute une piece au dossier de preuves (persiste en DB)."""
+    from api.database import get_proof_case, add_proof_entry
+    case = get_proof_case(case_id)
+    if not case:
+        raise HTTPException(404, "Dossier de preuves introuvable.")
+    if case["user_id"] != current_user["id"]:
+        raise HTTPException(403, "Acces refuse a ce dossier.")
+    entry = add_proof_entry(
+        case_id=case_id,
+        entry_type=request.get("type", "note"),
+        content=request.get("content", ""),
+        metadata=request.get("metadata"),
+    )
+    return entry
+
+
+@app.get("/proof/{case_id}/entries")
+def proof_entries(
+    case_id: int,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Liste les pieces d'un dossier de preuves."""
+    from api.database import get_proof_case, list_proof_entries
+    case = get_proof_case(case_id)
+    if not case:
+        raise HTTPException(404, "Dossier de preuves introuvable.")
+    if case["user_id"] != current_user["id"]:
+        raise HTTPException(403, "Acces refuse.")
+    entries = list_proof_entries(case_id)
+    return {"entries": entries, "total": len(entries)}
 
 
 # ─── Heritage Endpoints ──────────────────────────────────────────────────

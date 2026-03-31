@@ -11,6 +11,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -18,7 +19,16 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.database import create_user, get_user_by_email, get_user_by_id
 
 # ─── Config ──────────────────────────────────────────────────────────────────
-SECRET_KEY = os.getenv("LEXAVO_JWT_SECRET", "lexavo-dev-secret-change-in-production")
+SECRET_KEY = os.getenv("LEXAVO_JWT_SECRET", "")
+if not SECRET_KEY:
+    import warnings
+    warnings.warn(
+        "LEXAVO_JWT_SECRET non defini — utilisation d'une cle ephemere. "
+        "Les tokens ne survivront pas au redemarrage.",
+        stacklevel=1,
+    )
+    SECRET_KEY = secrets.token_hex(32)  # cle ephemere, securisee mais non persistante
+
 ALGORITHM = "HS256"
 TOKEN_EXPIRY_DAYS = 7
 
@@ -29,16 +39,20 @@ security = HTTPBearer()
 # ─── Password hashing ───────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    """Hash a password using SHA-256 with a random salt.
-    Format: salt$hash (both hex-encoded).
+    """Hash a password using bcrypt (industry standard, GPU-resistant).
+    Returns the bcrypt hash string directly.
     """
-    salt = secrets.token_hex(16)
-    h = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
-    return f"{salt}${h}"
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    """Verify a password against a salt$hash string."""
+    """Verify a password against a bcrypt hash.
+    Also supports legacy SHA-256 salt$hash format for migration.
+    """
+    if password_hash.startswith("$2b$") or password_hash.startswith("$2a$"):
+        # bcrypt format
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    # Legacy SHA-256 format: salt$hash — still verify but flag for upgrade
     if "$" not in password_hash:
         return False
     salt, stored_hash = password_hash.split("$", 1)

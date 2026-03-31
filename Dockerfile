@@ -16,7 +16,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Install PyTorch CPU-only first (200MB vs 2GB CUDA), then all other deps
+RUN pip install --no-cache-dir --prefix=/install \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime — lean production image
@@ -53,6 +56,9 @@ RUN apt-get update && \
     apt-get remove -y wget && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
+
+# Pre-download the embedding model at build time (avoids 60s delay on first /ask)
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
 # Create non-root user for security
 RUN groupadd --gid 1000 appuser && \

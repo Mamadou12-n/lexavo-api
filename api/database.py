@@ -123,6 +123,40 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
 
+            CREATE TABLE IF NOT EXISTS alert_preferences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL UNIQUE,
+                domains TEXT NOT NULL DEFAULT '[]',
+                frequency TEXT NOT NULL DEFAULT 'daily' CHECK(frequency IN ('realtime', 'daily', 'weekly')),
+                enabled INTEGER NOT NULL DEFAULT 1,
+                updated_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_alert_prefs_user ON alert_preferences(user_id);
+
+            CREATE TABLE IF NOT EXISTS proof_cases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'closed', 'archived')),
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_proof_cases_user ON proof_cases(user_id);
+
+            CREATE TABLE IF NOT EXISTS proof_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                case_id INTEGER NOT NULL,
+                entry_type TEXT NOT NULL DEFAULT 'note' CHECK(entry_type IN ('note', 'document', 'photo', 'email', 'sms', 'testimony')),
+                content TEXT NOT NULL,
+                metadata_json TEXT DEFAULT '{}',
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (case_id) REFERENCES proof_cases(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_proof_entries_case ON proof_entries(case_id);
+
             CREATE TABLE IF NOT EXISTS push_tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -680,5 +714,140 @@ def get_push_tokens_for_user(user_id: int) -> list:
             (user_id,),
         ).fetchall()
         return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+# ─── Alert Preferences CRUD ────────────────────────────────────────────────
+
+def get_alert_preferences(user_id: int) -> dict:
+    """Retourne les preferences d'alertes de l'utilisateur. Cree les defaults si absentes."""
+    conn = _get_conn()
+    try:
+        row = conn.execute(
+            "SELECT * FROM alert_preferences WHERE user_id = ?", (user_id,)
+        ).fetchone()
+        if row:
+            d = dict(row)
+            d["domains"] = json.loads(d["domains"])
+            d["enabled"] = bool(d["enabled"])
+            return d
+        # Auto-create defaults
+        conn.execute(
+            "INSERT INTO alert_preferences (user_id) VALUES (?)", (user_id,)
+        )
+        conn.commit()
+        return get_alert_preferences(user_id)
+    finally:
+        conn.close()
+
+
+def update_alert_preferences(user_id: int, domains: list = None, frequency: str = None, enabled: bool = None) -> dict:
+    """Met a jour les preferences d'alertes."""
+    conn = _get_conn()
+    try:
+        get_alert_preferences(user_id)  # ensure exists
+        parts, params = [], []
+        if domains is not None:
+            parts.append("domains = ?")
+            params.append(json.dumps(domains, ensure_ascii=False))
+        if frequency is not None:
+            parts.append("frequency = ?")
+            params.append(frequency)
+        if enabled is not None:
+            parts.append("enabled = ?")
+            params.append(int(enabled))
+        if parts:
+            parts.append("updated_at = datetime('now')")
+            params.append(user_id)
+            conn.execute(f"UPDATE alert_preferences SET {', '.join(parts)} WHERE user_id = ?", params)
+            conn.commit()
+        return get_alert_preferences(user_id)
+    finally:
+        conn.close()
+
+
+# ─── Proof Cases CRUD ───────────────────────────────────────────────────────
+
+def create_proof_case(user_id: int, title: str, description: str = None) -> dict:
+    """Cree un nouveau dossier de preuves."""
+    conn = _get_conn()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO proof_cases (user_id, title, description) VALUES (?, ?, ?)",
+            (user_id, title, description),
+        )
+        conn.commit()
+        return get_proof_case(cursor.lastrowid)
+    finally:
+        conn.close()
+
+
+def get_proof_case(case_id: int) -> Optional[dict]:
+    """Retourne un dossier de preuves par ID."""
+    conn = _get_conn()
+    try:
+        row = conn.execute("SELECT * FROM proof_cases WHERE id = ?", (case_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_proof_cases(user_id: int) -> list:
+    """Liste tous les dossiers de preuves d'un utilisateur."""
+    conn = _get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM proof_cases WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def add_proof_entry(case_id: int, entry_type: str, content: str, metadata: dict = None) -> dict:
+    """Ajoute une piece au dossier de preuves."""
+    conn = _get_conn()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO proof_entries (case_id, entry_type, content, metadata_json) VALUES (?, ?, ?, ?)",
+            (case_id, entry_type, content, json.dumps(metadata or {}, ensure_ascii=False)),
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM proof_entries WHERE id = ?", (cursor.lastrowid,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_proof_entries(case_id: int) -> list:
+    """Liste toutes les pieces d'un dossier."""
+    conn = _get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM proof_entries WHERE case_id = ? ORDER BY created_at ASC",
+            (case_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+# ─── SQLite Backup ──────────────────────────────────────────────────────────
+
+def backup_database(backup_dir: str = None) -> str:
+    """Cree un backup SQLite via l'API de backup integree. Retourne le chemin du backup."""
+    import shutil
+    backup_dir = backup_dir or str(DB_DIR / "backups")
+    Path(backup_dir).mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    backup_path = str(Path(backup_dir) / f"lexavo_backup_{timestamp}.db")
+    conn = _get_conn()
+    try:
+        backup_conn = sqlite3.connect(backup_path)
+        conn.backup(backup_conn)
+        backup_conn.close()
+        return backup_path
     finally:
         conn.close()
