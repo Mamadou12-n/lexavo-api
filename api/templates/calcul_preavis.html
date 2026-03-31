@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Calculateur préavis licenciement Belgique 2026 | Lexavo{% endblock %}
+{% block description %}Calculez votre préavis de licenciement en Belgique selon la CCT n°109. Résultat immédiat : semaines, mois et indemnité de rupture. Gratuit et fiable.{% endblock %}
+{% block canonical %}https://lexavo.be/calcul/preavis-licenciement{% endblock %}
+{% block og_title %}Calculateur préavis licenciement Belgique 2026 | Lexavo{% endblock %}
+{% block og_description %}Calculez votre préavis de licenciement selon la CCT n°109. Résultat en secondes.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Comment calculer mon préavis de licenciement en Belgique ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Le préavis se calcule selon la CCT n°109 en fonction de votre ancienneté. Par exemple : 1 an d'ancienneté = 6 semaines, 5 ans = 18 semaines, 10 ans = 33 semaines. Notre calculateur applique automatiquement le barème légal."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quelle est la différence entre préavis et indemnité de rupture ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Le préavis est la période pendant laquelle vous continuez à travailler avant la fin du contrat. L'indemnité de rupture (ou indemnité compensatoire) est le montant versé si l'employeur décide de vous libérer immédiatement de votre obligation de prester le préavis."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Le préavis CCT n°109 s'applique-t-il à tous les travailleurs ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La CCT n°109 s'applique à la quasi-totalité des travailleurs salariés du secteur privé belge. Des règles spécifiques existent pour certaines catégories comme les travailleurs domestiques, les travailleurs intérimaires ou les travailleurs du secteur public."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Mon employeur peut-il me licencier sans préavis ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, en cas de motif grave (faute grave), l'employeur peut rompre le contrat immédiatement sans préavis ni indemnité. Hors motif grave, il doit respecter le délai de préavis ou payer l'indemnité compensatoire."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Comment est calculée l'indemnité de rupture ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "L'indemnité de rupture = salaire mensuel brut × (semaines de préavis / 4,33). Le salaire de référence inclut le salaire de base, les primes, avantages en nature et la valeur du véhicule de société."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Calculateur préavis licenciement Belgique 2026</h1>
+<p>Calculez instantanément votre délai de préavis et votre indemnité de rupture selon la <strong>CCT n°109 du CNT</strong> (loi Peeters du 26 décembre 2013).</p>
+
+<div class="legal-ref">
+    <strong>Base légale :</strong> CCT n°109 du Conseil National du Travail (30/01/2014) — Loi du 26 décembre 2013 relative aux délais de préavis et à la journée de carence.<br>
+    <strong>Article de référence :</strong> Art. 37/2 de la loi du 3 juillet 1978 relative aux contrats de travail.
+</div>
+
+<h2>Calculateur interactif</h2>
+<form id="form-preavis" onsubmit="return false;">
+    <div class="form-group">
+        <label for="years">Ancienneté (années complètes)</label>
+        <input type="number" id="years" min="0" max="50" value="5" required>
+    </div>
+    <div class="form-group">
+        <label for="salary">Salaire mensuel brut (€)</label>
+        <input type="number" id="salary" min="100" max="99999" step="0.01" value="3000" required>
+    </div>
+    <button class="cta" onclick="calculerPreavis()">Calculer mon préavis</button>
+</form>
+
+<div id="result-preavis" class="result-box">
+    <p>Votre délai de préavis :</p>
+    <div class="amount" id="res-weeks">— semaines</div>
+    <p id="res-months"></p>
+    <p id="res-indemnity"></p>
+    <p class="disclaimer" id="res-disclaimer"></p>
+</div>
+
+<h2>Barème légal CCT n°109 — Tableau de référence</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Ancienneté</th>
+            <th>Semaines de préavis</th>
+            <th>Exemple (3 000 €/mois)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Moins de 3 mois</td><td>1 semaine</td><td>693 €</td></tr>
+        <tr><td>1 an</td><td>6 semaines</td><td>4 158 €</td></tr>
+        <tr><td>2 ans</td><td>10 semaines</td><td>6 935 €</td></tr>
+        <tr><td>3 ans</td><td>14 semaines</td><td>9 699 €</td></tr>
+        <tr><td>5 ans</td><td>18 semaines</td><td>12 470 €</td></tr>
+        <tr><td>10 ans</td><td>33 semaines</td><td>22 862 €</td></tr>
+        <tr><td>15 ans</td><td>48 semaines</td><td>33 256 €</td></tr>
+        <tr><td>20 ans</td><td>63 semaines</td><td>43 650 €</td></tr>
+    </tbody>
+</table>
+
+<h2>La formule légale expliquée</h2>
+<div class="step">
+    <div class="step-num">1</div>
+    <div><strong>Déterminer l'ancienneté</strong> — Comptez les années complètes depuis la date d'entrée en service (contrats de travail successifs inclus si même employeur).</div>
+</div>
+<div class="step">
+    <div class="step-num">2</div>
+    <div><strong>Lire le barème CCT n°109</strong> — Le tableau prévoit de 1 semaine (0 an) à 63 + 3×(n-20) semaines au-delà de 20 ans d'ancienneté.</div>
+</div>
+<div class="step">
+    <div class="step-num">3</div>
+    <div><strong>Calculer l'indemnité</strong> — Salaire mensuel brut × (semaines / 4,33). Le salaire inclut tous les avantages : prime de fin d'année, voiture, chèques-repas…</div>
+</div>
+
+<h2>FAQ — Préavis de licenciement Belgique</h2>
+<div class="faq-item">
+    <div class="faq-question">Comment calculer mon préavis de licenciement en Belgique ?</div>
+    <div class="faq-answer">Le préavis se calcule selon la CCT n°109 en fonction de votre ancienneté. Par exemple : 1 an = 6 semaines, 5 ans = 18 semaines, 10 ans = 33 semaines. Notre calculateur applique automatiquement le barème légal.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Quelle est la différence entre préavis et indemnité de rupture ?</div>
+    <div class="faq-answer">Le préavis est la période pendant laquelle vous continuez à travailler. L'indemnité de rupture est le montant versé si l'employeur vous libère immédiatement de la prestation du préavis.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">La CCT n°109 s'applique-t-elle à tous les travailleurs ?</div>
+    <div class="faq-answer">Elle s'applique à la quasi-totalité des salariés du secteur privé belge. Des règles spécifiques existent pour les travailleurs domestiques, intérimaires et le secteur public.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Mon employeur peut-il me licencier sans préavis ?</div>
+    <div class="faq-answer">Oui, en cas de motif grave (faute grave), l'employeur peut rompre le contrat immédiatement sans préavis ni indemnité. Hors motif grave, il doit respecter le délai ou payer l'indemnité compensatoire.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Comment est calculée l'indemnité de rupture ?</div>
+    <div class="faq-answer">Indemnité = salaire mensuel brut × (semaines / 4,33). Le salaire de référence inclut le salaire de base, les primes, avantages en nature et la valeur du véhicule de société.</div>
+</div>
+
+<div class="legal-ref" style="margin-top:2rem;">
+    <strong>Base légale complète :</strong><br>
+    • CCT n°109 du CNT — 30 janvier 2014<br>
+    • Loi du 26 décembre 2013 concernant l'introduction d'un statut unique<br>
+    • Art. 37/2 — Loi du 3 juillet 1978 relative aux contrats de travail<br>
+    • <a href="https://www.cnt-nar.be/CCT-ORIG/cct-109.pdf" target="_blank" rel="noopener">Texte officiel CCT n°109 (cnt-nar.be)</a>
+</div>
+
+<p class="disclaimer">Ce calculateur est fourni à titre indicatif. Des exceptions légales peuvent modifier le résultat (motif grave, contre-préavis, période d'essai…). Consultez un avocat spécialisé en droit du travail pour votre situation spécifique.</p>
+
+<p style="margin-top:2rem;">
+    <a href="/avocats/Bruxelles/droit-travail" class="cta">Trouver un avocat droit du travail</a>
+</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function calculerPreavis() {
+    const years = parseInt(document.getElementById('years').value) || 0;
+    const salary = parseFloat(document.getElementById('salary').value) || 0;
+    if (salary <= 0) { alert('Veuillez entrer un salaire valide.'); return; }
+
+    try {
+        const resp = await fetch(`/calculators/notice-period?years=${years}&monthly_salary=${salary}`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Erreur API');
+        const data = await resp.json();
+
+        document.getElementById('res-weeks').textContent = data.weeks + ' semaines';
+        document.getElementById('res-months').textContent = '≈ ' + data.months + ' mois';
+        document.getElementById('res-indemnity').textContent = 'Indemnité de rupture estimée : ' + data.indemnity_euros.toLocaleString('fr-BE', {style:'currency',currency:'EUR'});
+        document.getElementById('res-disclaimer').textContent = data.disclaimer;
+        document.getElementById('result-preavis').classList.add('visible');
+    } catch(e) {
+        // Fallback calcul local
+        let weeks = 1;
+        if (years <= 0) weeks = 1;
+        else if (years <= 3) weeks = 2 + years * 4;
+        else if (years <= 4) weeks = 15;
+        else if (years <= 5) weeks = 18;
+        else if (years <= 6) weeks = 21;
+        else if (years <= 7) weeks = 24;
+        else if (years <= 8) weeks = 27;
+        else if (years <= 9) weeks = 30;
+        else if (years <= 10) weeks = 33;
+        else if (years <= 15) weeks = 33 + (years - 10) * 3;
+        else if (years <= 20) weeks = 48 + (years - 15) * 3;
+        else weeks = 63 + (years - 20) * 3;
+
+        const indemnity = (salary * weeks / 4.33).toFixed(2);
+        document.getElementById('res-weeks').textContent = weeks + ' semaines';
+        document.getElementById('res-months').textContent = '≈ ' + (weeks / 4.33).toFixed(1) + ' mois';
+        document.getElementById('res-indemnity').textContent = 'Indemnité de rupture estimée : ' + parseFloat(indemnity).toLocaleString('fr-BE', {style:'currency',currency:'EUR'});
+        document.getElementById('res-disclaimer').textContent = 'Calcul indicatif basé sur le barème légal.';
+        document.getElementById('result-preavis').classList.add('visible');
+    }
+}
+</script>
+{% endblock %}

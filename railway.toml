@@ -1,0 +1,37 @@
+# =============================================================================
+# railway.toml — Lexavo Backend Deployment
+# Déploiement Railway du backend FastAPI + ChromaDB
+# =============================================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[volumes]]
+mountPath = "/app/db"
+
+# =============================================================================
+# Variables d'environnement à configurer dans le dashboard Railway :
+#
+# REQUIRED :
+#   ANTHROPIC_API_KEY     = sk-ant-...
+#   LEXAVO_JWT_SECRET     = <secret aléatoire 64 chars>
+#   LEXAVO_DB_PATH        = /app/db/lexavo.db
+#
+# CORS (remplacer VOTRE_URL par l'URL Railway générée) :
+#   LEXAVO_ALLOWED_ORIGINS = https://VOTRE_APP.railway.app,exp://...
+#
+# STRIPE (optionnel pour la démo TFE) :
+#   STRIPE_SECRET_KEY      = sk_test_...
+#   STRIPE_WEBHOOK_SECRET  = whsec_...
+#   STRIPE_PRICE_PRO       = price_...
+#   STRIPE_PRICE_CABINET   = price_...
+#   LEXAVO_FRONTEND_URL    = https://VOTRE_APP.railway.app
+# =============================================================================

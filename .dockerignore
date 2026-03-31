@@ -1,0 +1,68 @@
+# =============================================================================
+# .dockerignore — JurisBE
+# Exclude files not needed in the Docker image
+# =============================================================================
+
+# Git
+.git
+.gitignore
+
+# Environment and secrets
+.env
+.env.*
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Mobile app (runs on host, not in Docker)
+mobile/
+
+# Output data (except chroma_db, which is copied explicitly)
+output/apd/
+output/bruxelles/
+output/cce/
+output/ccrek/
+output/chambre/
+output/cnt/
+output/codex_vlaanderen/
+output/consconst/
+output/conseil_etat/
+output/eurlex/
+output/fsma/
+output/gallilex/
+output/hudoc/
+output/juridat/
+output/justel/
+output/moniteur/
+output/normalized/
+output/wallex/
+output/web_app/
+output/*.log
+output/lexavo.db
+
+# Scrapers (not needed at runtime)
+scrapers/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Node (from mobile)
+node_modules/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# GitHub
+.github/

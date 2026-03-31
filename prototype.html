@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lexavo — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #F5F5F7;
+    --surface:   #FFFFFF;
+    --ink:       #18181B;
+    --muted:     #71717A;
+    --faint:     #A1A1AA;
+    --border:    #E4E4E7;
+    --accent:    #E85D26;
+    --accent-bg: #FFF3EE;
+    --header:    #1C2B3A;
+    --green:     #16A34A;
+    --green-bg:  #F0FDF4;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.09);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', -apple-system, sans-serif;
+    background: #0D1117;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 28px 20px 40px;
+  }
+
+  .page-label {
+    color: rgba(255,255,255,0.3);
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  /* ── PHONE FRAME ── */
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow:
+      0 50px 100px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.08),
+      inset 0 0 0 1px rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: var(--header);
+    padding: 14px 24px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-bar .time {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .status-bar .icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--header);
+    padding: 10px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-icon {
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+  .header-title {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .header-sub {
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    font-weight: 400;
+  }
+  .header-right {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── SCREEN ── */
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+  .screen-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 88px;
+  }
+  .screen-scroll::-webkit-scrollbar { width: 3px; }
+  .screen-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── TAB BAR ── */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 4px 22px;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 2px;
+    border: none;
+    background: none;
+    position: relative;
+  }
+  .tab-icon-wrap {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .tab.active .tab-icon-wrap { background: var(--accent-bg); }
+  .tab svg { width: 18px; height: 18px; stroke: var(--faint); stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+  .tab.active svg { stroke: var(--accent); }
+  .tab-label { font-size: 9.5px; font-weight: 600; color: var(--faint); transition: color 0.2s; }
+  .tab.active .tab-label { color: var(--accent); }
+
+  /* ── SHARED COMPONENTS ── */
+  .section { margin-bottom: 22px; }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+
+  /* ── HOME SCREEN ── */
+  .home-hero {
+    background: var(--header);
+    margin: -20px -16px 20px;
+    padding: 22px 20px 26px;
+  }
+  .home-greeting {
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .home-headline {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+    line-height: 1.2;
+  }
+  .home-headline span { color: var(--accent); }
+  .home-search-pill {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .home-search-pill:hover { background: rgba(255,255,255,0.12); }
+  .home-search-pill svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.4); stroke-width: 2; fill: none; flex-shrink: 0; }
+  .home-search-text { color: rgba(255,255,255,0.35); font-size: 13.5px; font-weight: 500; }
+  .home-stats-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .home-stat-chip {
+    background: rgba(255,255,255,0.07);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 500;
+  }
+  .home-stat-sep { color: rgba(255,255,255,0.2); font-size: 11px; }
+
+  .topics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+  .topic-chip {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .topic-chip:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(232,93,38,0.1); }
+  .topic-chip:active { transform: scale(0.97); }
+  .topic-icon { font-size: 18px; display: block; margin-bottom: 5px; }
+  .topic-name { font-size: 10.5px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+
+  .quick-actions { display: flex; gap: 10px; }
+  .quick-btn {
+    flex: 1;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .quick-btn:hover { opacity: 0.9; }
+  .quick-btn:active { transform: scale(0.97); }
+  .quick-btn.secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .quick-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.8; fill: none; }
+
+  .notice {
+    background: var(--accent-bg);
+    border: 1px solid rgba(232,93,38,0.2);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .notice p { font-size: 11px; color: var(--accent); font-weight: 500; line-height: 1.5; text-align: center; }
+
+  /* ── ASK SCREEN ── */
+  .input-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .input-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .text-area {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    min-height: 82px;
+    resize: none;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .text-area:focus { outline: none; border-color: var(--accent); }
+  .text-area::placeholder { color: var(--faint); }
+
+  .branch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--accent-bg);
+    border: 1px solid rgba(232,93,38,0.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 12px;
+    letter-spacing: 0.2px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { background: var(--border); color: var(--faint); cursor: default; transform: none; }
+
+  .suggest-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  .suggest-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .suggest-item:hover { border-color: var(--accent); }
+  .suggest-arrow { color: var(--accent); font-size: 18px; font-weight: 300; flex-shrink: 0; }
+  .suggest-text { font-size: 12.5px; color: var(--ink); line-height: 1.4; font-weight: 500; }
+
+  /* answer */
+  .answer-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 14px;
+    animation: fadeUp 0.35s ease;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .answer-header {
+    background: var(--header);
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .answer-header-text { color: #fff; font-weight: 700; font-size: 13px; }
+  .model-badge {
+    background: var(--accent);
+    padding: 3px 9px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .answer-body { padding: 16px; font-size: 13.5px; color: var(--ink); line-height: 1.75; }
+  .answer-body strong { font-weight: 700; }
+
+  .sources-section {
+    border-top: 1px solid var(--border);
+    padding: 14px;
+    background: var(--bg);
+  }
+  .sources-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  .citation {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .citation-header { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .citation-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .source-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; color: #fff;
+  }
+  .sim-score { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--green); }
+  .citation-title { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .citation-ecli { font-size: 10px; color: var(--faint); font-family: 'Courier New', monospace; }
+
+  /* loading */
+  .loading-wrap { display: flex; flex-direction: column; align-items: center; padding: 36px 20px; gap: 14px; }
+  .skeleton-line {
+    height: 12px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .loading-text { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .skeleton-block { background: var(--surface); border-radius: var(--radius-md); padding: 16px; border: 1px solid var(--border); width: 100%; }
+
+  /* ── SEARCH SCREEN ── */
+  .search-bar-wrap {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .search-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13.5px;
+    background: var(--bg);
+    color: var(--ink);
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  .search-btn {
+    width: 100%;
+    background: var(--header);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.2s;
+  }
+  .search-btn:hover { opacity: 0.88; }
+  .result-card {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+  }
+  .result-card:hover { border-color: var(--accent); }
+  .result-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .result-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+  .result-excerpt { font-size: 11.5px; color: var(--muted); line-height: 1.55; }
+  .result-meta { display: flex; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
+  .result-meta span { font-size: 10.5px; color: var(--faint); font-weight: 500; }
+
+  .search-empty { text-align: center; padding: 50px 20px; }
+  .search-empty-icon { font-size: 40px; margin-bottom: 14px; }
+  .search-empty-text { font-size: 13px; color: var(--muted); font-weight: 500; line-height: 1.6; }
+
+  /* ── LAWYERS SCREEN ── */
+  .lawyer-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .lawyer-header { display: flex; align-items: flex-start; gap: 13px; }
+  .lawyer-avatar {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .lawyer-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .lawyer-bar { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+  .lawyer-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; }
+  .lawyer-city { font-size: 11px; color: var(--faint); font-weight: 500; }
+  .lawyer-rating { font-size: 12px; color: #F59E0B; font-weight: 800; }
+  .lawyer-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+  .lawyer-tag {
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid rgba(232,93,38,0.2);
+  }
+  .verified-badge {
+    font-size: 10px;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(22,163,74,0.25);
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+  .lawyer-desc { font-size: 11.5px; color: var(--muted); line-height: 1.55; margin-top: 10px; font-weight: 400; }
+  .lawyers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .lawyers-count { font-size: 12px; color: var(--faint); font-weight: 600; }
+
+  /* ── BILLING SCREEN ── */
+  .quota-wrap {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .quota-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .quota-plan { font-size: 14px; font-weight: 800; color: var(--ink); }
+  .quota-count { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .quota-track {
+    background: var(--bg);
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 7px;
+  }
+  .quota-fill { background: var(--accent); height: 100%; border-radius: 6px; width: 40%; transition: width 0.5s; }
+  .quota-renew { font-size: 11px; color: var(--faint); font-weight: 500; }
+
+  .plan-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--border);
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .plan-card.popular {
+    border-color: var(--accent);
+    box-shadow: 0 6px 20px rgba(232,93,38,0.12);
+  }
+  .popular-badge {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .plan-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .plan-name { font-size: 17px; font-weight: 800; color: var(--ink); }
+  .plan-tag { font-size: 10px; font-weight: 700; background: var(--bg); color: var(--muted); padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border); }
+  .plan-price { font-size: 30px; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: 5px; }
+  .plan-price span { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .plan-quota { font-size: 12px; color: var(--muted); margin-bottom: 14px; font-weight: 500; }
+  .plan-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 12px; }
+  .plan-feature { font-size: 12.5px; color: var(--ink); margin-bottom: 7px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .plan-check { width: 16px; height: 16px; border-radius: 50%; background: var(--green-bg); border: 1px solid rgba(22,163,74,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .plan-check::after { content: '✓'; font-size: 9px; color: var(--green); font-weight: 800; }
+  .plan-btn {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 14px;
+    border: none;
+    transition: opacity 0.2s, transform 0.15s;
+    letter-spacing: 0.2px;
+  }
+  .plan-btn:hover { opacity: 0.88; }
+  .plan-btn:active { transform: scale(0.99); }
+  .plan-btn.primary { background: var(--accent); color: #fff; }
+  .plan-btn.ghost { background: var(--bg); color: var(--ink); border: 1.5px solid var(--border); }
+  .plan-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+
+  .billing-notice {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .billing-notice p { font-size: 11px; color: var(--faint); font-weight: 500; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<p class="page-label">Lexavo — Prototype interactif</p>
+
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <span>●●●</span>
+      <span style="margin-left:2px">WiFi</span>
+      <span style="margin-left:2px">▐▐</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="header" id="app-header">
+    <div class="header-brand">
+      <div class="header-icon">⚖</div>
+      <div>
+        <div class="header-title" id="header-title">Lexavo</div>
+        <div class="header-sub" id="header-sub">Base juridique belge</div>
+      </div>
+    </div>
+    <div class="header-right">👤</div>
+  </div>
+
+  <!-- ══ HOME ══ -->
+  <div class="screen active" id="screen-home">
+    <div class="screen-scroll">
+
+      <div class="home-hero">
+        <div class="home-greeting">Bonne journée</div>
+        <div class="home-headline">Votre assistant<br>juridique <span>belge</span></div>
+        <div class="home-search-pill" onclick="showScreen('ask')">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="home-search-text">Posez votre question juridique…</span>
+        </div>
+        <div class="home-stats-line">
+          <span class="home-stat-chip">43 429 textes</span>
+          <span class="home-stat-sep">·</span>
+          <span class="home-stat-chip">18 sources officielles</span>
+          <span class="home-stat-sep">·</span>
+          <span class="home-stat-chip">15 branches</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Explorer par matière</div>
+        <div class="topics-grid">
+          <div class="topic-chip" onclick="fillTopic('licenciement motif grave')">
+            <span class="topic-icon">💼</span>
+            <span class="topic-name">Droit du travail</span>
+          </div>
+          <div class="topic-chip" onclick="fillTopic('impôts TVA fiscalité')">
+            <span class="topic-icon">🧾</span>
+            <span class="topic-name">Droit fiscal</span>
+          </div>
+          <div class="topic-chip" onclick="fillTopic('divorce garde enfants')">
+            <span class="topic-icon">👨‍👩‍👧</span>
+            <span class="topic-name">Droit familial</span>
+          </div>
+          <div class="topic-chip" onclick="fillTopic('faillite insolvabilité société')">
+            <span class="topic-icon">🏢</span>
+            <span class="topic-name">Droit commercial</span>
+          </div>
+          <div class="topic-chip" onclick="fillTopic('permis urbanisme recours')">
+            <span class="topic-icon">🏛️</span>
+            <span class="topic-name">Droit administratif</span>
+          </div>
+          <div class="topic-chip" onclick="fillTopic('RGPD données personnelles')">
+            <span class="topic-icon">🔒</span>
+            <span class="topic-name">Droits fondamentaux</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Accès rapide</div>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="showScreen('ask')">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Poser une question
+          </button>
+          <button class="quick-btn secondary" onclick="showScreen('lawyers')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Trouver un avocat
+          </button>
+        </div>
+      </div>
+
+      <div class="notice">
+        <p>Outil d'aide à la recherche juridique. Ne remplace pas un avis professionnel.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ ASK ══ -->
+  <div class="screen" id="screen-ask">
+    <div class="screen-scroll">
+
+      <div class="input-card">
+        <span class="input-label">Votre question juridique</span>
+        <textarea class="text-area" id="question-input"
+          placeholder="Ex : Quelles sont les conditions d'un licenciement pour motif grave ?"
+          oninput="onQuestionInput(this.value)"></textarea>
+        <div id="branch-badge-wrap" style="display:none">
+          <span class="branch-badge" id="branch-badge">⚖ Détection…</span>
+        </div>
+        <button class="submit-btn" id="ask-btn" onclick="simulateAsk()" disabled>
+          Analyser avec Lexavo
+        </button>
+      </div>
+
+      <div id="suggest-section">
+        <div class="suggest-label">Questions fréquentes</div>
+        <div class="suggest-item" onclick="fillQuestion(this)">
+          <span class="suggest-arrow">›</span>
+          <span class="suggest-text">Quelles sont les conditions d'un licenciement pour motif grave ?</span>
+        </div>
+        <div class="suggest-item" onclick="fillQuestion(this)">
+          <span class="suggest-arrow">›</span>
+          <span class="suggest-text">Comment contester un permis d'urbanisme refusé ?</span>
+        </div>
+        <div class="suggest-item" onclick="fillQuestion(this)">
+          <span class="suggest-arrow">›</span>
+          <span class="suggest-text">Quels sont les droits d'un locataire en cas de défaut du bailleur ?</span>
+        </div>
+        <div class="suggest-item" onclick="fillQuestion(this)">
+          <span class="suggest-arrow">›</span>
+          <span class="suggest-text">Qu'est-ce que le RGPD impose aux entreprises belges ?</span>
+        </div>
+        <div class="suggest-item" onclick="fillQuestion(this)">
+          <span class="suggest-arrow">›</span>
+          <span class="suggest-text">Comment fonctionne la procédure de faillite en Belgique ?</span>
+        </div>
+      </div>
+
+      <div id="loading-section" style="display:none">
+        <div class="loading-wrap">
+          <div class="skeleton-block">
+            <div class="skeleton-line" style="width:70%;margin-bottom:10px"></div>
+            <div class="skeleton-line" style="width:100%;margin-bottom:8px"></div>
+            <div class="skeleton-line" style="width:90%;margin-bottom:8px"></div>
+            <div class="skeleton-line" style="width:55%"></div>
+          </div>
+          <span class="loading-text">Analyse avec Claude Sonnet 4.6…</span>
+        </div>
+      </div>
+
+      <div id="answer-section" style="display:none">
+        <div class="answer-card">
+          <div class="answer-header">
+            <span class="answer-header-text">Réponse juridique</span>
+            <span class="model-badge">Sonnet 4.6</span>
+          </div>
+          <div class="answer-body" id="answer-body"></div>
+          <div class="sources-section">
+            <div class="sources-title" id="sources-count"></div>
+            <div id="sources-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ SEARCH ══ -->
+  <div class="screen" id="screen-search">
+    <div class="screen-scroll">
+
+      <div class="search-bar-wrap">
+        <input class="search-input" id="search-input"
+          placeholder="Ex : faillite insolvabilité créanciers…"
+          oninput="onSearchInput(this.value)">
+        <button class="search-btn" onclick="simulateSearch()">Rechercher dans la base</button>
+      </div>
+
+      <div id="search-results-section" style="display:none">
+        <div class="section-label" id="search-count"></div>
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="source-badge" style="background:#B22222">Juridat</span>
+            <span class="sim-score">92%</span>
+          </div>
+          <div class="result-title">Cour de cassation — Arrêt du 12 mars 2023</div>
+          <div class="result-excerpt">La procédure de faillite implique la cessation de paiements et l'ébranlement du crédit. Le tribunal de l'entreprise est compétent…</div>
+          <div class="result-meta">
+            <span>2023-03-12</span>
+            <span>ECLI:BE:CASS:2023:ARR.20230312.1</span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="source-badge" style="background:#1A6B3A">Moniteur belge</span>
+            <span class="sim-score">88%</span>
+          </div>
+          <div class="result-title">Loi du 11 août 2017 — Insolvabilité des entreprises</div>
+          <div class="result-excerpt">Le livre XX du Code de droit économique organise le traitement de l'insolvabilité, incluant la faillite et la réorganisation judiciaire…</div>
+          <div class="result-meta">
+            <span>2017-08-11</span>
+            <span>Moniteur belge</span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="source-badge" style="background:#2F4F4F">Conseil d'État</span>
+            <span class="sim-score">74%</span>
+          </div>
+          <div class="result-title">Arrêt n° 254.123 — Section du contentieux administratif</div>
+          <div class="result-excerpt">La dissolution d'une société commerciale et les effets de la liquidation sur les dettes sociales et les créanciers chirographaires…</div>
+          <div class="result-meta">
+            <span>2022-11-08</span>
+            <span>n° 254.123</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="search-empty" class="search-empty">
+        <div class="search-empty-icon">🔍</div>
+        <div class="search-empty-text">Recherchez dans 43 429 passages<br>de jurisprudence et législation belge</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ LAWYERS ══ -->
+  <div class="screen" id="screen-lawyers">
+    <div class="screen-scroll">
+
+      <div class="lawyers-header">
+        <div class="section-label" style="margin:0">Avocats partenaires</div>
+        <span class="lawyers-count">3 profils</span>
+      </div>
+
+      <div class="lawyer-card">
+        <div class="lawyer-header">
+          <div class="lawyer-avatar" style="background:#1C2B3A">SV</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+              <span class="lawyer-name">Me Sophie Vandenberghe</span>
+              <span class="verified-badge">✓ Vérifié</span>
+            </div>
+            <div class="lawyer-bar">Barreau de Bruxelles</div>
+            <div class="lawyer-meta">
+              <span class="lawyer-city">📍 Bruxelles</span>
+              <span class="lawyer-rating">★ 4.7</span>
+            </div>
+          </div>
+        </div>
+        <div class="lawyer-tags">
+          <span class="lawyer-tag">Droit du travail</span>
+          <span class="lawyer-tag">Droit commercial</span>
+        </div>
+        <div class="lawyer-desc">Avocate depuis 2010. Accompagne les entreprises et travailleurs dans leurs litiges individuels et collectifs.</div>
+      </div>
+
+      <div class="lawyer-card">
+        <div class="lawyer-header">
+          <div class="lawyer-avatar" style="background:#E85D26">MD</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+              <span class="lawyer-name">Me Marc De Smedt</span>
+              <span class="verified-badge">✓ Vérifié</span>
+            </div>
+            <div class="lawyer-bar">Balie van Antwerpen</div>
+            <div class="lawyer-meta">
+              <span class="lawyer-city">📍 Anvers</span>
+              <span class="lawyer-rating">★ 4.5</span>
+            </div>
+          </div>
+        </div>
+        <div class="lawyer-tags">
+          <span class="lawyer-tag">Droit fiscal</span>
+          <span class="lawyer-tag">Droit commercial</span>
+        </div>
+        <div class="lawyer-desc">Advocaat gespecialiseerd in fiscaal recht en handelsrecht. Bijstand aan KMO's bij fiscale geschillen.</div>
+      </div>
+
+      <div class="lawyer-card">
+        <div class="lawyer-header">
+          <div class="lawyer-avatar" style="background:#6D28D9">IM</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+              <span class="lawyer-name">Me Isabelle Moreau</span>
+              <span class="verified-badge">✓ Vérifié</span>
+            </div>
+            <div class="lawyer-bar">Barreau de Liège</div>
+            <div class="lawyer-meta">
+              <span class="lawyer-city">📍 Liège</span>
+              <span class="lawyer-rating">★ 4.8</span>
+            </div>
+          </div>
+        </div>
+        <div class="lawyer-tags">
+          <span class="lawyer-tag">Droit familial</span>
+          <span class="lawyer-tag">Droit immobilier</span>
+        </div>
+        <div class="lawyer-desc">Médiatrice agréée. Divorce, garde d'enfants, pensions alimentaires, successions et baux.</div>
+      </div>
+
+      <div class="billing-notice">
+        <p>Partenaires Lexavo · Vérifiez toujours les informations sur avocats.be</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ BILLING ══ -->
+  <div class="screen" id="screen-billing">
+    <div class="screen-scroll">
+
+      <div class="quota-wrap">
+        <div class="quota-top">
+          <span class="quota-plan">Plan Gratuit</span>
+          <span class="quota-count">2 / 5 questions</span>
+        </div>
+        <div class="quota-track">
+          <div class="quota-fill"></div>
+        </div>
+        <div class="quota-renew">Renouvellement le 1er mai 2026</div>
+      </div>
+
+      <div class="section-label">Choisir un plan</div>
+
+      <div class="plan-card">
+        <div class="plan-top">
+          <span class="plan-name">Gratuit</span>
+          <span class="plan-tag">Actuel</span>
+        </div>
+        <div class="plan-price">0€ <span>/ mois</span></div>
+        <div class="plan-quota">5 questions par mois</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><div class="plan-check"></div>5 questions juridiques / mois</div>
+        <div class="plan-feature"><div class="plan-check"></div>3 branches du droit</div>
+        <div class="plan-feature"><div class="plan-check"></div>Sources de base</div>
+        <button class="plan-btn ghost" disabled>Plan actuel</button>
+      </div>
+
+      <div class="plan-card popular">
+        <div class="popular-badge">Recommandé</div>
+        <div class="plan-top">
+          <span class="plan-name">Pro</span>
+        </div>
+        <div class="plan-price">29€ <span>/ mois</span></div>
+        <div class="plan-quota">Questions illimitées</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><div class="plan-check"></div>Questions illimitées</div>
+        <div class="plan-feature"><div class="plan-check"></div>15 branches du droit</div>
+        <div class="plan-feature"><div class="plan-check"></div>18 sources officielles</div>
+        <div class="plan-feature"><div class="plan-check"></div>Historique complet</div>
+        <div class="plan-feature"><div class="plan-check"></div>Annuaire avocats premium</div>
+        <button class="plan-btn primary" onclick="alert('Redirection vers Stripe Checkout…')">Passer au Pro</button>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-top">
+          <span class="plan-name">Cabinet</span>
+        </div>
+        <div class="plan-price">99€ <span>/ mois</span></div>
+        <div class="plan-quota">Questions illimitées · Multi-utilisateurs</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><div class="plan-check"></div>Tout Pro inclus</div>
+        <div class="plan-feature"><div class="plan-check"></div>5 comptes utilisateurs</div>
+        <div class="plan-feature"><div class="plan-check"></div>Accès API direct</div>
+        <div class="plan-feature"><div class="plan-check"></div>Analytics & rapports</div>
+        <div class="plan-feature"><div class="plan-check"></div>Support prioritaire</div>
+        <button class="plan-btn ghost" onclick="alert('Redirection vers Stripe Checkout…')">Choisir Cabinet</button>
+      </div>
+
+      <div class="billing-notice">
+        <p>Paiement sécurisé via Stripe · Annulation à tout moment · Sans engagement</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ TAB BAR ══ -->
+  <div class="tab-bar">
+    <button class="tab active" id="tab-home" onclick="showScreen('home')">
+      <div class="tab-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="tab-label">Accueil</span>
+    </button>
+    <button class="tab" id="tab-ask" onclick="showScreen('ask')">
+      <div class="tab-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <span class="tab-label">Question</span>
+    </button>
+    <button class="tab" id="tab-search" onclick="showScreen('search')">
+      <div class="tab-icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <span class="tab-label">Recherche</span>
+    </button>
+    <button class="tab" id="tab-lawyers" onclick="showScreen('lawyers')">
+      <div class="tab-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <span class="tab-label">Avocats</span>
+    </button>
+    <button class="tab" id="tab-billing" onclick="showScreen('billing')">
+      <div class="tab-icon-wrap">
+        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <span class="tab-label">Abonnement</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+const HEADERS = {
+  home:    { title: 'Lexavo', sub: 'Base juridique belge' },
+  ask:     { title: 'Question juridique', sub: '' },
+  search:  { title: 'Recherche vectorielle', sub: '' },
+  lawyers: { title: 'Avocats partenaires', sub: '' },
+  billing: { title: 'Abonnement', sub: '' },
+};
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  const h = HEADERS[name];
+  document.getElementById('header-title').textContent = h.title;
+  document.getElementById('header-sub').textContent = h.sub;
+}
+
+function fillTopic(topic) {
+  showScreen('ask');
+  setTimeout(() => {
+    document.getElementById('question-input').value = topic;
+    onQuestionInput(topic);
+  }, 50);
+}
+
+function onQuestionInput(val) {
+  const btn = document.getElementById('ask-btn');
+  const badgeWrap = document.getElementById('branch-badge-wrap');
+  const badge = document.getElementById('branch-badge');
+  btn.disabled = val.trim().length < 5;
+  if (val.trim().length > 5) {
+    badgeWrap.style.display = 'block';
+    const q = val.toLowerCase();
+    if (q.includes('licenci') || q.includes('travail') || q.includes('salaire') || q.includes('motif grave'))
+      badge.textContent = '⚖ Droit du travail · 0.85';
+    else if (q.includes('permis') || q.includes('urbanisme') || q.includes('recours administratif'))
+      badge.textContent = '🏛 Droit administratif · 0.72';
+    else if (q.includes('rgpd') || q.includes('données') || q.includes('vie privée'))
+      badge.textContent = '🔒 Droits fondamentaux · 0.78';
+    else if (q.includes('faillite') || q.includes('société') || q.includes('insolvab'))
+      badge.textContent = '🏢 Droit commercial · 0.81';
+    else if (q.includes('divorce') || q.includes('garde') || q.includes('aliment'))
+      badge.textContent = '👨‍👩‍👧 Droit familial · 0.90';
+    else if (q.includes('impôt') || q.includes('tva') || q.includes('fiscal'))
+      badge.textContent = '🧾 Droit fiscal · 0.76';
+    else
+      badge.textContent = '⚖ Détection automatique…';
+  } else {
+    badgeWrap.style.display = 'none';
+  }
+}
+
+function fillQuestion(el) {
+  const text = el.querySelector('.suggest-text').textContent;
+  document.getElementById('question-input').value = text;
+  onQuestionInput(text);
+  setTimeout(() => simulateAsk(), 300);
+}
+
+const DEMO_ANSWERS = {
+  'licenci': {
+    answer: `Le licenciement pour motif grave permet à l'employeur de rompre le contrat de travail sans préavis ni indemnité. Trois conditions cumulatives sont requises :
+
+**1. Faute grave**
+Les faits reprochés doivent constituer une faute qui rend toute collaboration professionnelle définitivement impossible (ECLI:BE:CASS:2023:ARR.20230312.1).
+
+**2. Délai de 3 jours ouvrables**
+La notification doit intervenir dans les 3 jours suivant la connaissance des faits — article 35 de la Loi du 3 juillet 1978.
+
+**3. Procédure formelle**
+Notification par lettre recommandée ou exploit d'huissier, avec description précise des motifs.`,
+    sources: [
+      { num: 1, badge: 'Juridat', color: '#B22222', title: 'Cass. trav. 12/03/2023', ecli: 'ECLI:BE:CASS:2023:ARR.20230312.1', sim: 94 },
+      { num: 2, badge: 'Moniteur belge', color: '#1A6B3A', title: 'Loi du 3 juillet 1978 — Art. 35', ecli: '', sim: 89 },
+      { num: 3, badge: 'CNT', color: '#DC6B19', title: 'CCT n° 109 — Motivation du licenciement', ecli: '', sim: 76 },
+    ]
+  },
+  'permis': {
+    answer: `La contestation d'un permis d'urbanisme refusé suit une procédure en deux étapes :
+
+**1. Recours administratif**
+Recours auprès du Fonctionnaire délégué régional dans les 30 jours de la notification du refus. Ce recours est suspensif.
+
+**2. Recours au Conseil d'État**
+Si le recours est rejeté, annulation possible devant le Conseil d'État dans les 60 jours. La procédure d'extrême urgence (24h) est possible en cas d'urgence démontrée.`,
+    sources: [
+      { num: 1, badge: "Conseil d'État", color: '#2F4F4F', title: "CE n° 254.456 — Recours permis urbanisme", ecli: '', sim: 91 },
+      { num: 2, badge: 'Moniteur belge', color: '#1A6B3A', title: 'CWATUPE — Art. 154 et suivants', ecli: '', sim: 83 },
+    ]
+  },
+  'default': {
+    answer: `Sur base des documents juridiques belges disponibles, voici les éléments pertinents :
+
+La question soulève plusieurs aspects du droit belge qui font l'objet d'une jurisprudence abondante des cours et tribunaux, notamment la Cour de cassation et le Conseil d'État.
+
+Les principes généraux applicables ont été développés progressivement en tenant compte des obligations découlant du droit européen et des textes législatifs en vigueur.`,
+    sources: [
+      { num: 1, badge: 'Juridat', color: '#B22222', title: 'Arrêt récent — Cour de cassation', ecli: 'ECLI:BE:CASS:2023:ARR.001', sim: 82 },
+      { num: 2, badge: 'EUR-Lex', color: '#0050A0', title: 'Directive européenne applicable', ecli: '', sim: 71 },
+    ]
+  }
+};
+
+function simulateAsk() {
+  const q = document.getElementById('question-input').value.toLowerCase();
+  document.getElementById('suggest-section').style.display = 'none';
+  document.getElementById('answer-section').style.display = 'none';
+  document.getElementById('loading-section').style.display = 'flex';
+
+  setTimeout(() => {
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('answer-section').style.display = 'block';
+
+    let demo = DEMO_ANSWERS['default'];
+    if (q.includes('licenci') || q.includes('motif grave')) demo = DEMO_ANSWERS['licenci'];
+    else if (q.includes('permis') || q.includes('urbanisme')) demo = DEMO_ANSWERS['permis'];
+
+    document.getElementById('answer-body').innerHTML = demo.answer
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+
+    const count = demo.sources.length;
+    document.getElementById('sources-count').textContent = `${count} source${count > 1 ? 's' : ''} citée${count > 1 ? 's' : ''}`;
+    const list = document.getElementById('sources-list');
+    list.innerHTML = '';
+    demo.sources.forEach(s => {
+      list.innerHTML += `
+        <div class="citation">
+          <div class="citation-header">
+            <div class="citation-num" style="background:${s.color}">${s.num}</div>
+            <span class="source-badge" style="background:${s.color}">${s.badge}</span>
+            <span class="sim-score">${s.sim}%</span>
+          </div>
+          <div class="citation-title">${s.title}</div>
+          ${s.ecli ? `<div class="citation-ecli">${s.ecli}</div>` : ''}
+        </div>
+      `;
+    });
+    document.querySelector('#screen-ask .screen-scroll').scrollTop = 999;
+  }, 2200);
+}
+
+function simulateSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  document.getElementById('search-empty').style.display = 'none';
+  document.getElementById('search-results-section').style.display = 'block';
+  document.getElementById('search-count').textContent = `3 résultats pour "${q}"`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# =============================================================================
+# requirements.txt — JurisBE Backend
+# Python dependencies for the FastAPI RAG API and data processing
+# =============================================================================
+
+# ─── API Framework ───────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+python-multipart>=0.0.9              # Form data support for FastAPI
+
+# ─── LLM & Embeddings (RAG) ─────────────────────────────────────────────────
+anthropic>=0.28.0                     # Claude API
+chromadb>=0.5.0                       # Vector database (local, no server)
+sentence-transformers>=2.7.0          # paraphrase-multilingual-MiniLM-L12-v2
+
+# ─── Authentication ──────────────────────────────────────────────────────────
+pyjwt>=2.8.0                         # JWT token handling
+
+# ─── Billing ────────────────────────────────────────────────────────────
+stripe>=8.0.0                        # Stripe payments & subscriptions
+
+# ─── HTTP & Scraping (data pipeline) ────────────────────────────────────────
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+tenacity>=8.3.0                       # Retry logic for API calls
+
+# ─── Data Processing ────────────────────────────────────────────────────────
+# (used by processors/ and scrapers/)
+lxml>=5.2.0
+python-dotenv>=1.0.1
+jinja2>=3.1.0                        # Templates HTML pour SEO programmatique

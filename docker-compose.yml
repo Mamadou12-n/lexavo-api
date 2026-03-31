@@ -1,0 +1,53 @@
+# =============================================================================
+# docker-compose.yml — Lexavo Local Development
+# =============================================================================
+# Usage:
+#   docker compose up --build        # Build and start API
+#   docker compose up -d             # Start in background
+#   docker compose logs -f api       # Follow API logs
+#   docker compose down              # Stop all services
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # FastAPI Backend — RAG API for Belgian legal documents
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lexavo-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Uncomment to override default model
+      # - CLAUDE_MODEL=claude-sonnet-4-20250514
+    volumes:
+      # Mount chroma_db for persistence across container restarts
+      # This avoids re-embedding 13,000+ chunks on every rebuild
+      - ./output/chroma_db:/app/output/chroma_db
+    networks:
+      - lexavo-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Mobile — React Native / Expo
+  # ---------------------------------------------------------------------------
+  # The Expo dev server runs locally on the host machine (not in Docker).
+  # Start it with:
+  #   cd mobile && npx expo start
+  #
+  # The mobile app connects to the API at http://<host-ip>:8000
+  # On Android emulator, use http://10.0.2.2:8000
+  # On iOS simulator, use http://localhost:8000
+
+networks:
+  lexavo-net:
+    driver: bridge

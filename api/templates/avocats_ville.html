@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | Lexavo{% endblock %}
+{% block description %}{{ meta_description }}{% endblock %}
+{% block canonical %}https://lexavo.be/avocats/{{ city }}{% if specialty %}/{{ specialty_slug }}{% endif %}{% endblock %}
+{% block og_title %}{{ page_title }} | Lexavo{% endblock %}
+{% block og_description %}{{ meta_description }}{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ page_title }}",
+  "description": "{{ meta_description }}",
+  "numberOfItems": {{ lawyers|length }},
+  "itemListElement": [
+    {% for lawyer in lawyers %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "LocalBusiness",
+        "name": "{{ lawyer.name }}",
+        "description": "{{ lawyer.description[:120] if lawyer.description else '' }}",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "{{ city }}",
+          "addressCountry": "BE"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "{{ lawyer.rating }}",
+          "bestRating": "5",
+          "reviewCount": "1"
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+<p>{{ city_description }}</p>
+
+{% if specialty %}
+<p>
+    <a href="/avocats/{{ city }}">Tous les avocats à {{ city }}</a> &rsaquo;
+    <strong>{{ specialty_label }}</strong>
+</p>
+{% endif %}
+
+<h2>Filtrer par spécialité</h2>
+<div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1.5rem;">
+    <a href="/avocats/{{ city }}" style="padding:.4rem .9rem; border:2px solid #1C2B3A; border-radius:20px; text-decoration:none; color:#1C2B3A; font-size:.9rem; {% if not specialty %}background:#1C2B3A;color:white;{% endif %}">Tous</a>
+    {% for slug, label in specialties.items() %}
+    <a href="/avocats/{{ city }}/{{ slug }}" style="padding:.4rem .9rem; border:2px solid #1C2B3A; border-radius:20px; text-decoration:none; color:#1C2B3A; font-size:.9rem; {% if specialty_slug == slug %}background:#1C2B3A;color:white;{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+
+{% if lawyers %}
+<h2>{{ lawyers|length }} avocat{{ 's' if lawyers|length > 1 else '' }} trouvé{{ 's' if lawyers|length > 1 else '' }}</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Avocat</th>
+            <th>Barreau</th>
+            <th>Spécialités</th>
+            <th>Note</th>
+            <th>Contact</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for lawyer in lawyers %}
+        <tr>
+            <td>
+                <strong>{{ lawyer.name }}</strong>
+                {% if lawyer.verified %}<span class="badge">Vérifié</span>{% endif %}
+                {% if lawyer.description %}
+                <br><small style="color:#666;">{{ lawyer.description[:100] }}…</small>
+                {% endif %}
+            </td>
+            <td>{{ lawyer.bar }}</td>
+            <td>
+                {% for spec in lawyer.specialties %}
+                <span class="badge badge-blue" style="margin:.1rem;">{{ spec }}</span>
+                {% endfor %}
+            </td>
+            <td>
+                <span class="stars">{% for i in range(lawyer.rating|int) %}★{% endfor %}{% if lawyer.rating % 1 >= 0.5 %}½{% endif %}</span>
+                <br><small>{{ lawyer.rating }}/5</small>
+            </td>
+            <td>
+                {% if lawyer.email %}<a href="mailto:{{ lawyer.email }}" style="color:#E85D26;">Email</a><br>{% endif %}
+                {% if lawyer.phone %}<small>{{ lawyer.phone }}</small>{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="legal-ref">
+    <strong>Aucun avocat trouvé</strong> pour cette combinaison ville/spécialité dans notre base de données.<br>
+    <a href="/avocats/{{ city }}">Voir tous les avocats à {{ city }}</a> ou consultez l'<a href="https://www.avocats.be" target="_blank" rel="noopener">Ordre des barreaux francophones (OBFG)</a>.
+</div>
+{% endif %}
+
+<h2>Le barreau de {{ city }}</h2>
+<div class="legal-ref">
+    {{ barreau_info }}
+</div>
+
+<h2>Autres villes</h2>
+<div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1.5rem;">
+    {% for ville in all_cities %}
+    <a href="/avocats/{{ ville }}" style="padding:.4rem .9rem; border:1px solid #ccc; border-radius:20px; text-decoration:none; color:#1C2B3A; font-size:.85rem;">{{ ville }}</a>
+    {% endfor %}
+</div>
+
+<p class="disclaimer">Les informations sur les avocats sont fournies à titre indicatif. Vérifiez toujours les accréditations auprès du barreau compétent. Lexavo ne garantit pas la disponibilité des avocats listés.</p>
+{% endblock %}

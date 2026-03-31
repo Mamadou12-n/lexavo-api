@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Calculateur pension alimentaire Belgique 2026 | Lexavo{% endblock %}
+{% block description %}Calculez la pension alimentaire selon le barème Renard (méthode de référence belge). Résultat instantané : montant mensuel et annuel. Gratuit.{% endblock %}
+{% block canonical %}https://lexavo.be/calcul/pension-alimentaire{% endblock %}
+{% block og_title %}Calculateur pension alimentaire Belgique 2026 | Lexavo{% endblock %}
+{% block og_description %}Barème Renard : calculez la pension alimentaire entre ex-conjoints en Belgique. Résultat immédiat.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Comment est calculée la pension alimentaire en Belgique ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La méthode Renard, la plus utilisée en Belgique, calcule la pension alimentaire comme suit : (revenus du débiteur - revenus du créancier) / 3, plus un supplément de 10% par enfant à charge. Le montant est plafonné à 1/3 des revenus du débiteur."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Qui peut demander une pension alimentaire après un divorce ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "En Belgique, l'époux dans le besoin peut demander une pension alimentaire après divorce, à condition que le divorce ait été prononcé aux torts de l'autre conjoint ou par consentement mutuel avec clause alimentaire. La demande doit être introduite dans les 3 mois suivant le divorce."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "La pension alimentaire est-elle imposable en Belgique ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, en Belgique, 80% de la pension alimentaire reçue est imposable dans le chef du bénéficiaire. Le débiteur peut déduire 80% des pensions versées de ses revenus imposables, sous conditions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Peut-on modifier la pension alimentaire après le jugement ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, la pension alimentaire peut être révisée en cas de changement important dans la situation financière de l'une des parties (perte d'emploi, remariage, invalidité…). Il faut saisir le tribunal de la famille pour modifier le jugement initial."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quelle est la différence entre pension alimentaire et contribution alimentaire pour enfants ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La pension alimentaire (art. 301 CC) concerne l'entretien de l'ex-conjoint. La contribution alimentaire pour enfants (art. 203 CC) vise les frais d'entretien, d'éducation et de formation des enfants. Les deux peuvent coexister et sont calculées différemment."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Calculateur pension alimentaire Belgique 2026</h1>
+<p>Estimez la pension alimentaire entre ex-conjoints selon le <strong>barème Renard</strong>, méthode doctrinale de référence en droit belge de la famille.</p>
+
+<div class="legal-ref">
+    <strong>Base légale :</strong> Art. 301 §3 du Code civil belge — critères de fixation de la pension alimentaire entre ex-époux.<br>
+    <strong>Méthode :</strong> Barème Renard — formule : <em>(revenus élevés − revenus faibles) / 3 + 10% par enfant</em>
+</div>
+
+<h2>Calculateur interactif</h2>
+<form id="form-pension" onsubmit="return false;">
+    <div class="form-group">
+        <label for="income-high">Revenus mensuels nets du débiteur (€)</label>
+        <input type="number" id="income-high" min="0" max="99999" step="0.01" value="3500" required>
+    </div>
+    <div class="form-group">
+        <label for="income-low">Revenus mensuels nets du créancier (€)</label>
+        <input type="number" id="income-low" min="0" max="99999" step="0.01" value="1500" required>
+    </div>
+    <div class="form-group">
+        <label for="children">Nombre d'enfants à charge</label>
+        <input type="number" id="children" min="0" max="20" value="1" required>
+    </div>
+    <button class="cta" onclick="calculerPension()">Calculer la pension</button>
+</form>
+
+<div id="result-pension" class="result-box">
+    <p>Pension alimentaire estimée :</p>
+    <div class="amount" id="res-monthly">— / mois</div>
+    <p id="res-annual"></p>
+    <p id="res-formula"></p>
+    <p class="disclaimer" id="res-disclaimer"></p>
+</div>
+
+<h2>La formule Renard expliquée</h2>
+<div class="step">
+    <div class="step-num">1</div>
+    <div><strong>Écart de revenus</strong> — Soustrayez les revenus nets du conjoint le plus faible de ceux du conjoint le plus aisé.</div>
+</div>
+<div class="step">
+    <div class="step-num">2</div>
+    <div><strong>Division par 3</strong> — L'écart divisé par 3 donne le montant de base de la pension. Ce ratio reflète la jurisprudence dominante.</div>
+</div>
+<div class="step">
+    <div class="step-num">3</div>
+    <div><strong>Supplément enfants</strong> — Ajoutez 10% du montant de base par enfant à charge du débiteur.</div>
+</div>
+<div class="step">
+    <div class="step-num">4</div>
+    <div><strong>Plafond</strong> — Le total ne peut dépasser 1/3 des revenus du débiteur (plafond légal implicite).</div>
+</div>
+
+<h2>Exemples de calcul</h2>
+<table>
+    <thead>
+        <tr><th>Revenus débiteur</th><th>Revenus créancier</th><th>Enfants</th><th>Pension mensuelle</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>3 000 €</td><td>1 000 €</td><td>0</td><td>667 €</td></tr>
+        <tr><td>3 000 €</td><td>1 000 €</td><td>2</td><td>800 €</td></tr>
+        <tr><td>5 000 €</td><td>2 000 €</td><td>0</td><td>1 000 €</td></tr>
+        <tr><td>5 000 €</td><td>0 €</td><td>3</td><td>1 667 €</td></tr>
+    </tbody>
+</table>
+
+<h2>FAQ — Pension alimentaire en Belgique</h2>
+<div class="faq-item">
+    <div class="faq-question">Comment est calculée la pension alimentaire en Belgique ?</div>
+    <div class="faq-answer">La méthode Renard : (revenus débiteur − revenus créancier) / 3, plus 10% par enfant à charge. Le montant est plafonné à 1/3 des revenus du débiteur.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Qui peut demander une pension alimentaire après divorce ?</div>
+    <div class="faq-answer">L'époux dans le besoin peut la demander si le divorce est prononcé aux torts de l'autre ou par consentement mutuel avec clause alimentaire. La demande doit être introduite dans les 3 mois suivant le divorce.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">La pension alimentaire est-elle imposable ?</div>
+    <div class="faq-answer">Oui : 80% de la pension reçue est imposable chez le bénéficiaire. Le débiteur peut déduire 80% des pensions versées de ses revenus imposables.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Peut-on modifier la pension après le jugement ?</div>
+    <div class="faq-answer">Oui, en cas de changement important de situation (perte d'emploi, remariage, invalidité…). Il faut saisir le tribunal de la famille pour modifier le jugement initial.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Quelle différence entre pension alimentaire et contribution alimentaire pour enfants ?</div>
+    <div class="faq-answer">La pension alimentaire (art. 301 CC) concerne l'ex-conjoint. La contribution alimentaire pour enfants (art. 203 CC) couvre les frais d'entretien et d'éducation. Les deux peuvent coexister.</div>
+</div>
+
+<div class="legal-ref" style="margin-top:2rem;">
+    <strong>Base légale complète :</strong><br>
+    • Art. 301 §3 Code civil — fixation de la pension alimentaire entre époux<br>
+    • Art. 203 Code civil — obligation alimentaire envers les enfants<br>
+    • Loi du 19 mars 2010 portant réforme du divorce<br>
+    • Circulaire AGDA — barème fiscal des pensions alimentaires 2026
+</div>
+
+<p class="disclaimer">Ce calculateur est fourni à titre indicatif selon la méthode Renard. Le juge fixe le montant en fonction des circonstances concrètes (besoins, ressources, situation de vie). Consultez un avocat spécialisé en droit familial.</p>
+
+<p style="margin-top:2rem;">
+    <a href="/avocats/Bruxelles/droit-familial" class="cta">Trouver un avocat droit familial</a>
+</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function calculerPension() {
+    const incHigh = parseFloat(document.getElementById('income-high').value) || 0;
+    const incLow  = parseFloat(document.getElementById('income-low').value)  || 0;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    if (incHigh <= 0) { alert('Veuillez entrer des revenus valides.'); return; }
+
+    try {
+        const resp = await fetch(`/calculators/alimony?income_high=${incHigh}&income_low=${incLow}&children=${children}`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Erreur API');
+        const data = await resp.json();
+
+        document.getElementById('res-monthly').textContent = data.monthly_amount.toLocaleString('fr-BE', {style:'currency',currency:'EUR'}) + ' / mois';
+        document.getElementById('res-annual').textContent  = 'Soit ' + data.annual_amount.toLocaleString('fr-BE', {style:'currency',currency:'EUR'}) + ' / an';
+        document.getElementById('res-formula').textContent = 'Formule : ' + data.formula;
+        document.getElementById('res-disclaimer').textContent = data.disclaimer;
+        document.getElementById('result-pension').classList.add('visible');
+    } catch(e) {
+        const high = Math.max(incHigh, incLow);
+        const low  = Math.min(incHigh, incLow);
+        let base = (high - low) / 3;
+        let supplement = base * 0.10 * children;
+        let monthly = base + supplement;
+        const cap = high / 3;
+        if (monthly > cap) monthly = cap;
+        monthly = Math.round(monthly * 100) / 100;
+
+        document.getElementById('res-monthly').textContent = monthly.toLocaleString('fr-BE', {style:'currency',currency:'EUR'}) + ' / mois';
+        document.getElementById('res-annual').textContent  = 'Soit ' + (monthly * 12).toLocaleString('fr-BE', {style:'currency',currency:'EUR'}) + ' / an';
+        document.getElementById('res-formula').textContent = 'Formule : Barème Renard — (revenus élevés - revenus faibles) / 3';
+        document.getElementById('res-disclaimer').textContent = 'Calcul indicatif. Le juge fixe le montant selon les circonstances.';
+        document.getElementById('result-pension').classList.add('visible');
+    }
+}
+</script>
+{% endblock %}

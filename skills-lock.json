@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "expo-deployment": {
+      "source": "expo/skills",
+      "sourceType": "github",
+      "computedHash": "2a26de7ec3faaf19333ec5660152e5e711ef000a29d75324dff51967bc382755"
+    },
+    "expo-dev-client": {
+      "source": "expo/skills",
+      "sourceType": "github",
+      "computedHash": "ea568acdc9036b82b969159757456e9a4cdfae7f645ac2fad5fdf0f734f53568"
+    },
+    "remotion-render": {
+      "source": "inferen-sh/skills",
+      "sourceType": "github",
+      "computedHash": "1364c39b488438f2758ac0151d319efdc884768f6a2917edca7b14ce84ef7fe9"
+    },
+    "use-railway": {
+      "source": "railwayapp/railway-skills",
+      "sourceType": "github",
+      "computedHash": "276b1889ce15a894d12d0c6d9aa434aea228a41b5565c69f2b214871b540f063"
+    }
+  }
+}

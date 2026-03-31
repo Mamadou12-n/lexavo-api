@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Calculateur droits de succession Belgique 2026 | Lexavo{% endblock %}
+{% block description %}Calculez les droits de succession en Belgique selon votre région (Bruxelles, Wallonie, Flandre) et votre lien de parenté. Barèmes officiels 2026.{% endblock %}
+{% block canonical %}https://lexavo.be/calcul/droits-succession{% endblock %}
+{% block og_title %}Calculateur droits de succession Belgique 2026 | Lexavo{% endblock %}
+{% block og_description %}Droits de succession par région belge : Bruxelles, Wallonie, Flandre. Calcul immédiat selon les barèmes officiels.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Comment sont calculés les droits de succession en Belgique ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Les droits de succession sont calculés par tranches progressives selon la région (Bruxelles, Wallonie ou Flandre), le montant hérité et le lien de parenté avec le défunt. Les taux vont de 3% (ligne directe, première tranche) à 80% (tiers, Bruxelles)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quelle région est compétente pour les droits de succession ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La région compétente est celle où le défunt avait son domicile fiscal au moment du décès. Si le défunt a résidé dans plusieurs régions au cours des 5 dernières années, c'est la région de résidence la plus longue qui s'applique."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Y a-t-il des exemptions aux droits de succession en Belgique ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui. En Flandre, le conjoint et les cohabitants légaux sont totalement exemptés pour la résidence principale. En Wallonie et à Bruxelles, des abattements existent pour le conjoint survivant et les enfants. Les associations et fondations reconnues bénéficient souvent de taux réduits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quand doit-on déposer la déclaration de succession ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La déclaration de succession doit être déposée dans les 4 mois suivant le décès si celui-ci a eu lieu en Belgique, 5 mois si en Europe, 6 mois si hors Europe. Des pénalités et intérêts de retard s'appliquent en cas de dépôt tardif."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Peut-on réduire les droits de succession légalement ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, plusieurs techniques légales existent : donations de son vivant (après 3 ans sans impôt successoral), assurance-vie, démembrement de propriété (usufruit/nue-propriété), testament bien rédigé. Un avocat fiscaliste peut optimiser la transmission patrimoniale."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Calculateur droits de succession Belgique 2026</h1>
+<p>Calculez les droits de succession selon le barème officiel de votre région belge et votre lien de parenté avec le défunt.</p>
+
+<div class="legal-ref">
+    <strong>Base légale :</strong> Code des droits de succession — Région de Bruxelles-Capitale, Région wallonne, Région flamande.<br>
+    <strong>Compétence :</strong> La région du domicile fiscal du défunt est compétente (art. 1 CDS).
+</div>
+
+<h2>Calculateur interactif</h2>
+<form id="form-succession" onsubmit="return false;">
+    <div class="form-group">
+        <label for="region">Région du défunt</label>
+        <select id="region">
+            <option value="bruxelles">Région de Bruxelles-Capitale</option>
+            <option value="wallonie">Région wallonne</option>
+            <option value="flandre">Région flamande</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="amount">Montant hérité (€)</label>
+        <input type="number" id="amount" min="1" max="99999999" step="0.01" value="100000" required>
+    </div>
+    <div class="form-group">
+        <label for="relationship">Lien de parenté</label>
+        <select id="relationship">
+            <option value="direct_line">Ligne directe (enfants, petits-enfants, parents, conjoint)</option>
+            <option value="siblings">Frères et sœurs</option>
+            <option value="others">Autres (oncles, neveux, tiers…)</option>
+        </select>
+    </div>
+    <button class="cta" onclick="calculerSuccession()">Calculer les droits</button>
+</form>
+
+<div id="result-succession" class="result-box">
+    <p>Droits de succession estimés :</p>
+    <div class="amount" id="res-duty">—</div>
+    <p id="res-net"></p>
+    <p id="res-rate"></p>
+    <div id="res-breakdown" style="margin-top:1rem; font-size:.9rem; opacity:.8;"></div>
+    <p class="disclaimer" id="res-disclaimer"></p>
+</div>
+
+<h2>Barèmes par région — Ligne directe</h2>
+<table>
+    <thead>
+        <tr><th>Tranche</th><th>Bruxelles</th><th>Wallonie</th><th>Flandre</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>0 – 12 500 €</td><td>3%</td><td>3%</td><td>3%</td></tr>
+        <tr><td>12 501 – 50 000 €</td><td>3–8%</td><td>3–5%</td><td>3%</td></tr>
+        <tr><td>50 001 – 250 000 €</td><td>8–18%</td><td>5–18%</td><td>9%</td></tr>
+        <tr><td>250 001 – 500 000 €</td><td>24%</td><td>24%</td><td>27%</td></tr>
+        <tr><td>Au-delà de 500 000 €</td><td>30%</td><td>30%</td><td>27%</td></tr>
+    </tbody>
+</table>
+
+<h2>La formule légale expliquée</h2>
+<div class="step">
+    <div class="step-num">1</div>
+    <div><strong>Identifier la région compétente</strong> — C'est la région où le défunt avait son domicile fiscal au moment du décès.</div>
+</div>
+<div class="step">
+    <div class="step-num">2</div>
+    <div><strong>Déterminer le lien de parenté</strong> — Ligne directe (taux les plus bas), frères/sœurs, ou tiers (taux les plus élevés).</div>
+</div>
+<div class="step">
+    <div class="step-num">3</div>
+    <div><strong>Appliquer les tranches progressives</strong> — Chaque tranche du montant hérité est taxée à un taux différent, du plus bas au plus haut.</div>
+</div>
+<div class="step">
+    <div class="step-num">4</div>
+    <div><strong>Vérifier les exemptions</strong> — En Flandre, le conjoint est exempté sur la résidence principale. Des abattements existent dans chaque région.</div>
+</div>
+
+<h2>FAQ — Droits de succession Belgique</h2>
+<div class="faq-item">
+    <div class="faq-question">Comment sont calculés les droits de succession en Belgique ?</div>
+    <div class="faq-answer">Par tranches progressives selon la région, le montant hérité et le lien de parenté. Les taux vont de 3% (ligne directe, 1re tranche) à 80% (tiers, Bruxelles).</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Quelle région est compétente pour les droits de succession ?</div>
+    <div class="faq-answer">La région du domicile fiscal du défunt au moment du décès. Si plusieurs régions sur 5 ans, c'est celle de résidence la plus longue qui s'applique.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Y a-t-il des exemptions aux droits de succession ?</div>
+    <div class="faq-answer">Oui. En Flandre, le conjoint est exempté sur la résidence principale. Des abattements existent pour conjoint et enfants dans toutes les régions. Les ASBL reconnues bénéficient souvent de taux réduits.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Quand déposer la déclaration de succession ?</div>
+    <div class="faq-answer">4 mois après le décès si en Belgique, 5 mois si en Europe, 6 mois si hors Europe. Des pénalités s'appliquent en cas de retard.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question">Peut-on réduire les droits de succession légalement ?</div>
+    <div class="faq-answer">Oui : donations de son vivant, assurance-vie, démembrement de propriété, testament optimisé. Un avocat fiscaliste peut structurer la transmission patrimoniale.</div>
+</div>
+
+<div class="legal-ref" style="margin-top:2rem;">
+    <strong>Base légale complète :</strong><br>
+    • Code des droits de succession — Région de Bruxelles-Capitale<br>
+    • Décret wallon du 22 novembre 1990 — Code des droits de succession wallon<br>
+    • Vlaamse Codex Fiscaliteit — Erfbelasting (art. 2.7.1.0.1 et s.)<br>
+    • Art. 1 CDS — compétence régionale
+</div>
+
+<p class="disclaimer">Ce calculateur est fourni à titre indicatif. Des exemptions, abattements et réductions spécifiques peuvent modifier le montant réel. Consultez un notaire ou un avocat fiscaliste pour votre situation.</p>
+
+<p style="margin-top:2rem;">
+    <a href="/avocats/Bruxelles/droit-fiscal" class="cta">Trouver un avocat fiscaliste</a>
+</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function calculerSuccession() {
+    const region = document.getElementById('region').value;
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const rel    = document.getElementById('relationship').value;
+    if (amount <= 0) { alert('Veuillez entrer un montant valide.'); return; }
+
+    try {
+        const resp = await fetch(`/calculators/succession?region=${region}&amount=${amount}&relationship=${rel}`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Erreur API');
+        const data = await resp.json();
+
+        document.getElementById('res-duty').textContent = data.total_duty.toLocaleString('fr-BE', {style:'currency',currency:'EUR'});
+        document.getElementById('res-net').textContent  = 'Montant net reçu : ' + data.net_amount.toLocaleString('fr-BE', {style:'currency',currency:'EUR'});
+        document.getElementById('res-rate').textContent = 'Taux effectif : ' + data.effective_rate;
+
+        let bdHtml = '<strong>Détail par tranche :</strong><br>';
+        (data.breakdown || []).forEach(function(b) {
+            bdHtml += b.from.toLocaleString('fr-BE') + ' € → ' + b.to.toLocaleString('fr-BE') + ' € @ ' + b.rate + ' = ' + b.duty.toLocaleString('fr-BE', {style:'currency',currency:'EUR'}) + '<br>';
+        });
+        document.getElementById('res-breakdown').innerHTML = bdHtml;
+        document.getElementById('res-disclaimer').textContent = data.disclaimer;
+        document.getElementById('result-succession').classList.add('visible');
+    } catch(e) {
+        document.getElementById('res-duty').textContent = 'Erreur de calcul — vérifiez les paramètres.';
+        document.getElementById('result-succession').classList.add('visible');
+    }
+}
+</script>
+{% endblock %}

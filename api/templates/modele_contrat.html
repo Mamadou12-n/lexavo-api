@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ template.title }} — Modèle gratuit Belgique 2026 | Lexavo{% endblock %}
+{% block description %}Téléchargez et personnalisez ce modèle de contrat belge : {{ template.title }}. Base légale : {{ template.legal_basis }}. Gratuit sur Lexavo.{% endblock %}
+{% block canonical %}https://lexavo.be/modeles/{{ template.id }}{% endblock %}
+{% block og_title %}{{ template.title }} | Lexavo{% endblock %}
+{% block og_description %}Modèle de contrat belge — {{ template.legal_basis }}. Personnalisez et téléchargez gratuitement.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Comment utiliser le modèle : {{ template.title }}",
+  "description": "Générez un contrat belge conforme en 3 étapes simples via Lexavo.",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Remplir les informations",
+      "text": "Complétez les champs requis : {% for v in template.variables %}{{ v }}{% if not loop.last %}, {% endif %}{% endfor %}."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Générer le contrat",
+      "text": "Cliquez sur 'Générer le contrat' pour obtenir le document HTML personnalisé."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Faire valider par un professionnel",
+      "text": "Faites relire le contrat par un avocat ou un notaire avant signature."
+    }
+  ],
+  "tool": {
+    "@type": "HowToTool",
+    "name": "Lexavo — Générateur de contrats belges"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ template.title }}</h1>
+
+<div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+    <span class="badge">{{ template.category|capitalize }}</span>
+    {% if template.region %}<span class="badge badge-blue">{{ template.region|capitalize }}</span>{% endif %}
+    <span class="badge badge-blue">{{ template.language|upper }}</span>
+</div>
+
+<div class="legal-ref">
+    <strong>Base légale :</strong> {{ template.legal_basis }}<br>
+    <strong>Prix :</strong> {{ (template.price_cents / 100)|round(2) }} € (génération PDF complète) — aperçu HTML gratuit
+</div>
+
+<h2>À propos de ce modèle</h2>
+<p>Ce modèle de <strong>{{ template.title }}</strong> est conforme au droit belge en vigueur en 2026.
+Il couvre les clauses essentielles requises par la législation belge et peut être personnalisé
+selon votre situation spécifique.</p>
+
+<h2>Clauses importantes</h2>
+<div class="step">
+    <div class="step-num">1</div>
+    <div><strong>Identification des parties</strong> — Nom, adresse, et qualité de chaque partie contractante. Obligatoire pour la validité du contrat.</div>
+</div>
+<div class="step">
+    <div class="step-num">2</div>
+    <div><strong>Objet du contrat</strong> — Description précise et non ambiguë de la prestation, du bien ou du service concerné.</div>
+</div>
+<div class="step">
+    <div class="step-num">3</div>
+    <div><strong>Conditions financières</strong> — Montant, modalités de paiement, TVA applicable et conditions de révision.</div>
+</div>
+<div class="step">
+    <div class="step-num">4</div>
+    <div><strong>Durée et résiliation</strong> — Durée du contrat, conditions de renouvellement, délais et modalités de résiliation.</div>
+</div>
+<div class="step">
+    <div class="step-num">5</div>
+    <div><strong>Clause de droit applicable</strong> — Droit belge applicable et juridiction compétente en cas de litige.</div>
+</div>
+
+<h2>Générer votre contrat</h2>
+<p>Remplissez les champs ci-dessous pour obtenir un aperçu HTML personnalisé de votre contrat.</p>
+
+<form id="form-contrat" onsubmit="return false;">
+    {% for var in template.variables %}
+    <div class="form-group">
+        <label for="var_{{ var }}">{{ var | replace('_', ' ') | capitalize }}</label>
+        <input type="text" id="var_{{ var }}" name="{{ var }}" placeholder="{{ var | replace('_', ' ') | capitalize }}">
+    </div>
+    {% endfor %}
+    <button class="cta" onclick="genererContrat()">Générer l'aperçu HTML</button>
+</form>
+
+<div id="result-contrat" style="display:none; margin-top:2rem; border:1px solid #eee; border-radius:8px; padding:1.5rem; background:#fafafa;">
+    <h3>Aperçu du contrat</h3>
+    <div id="contrat-html"></div>
+</div>
+
+<h2>Autres modèles disponibles</h2>
+<div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1.5rem;">
+    {% for other in all_templates %}
+    <a href="/modeles/{{ other.id }}" style="padding:.4rem .9rem; border:1px solid #ccc; border-radius:20px; text-decoration:none; color:#1C2B3A; font-size:.85rem; {% if other.id == template.id %}border-color:#E85D26; color:#E85D26;{% endif %}">{{ other.title[:40] }}{% if other.title|length > 40 %}…{% endif %}</a>
+    {% endfor %}
+</div>
+
+<div class="legal-ref" style="margin-top:2rem;">
+    <strong>Base légale complète :</strong><br>
+    {{ template.legal_basis }}<br>
+    <br>
+    <strong>Note :</strong> Ce modèle est fourni à titre indicatif. Faites toujours relire vos contrats par un avocat ou un notaire avant signature.
+</div>
+
+<p style="margin-top:2rem;">
+    <a href="/avocats/Bruxelles" class="cta">Trouver un avocat pour valider ce contrat</a>
+</p>
+
+<p class="disclaimer">Lexavo fournit ce modèle à titre informatif uniquement. Il ne constitue pas un conseil juridique. Un professionnel du droit doit valider tout contrat avant signature.</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function genererContrat() {
+    const templateId = '{{ template.id }}';
+    const variables = {};
+    {% for var in template.variables %}
+    variables['{{ var }}'] = document.getElementById('var_{{ var }}').value || '[{{ var }}]';
+    {% endfor %}
+
+    try {
+        const resp = await fetch('/contracts/' + templateId + '/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({variables: variables})
+        });
+        if (!resp.ok) throw new Error('Auth requise');
+        const data = await resp.json();
+        document.getElementById('contrat-html').innerHTML = data.html;
+        document.getElementById('result-contrat').style.display = 'block';
+    } catch(e) {
+        // Aperçu local sans API
+        let html = '<h2>{{ template.title }}</h2>';
+        html += '<p><em>Base légale : {{ template.legal_basis }}</em></p><hr>';
+        html += '<h3>Parties</h3>';
+        {% for var in template.variables %}
+        html += '<p><strong>{{ var | replace("_", " ") | capitalize }} :</strong> ' + (variables['{{ var }}'] || '[{{ var }}]') + '</p>';
+        {% endfor %}
+        html += '<p><em>Document généré par Lexavo. À faire valider par un professionnel.</em></p>';
+        document.getElementById('contrat-html').innerHTML = html;
+        document.getElementById('result-contrat').style.display = 'block';
+    }
+}
+</script>
+{% endblock %}
