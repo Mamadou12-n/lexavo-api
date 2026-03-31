@@ -53,9 +53,10 @@ USER appuser
 # Expose the API port
 EXPOSE 8000
 
-# Healthcheck — hits the /health endpoint every 30 seconds
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+# Expose the default port (Railway overrides via $PORT env var)
+# Healthcheck — hits the /health endpoint (Railway uses $PORT, local uses 8000)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request,os; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT','8000') + '/health')" || exit 1
 
-# Start the FastAPI server
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the FastAPI server — $PORT injected by Railway, fallback to 8000 locally
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
