@@ -1,0 +1,50 @@
+name: "Lexavo — Notifications fin de beta"
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Simulation sans envoi'
+        type: boolean
+        default: false
+      force_milestone:
+        description: 'Forcer un milestone (j30, j15, j7, j0)'
+        type: string
+        default: ''
+
+jobs:
+  send-beta-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install psycopg2-binary requests
+      - name: Send notifications
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          LEXAVO_BETA_END: '2026-10-01'
+          RESEND_FROM_EMAIL: 'Lexavo <onboarding@resend.dev>'
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="\$ARGS --dry-run"
+          fi
+          if [ -n "${{ inputs.force_milestone }}" ]; then
+            ARGS="\$ARGS --force-milestone ${{ inputs.force_milestone }}"
+          fi
+          python scripts/send_beta_emails.py \$ARGS
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Lexavo Beta Notifications" >> \$GITHUB_STEP_SUMMARY
+          echo "- Date: \$(date -u)" >> \$GITHUB_STEP_SUMMARY
+          echo "- Beta end: 2026-10-01" >> \$GITHUB_STEP_SUMMARY
