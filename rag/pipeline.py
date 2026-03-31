@@ -90,11 +90,28 @@ def verify_citations(answer: str, sources: List[Dict]) -> tuple:
     return answer, stats
 
 
-def _build_system_prompt(branch_key: Optional[str] = None) -> str:
-    """Construit le prompt systeme avec specialisation par branche si detectee."""
+def _build_system_prompt(branch_key: Optional[str] = None, region: Optional[str] = None) -> str:
+    """Construit le prompt systeme avec specialisation par branche et region si detectees."""
     from rag.branches import get_branch_prompt
 
     prompt = BASE_SYSTEM_PROMPT
+
+    # Injection de la region de l'utilisateur
+    if region:
+        region_labels = {
+            "bruxelles": "Region de Bruxelles-Capitale (droit bruxellois applicable : ordonnances du Parlement bruxellois, Code bruxellois du Logement, WalLex n'est pas applicable)",
+            "wallonie":  "Region wallonne (droit wallon applicable : decrets du Parlement wallon, Code wallon du Logement, GalliLex/WalLex)",
+            "flandre":   "Region flamande — Vlaams Gewest (Vlaams recht van toepassing : decreten Vlaams Parlement, Codex Wonen, Codex Vlaanderen)",
+        }
+        label = region_labels.get(region.lower(), region)
+        prompt += (
+            f"\n\nLocalisation de l'utilisateur : {label}. "
+            "Priorise systematiquement les textes legislatifs, jurisprudences et reglements applicables dans cette region. "
+            "Si la matiere est regionalisee (bail, urbanisme, environnement, allocations familiales, successions...), "
+            "reponds exclusivement avec le droit de cette region sauf si l'utilisateur pose une question comparative. "
+            "Signale toujours clairement quand une regle est specifique a cette region."
+        )
+
     if branch_key:
         extra = get_branch_prompt(branch_key)
         if extra:
@@ -110,6 +127,7 @@ def ask(
     anthropic_api_key: Optional[str] = None,
     branch: Optional[str] = None,
     auto_detect_branch: bool = True,
+    region: Optional[str] = None,
 ) -> Dict:
     """
     Pipeline RAG complet : question → detection branche → retrieval → reponse humanisee.
@@ -180,8 +198,8 @@ def ask(
     context = format_context(chunks, max_total_chars=6000)
     log.info(f"  {len(chunks)} chunks recuperes, contexte = {len(context)} chars")
 
-    # 3. Construire le prompt avec specialisation branche
-    system_prompt = _build_system_prompt(detected_branch)
+    # 3. Construire le prompt avec specialisation branche + region utilisateur
+    system_prompt = _build_system_prompt(detected_branch, region)
 
     user_message = f"""Contexte juridique :
 

@@ -131,6 +131,10 @@ class AskRequest(BaseModel):
         default=None,
         description="Branche du droit a forcer (ex: droit_travail, droit_fiscal). Si absent, detection automatique.",
     )
+    region: Optional[str] = Field(
+        default=None,
+        description="Region belge de l'utilisateur : bruxelles, wallonie, flandre. Permet de prioriser le droit regional applicable.",
+    )
 
 
 class SourceDoc(BaseModel):

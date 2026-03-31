@@ -175,6 +175,7 @@ def ask_endpoint(
             model=request.model,
             anthropic_api_key=api_key,
             branch=request.branch,
+            region=request.region,
         )
     except RuntimeError as e:
         raise HTTPException(
