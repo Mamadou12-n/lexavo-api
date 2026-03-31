@@ -36,15 +36,17 @@ jobs:
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            ARGS="\$ARGS --dry-run"
+            ARGS="$ARGS --dry-run"
           fi
           if [ -n "${{ inputs.force_milestone }}" ]; then
-            ARGS="\$ARGS --force-milestone ${{ inputs.force_milestone }}"
+            ARGS="$ARGS --force-milestone ${{ inputs.force_milestone }}"
           fi
-          python scripts/send_beta_emails.py \$ARGS
+          python scripts/send_beta_emails.py $ARGS
       - name: Summary
         if: always()
         run: |
-          echo "### Lexavo Beta Notifications" >> \$GITHUB_STEP_SUMMARY
-          echo "- Date: \$(date -u)" >> \$GITHUB_STEP_SUMMARY
-          echo "- Beta end: 2026-10-01" >> \$GITHUB_STEP_SUMMARY
+          echo "### Lexavo Beta Notifications" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date** : $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Beta end** : 2026-10-01" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry run** : ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Force milestone** : ${{ inputs.force_milestone }}" >> $GITHUB_STEP_SUMMARY
