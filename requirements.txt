@@ -12,7 +12,9 @@ python-multipart>=0.0.9              # Form data support for FastAPI
 # ─── LLM & Embeddings (RAG) ─────────────────────────────────────────────────
 anthropic>=0.28.0                     # Claude API
 chromadb>=0.5.0                       # Vector database (local, no server)
-sentence-transformers>=2.7.0          # paraphrase-multilingual-MiniLM-L12-v2
+# sentence-transformers: NOT included in prod image (pulls PyTorch 2GB+CUDA)
+# Install locally for indexing: pip install sentence-transformers
+# On Railway, ChromaDB is absent → /ask returns 503 before model loading
 
 # ─── Authentication ──────────────────────────────────────────────────────────
 pyjwt>=2.8.0                         # JWT token handling

@@ -153,8 +153,16 @@ def ask_endpoint(
     Authentification requise. Quota selon le plan (free: 5/mois, pro/cabinet: illimite).
     """
     from rag.pipeline import ask
+    from rag.indexer import CHROMA_DIR
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
+
+    # Vérifier que l'index est disponible avant de charger le modèle
+    if not CHROMA_DIR.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="Index ChromaDB non disponible sur ce serveur. Utilisez l'API locale avec l'index chargé.",
+        )
 
     # Verifier le quota avant d'appeler Claude
     check_quota(current_user["id"])
@@ -219,6 +227,13 @@ def search_endpoint(request: SearchRequest):
     Utile pour explorer la base documentaire directement.
     """
     from rag.retriever import retrieve
+    from rag.indexer import CHROMA_DIR
+
+    if not CHROMA_DIR.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="Index ChromaDB non disponible sur ce serveur.",
+        )
 
     try:
         chunks = retrieve(
