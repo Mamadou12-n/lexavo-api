@@ -18,6 +18,9 @@ sentence-transformers>=2.7.0          # Embedding model for query vectorization
 pyjwt>=2.8.0                         # JWT token handling
 bcrypt>=4.1.0                        # Password hashing (GPU-resistant)
 
+# ─── Database ────────────────────────────────────────────────────────────
+psycopg2-binary>=2.9.0               # PostgreSQL driver (production)
+
 # ─── Security ────────────────────────────────────────────────────────────
 slowapi>=0.1.9                       # Rate limiting per IP
 

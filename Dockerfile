@@ -12,7 +12,7 @@ WORKDIR /build
 
 # Install build dependencies needed by some Python packages
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc g++ && \
+    apt-get install -y --no-install-recommends gcc g++ libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -60,10 +60,12 @@ RUN apt-get update && \
 # Pre-download the embedding model at build time (avoids 60s delay on first /ask)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
-# Create non-root user for security
-RUN groupadd --gid 1000 appuser && \
+# Install libpq runtime for psycopg2 + create non-root user
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libpq5 && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser && \
-    mkdir -p /app/db && \
     chown -R appuser:appuser /app
 
 USER appuser
