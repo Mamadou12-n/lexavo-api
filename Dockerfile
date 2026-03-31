@@ -39,8 +39,8 @@ COPY rag/ ./rag/
 COPY processors/ ./processors/
 COPY config.py ./config.py
 
-# Copy the ChromaDB vector database (pre-built index)
-COPY output/chroma_db/ ./output/chroma_db/
+# Note: chroma_db is mounted via Railway volume at /app/output/chroma_db
+# (not baked into the image — set LEXAVO_CHROMA_DIR=/app/output/chroma_db)
 
 # Create non-root user for security
 RUN groupadd --gid 1000 appuser && \
