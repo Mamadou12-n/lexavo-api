@@ -1,6 +1,6 @@
 # =============================================================================
 # Dockerfile — Lexavo FastAPI Backend
-# Optimized for Railway 4GB image limit: ONNX Runtime instead of PyTorch
+# Railway Hobby plan (8GB limit) — PyTorch CPU + ChromaDB + FastAPI
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -17,19 +17,16 @@ RUN apt-get update && \
 
 COPY requirements.txt .
 
-# Install sentence-transformers WITHOUT PyTorch (saves ~1.5GB)
-# Use onnxruntime as backend instead (~50MB)
+# Install PyTorch CPU-only first (~800MB vs ~2GB CUDA), then all deps
 RUN pip install --no-cache-dir --prefix=/install \
-        onnxruntime && \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir --prefix=/install \
-        --no-deps sentence-transformers && \
+        sentence-transformers && \
     pip install --no-cache-dir --prefix=/install \
-        huggingface-hub tokenizers transformers tqdm numpy scipy scikit-learn Pillow && \
-    pip install --no-cache-dir --prefix=/install \
-        -r requirements.txt 2>&1 | tail -5
+        -r requirements.txt
 
 # ---------------------------------------------------------------------------
-# Stage 2: Runtime — lean production image (~2.5GB vs 6.5GB)
+# Stage 2: Runtime — production image
 # ---------------------------------------------------------------------------
 FROM python:3.11-slim AS runtime
 
@@ -47,9 +44,9 @@ COPY api/ ./api/
 COPY rag/ ./rag/
 COPY processors/ ./processors/
 COPY config.py ./config.py
-COPY start.sh ./start.sh
 
 # Download ChromaDB legal index from GitHub Releases
+# 43,005 chunks — droit belge FR/NL/EN/DE
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget && \
     mkdir -p /app/output && \
@@ -63,14 +60,16 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Pre-download embedding model at build time (avoids 60s delay on first /ask)
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
+
 # Runtime lib for psycopg2 + non-root user
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libpq5 && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser && \
-    chown -R appuser:appuser /app && \
-    chmod +x /app/start.sh
+    chown -R appuser:appuser /app
 
 USER appuser
 
