@@ -1,36 +1,21 @@
 # =============================================================================
 # railway.toml — Lexavo Backend Deployment
-# Déploiement Railway du backend FastAPI + ChromaDB
+# Nixpacks builder (lighter than Dockerfile for Railway free tier)
 # =============================================================================
 
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+builder = "NIXPACKS"
+
+[build.nixpacks]
+# Install system packages needed at runtime
+aptPkgs = ["libpq5", "wget"]
 
 [deploy]
+startCommand = "bash start.sh"
 healthcheckPath = "/health"
-healthcheckTimeout = 120
+healthcheckTimeout = 180
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
 [[volumes]]
 mountPath = "/app/db"
-
-# =============================================================================
-# Variables d'environnement à configurer dans le dashboard Railway :
-#
-# REQUIRED :
-#   ANTHROPIC_API_KEY     = sk-ant-...
-#   LEXAVO_JWT_SECRET     = <secret aléatoire 64 chars>
-#   LEXAVO_DB_PATH        = /app/db/lexavo.db
-#
-# CORS (remplacer VOTRE_URL par l'URL Railway générée) :
-#   LEXAVO_ALLOWED_ORIGINS = https://VOTRE_APP.railway.app,exp://...
-#
-# STRIPE (optionnel pour la démo TFE) :
-#   STRIPE_SECRET_KEY      = sk_test_...
-#   STRIPE_WEBHOOK_SECRET  = whsec_...
-#   STRIPE_PRICE_PRO       = price_...
-#   STRIPE_PRICE_CABINET   = price_...
-#   LEXAVO_FRONTEND_URL    = https://VOTRE_APP.railway.app
-# =============================================================================
