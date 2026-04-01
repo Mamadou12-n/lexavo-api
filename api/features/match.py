@@ -34,7 +34,7 @@ def find_matching_lawyers(
     branch = f"droit_{detected}" if detected != "general" else None
     specialty = BRANCH_TO_SPECIALTY.get(branch, "Droit general")
 
-    if mock or True:  # Uses demo lawyers until real DB is populated
+    if True:  # Uses DB lawyers — real scoring with specialties matching
         from api.database import list_lawyers
         lawyers = list_lawyers(city=city, specialty=None, language=language)
 

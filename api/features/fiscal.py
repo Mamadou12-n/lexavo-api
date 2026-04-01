@@ -70,10 +70,14 @@ def ask_fiscal(question: str, mock: bool = False) -> dict:
     )
 
     raw = response.content[0].text.strip()
-    json_match = re.search(r'\{[\s\S]*\}', raw)
-    if json_match:
-        result = json.loads(json_match.group())
-    else:
+    try:
+        json_match = re.search(r'\{[\s\S]*\}', raw)
+        if json_match:
+            result = json.loads(json_match.group())
+        else:
+            raise ValueError("Pas de JSON")
+    except (json.JSONDecodeError, ValueError):
+        log.warning("Fiscal JSON parsing failed, using fallback")
         result = {"answer": raw, "legal_references": [], "deadlines": [], "applies_to": []}
 
     result["disclaimer"] = "Information fiscale generale. Consultez votre comptable."

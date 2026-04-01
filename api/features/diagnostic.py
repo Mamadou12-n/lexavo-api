@@ -154,10 +154,14 @@ def generate_diagnostic(answers: List[dict], mock: bool = False) -> dict:
     )
 
     raw = response.content[0].text.strip()
-    json_match = re.search(r'\{[\s\S]*\}', raw)
-    if json_match:
-        result = json.loads(json_match.group())
-    else:
+    try:
+        json_match = re.search(r'\{[\s\S]*\}', raw)
+        if json_match:
+            result = json.loads(json_match.group())
+        else:
+            raise ValueError("Pas de JSON")
+    except (json.JSONDecodeError, ValueError):
+        log.warning("Diagnostic JSON parsing failed, using fallback")
         result = {"title": "Diagnostic", "situation_summary": raw[:300], "applicable_rights": [], "risks": [], "priority_actions": []}
 
     result["branch_detected"] = branch

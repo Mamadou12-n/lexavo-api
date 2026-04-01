@@ -30,7 +30,7 @@ def save_preferences(user_id: int, domains: List[str]) -> dict:
 
 
 def get_alert_feed(domains: List[str], limit: int = 10, mock: bool = False) -> list:
-    if mock or True:  # Always return demo feed for now
+    if mock:  # Demo feed — real feed via Moniteur belge scraping planned
         feed = [
             {"id": 1, "domain": "travail", "title": "Nouvelle CCT sur le teletravail structurel", "summary": "Le CNT a adopte la CCT n°149/2 rendant obligatoire une politique de teletravail ecrite.", "date": "2026-03-15", "source": "Moniteur belge", "url": ""},
             {"id": 2, "domain": "fiscal", "title": "Modification des tranches IPP 2026", "summary": "Indexation annuelle des baremes de l'impot des personnes physiques.", "date": "2026-03-10", "source": "SPF Finances", "url": ""},

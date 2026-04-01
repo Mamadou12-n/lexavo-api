@@ -708,7 +708,7 @@ def decode_analyze(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    text = request.get("document_text", "")
+    text = request.get("document_text") or request.get("text", "")
     if len(text.strip()) < 20:
         raise HTTPException(400, "Le document est trop court.")
 
@@ -753,36 +753,35 @@ async def decode_upload(
 # ─── Calculator Endpoints ──────────────────────────────────────────────────
 
 @app.post("/calculators/notice-period")
-def calc_notice(
-    years: int = Query(..., ge=0, description="Années d'ancienneté"),
-    monthly_salary: float = Query(..., gt=0, description="Salaire mensuel brut"),
-):
+def calc_notice(request: dict):
     """Calculateur de préavis de licenciement (CCT n 109)."""
     from api.features.calculators import calculate_notice_period
+    years = int(request.get("years", 0))
+    monthly_salary = float(request.get("monthly_salary", 0))
+    if monthly_salary <= 0:
+        raise HTTPException(400, "Salaire mensuel requis (> 0)")
     return calculate_notice_period(years=years, monthly_salary=monthly_salary)
 
 
 @app.post("/calculators/alimony")
-def calc_alimony(
-    income_high: float = Query(..., gt=0),
-    income_low: float = Query(..., ge=0),
-    children: int = Query(default=0, ge=0),
-):
+def calc_alimony(request: dict):
     """Calculateur de pension alimentaire (barème Renard)."""
     from api.features.calculators import calculate_alimony_renard
+    income_high = float(request.get("income_high", 0))
+    income_low = float(request.get("income_low", 0))
+    children = int(request.get("children", 0))
     return calculate_alimony_renard(
         income_high=income_high, income_low=income_low, children=children
     )
 
 
 @app.post("/calculators/succession")
-def calc_succession(
-    region: str = Query(..., description="bruxelles, wallonie, flandre"),
-    amount: float = Query(..., gt=0, description="Montant en euros"),
-    relationship: str = Query(default="direct_line", description="direct_line, siblings, others"),
-):
+def calc_succession(request: dict):
     """Calculateur de droits de succession par région."""
     from api.features.calculators import calculate_succession_duties
+    region = request.get("region", "bruxelles")
+    amount = float(request.get("amount", 0))
+    relationship = request.get("relationship", "direct_line")
     return calculate_succession_duties(
         region=region, amount=amount, relationship=relationship
     )
@@ -959,6 +958,10 @@ def audit_generate(
         sector=body.sector or "",
         employees=body.employees or 0,
     )
+
+    # Incrementer le compteur de questions
+    from api.database import increment_question_count
+    increment_question_count(current_user["id"])
 
     return AuditResponse(**result)
 

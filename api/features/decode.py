@@ -56,7 +56,11 @@ def decode_document(text: str, mock: bool = False) -> dict:
     )
 
     raw = response.content[0].text.strip()
-    json_match = re.search(r'\{[\s\S]*\}', raw)
-    if json_match:
-        return json.loads(json_match.group())
-    return {"plain_language": raw, "key_points": [], "actions_required": [], "deadlines": []}
+    try:
+        json_match = re.search(r'\{[\s\S]*\}', raw)
+        if json_match:
+            return json.loads(json_match.group())
+        raise ValueError("Pas de JSON")
+    except (json.JSONDecodeError, ValueError):
+        log.warning("Decode JSON parsing failed, using fallback")
+        return {"plain_language": raw, "key_points": [], "actions_required": [], "deadlines": []}
