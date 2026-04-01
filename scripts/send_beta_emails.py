@@ -356,7 +356,12 @@ def _print_report(stats: dict, days: int):
     log.info(f"  Corriges  : {stats['corrected']}")
     log.info("=" * 60)
     # JSON pour parsing automatique dans GitHub Actions
-    print(f"::set-output name=report::{json.dumps(report)}")
+    gh_output = os.environ.get("GITHUB_OUTPUT", "")
+    if gh_output:
+        with open(gh_output, "a") as f:
+            f.write(f"report={json.dumps(report)}\n")
+    else:
+        print(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":

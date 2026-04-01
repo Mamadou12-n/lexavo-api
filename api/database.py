@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS subscriptions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    plan TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free', 'pro', 'cabinet')),
+    plan TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free', 'basic', 'pro', 'business', 'firm_s', 'firm_m', 'enterprise')),
     stripe_customer_id TEXT,
     stripe_subscription_id TEXT,
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'canceled', 'past_due', 'trialing')),
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL UNIQUE,
-    plan TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free', 'pro', 'cabinet')),
+    plan TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free', 'basic', 'pro', 'business', 'firm_s', 'firm_m', 'enterprise')),
     stripe_customer_id TEXT, stripe_subscription_id TEXT,
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'canceled', 'past_due', 'trialing')),
     current_period_start TEXT, current_period_end TEXT,

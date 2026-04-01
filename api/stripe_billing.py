@@ -1,6 +1,6 @@
 """
 Stripe billing for Lexavo — Subscriptions & Checkout.
-6 tiers : free, basic (4,99€), pro (49,99€), business (79,99€),
+7 tiers : free, basic (4,99€), pro (49,99€), business (79,99€),
           firm_s (149,99€), firm_m (299,99€), enterprise (sur devis).
 Beta : gratuit pour tous jusqu'au 1er octobre 2026.
 """
@@ -193,7 +193,13 @@ def create_checkout_session(user_id: int, plan: str, billing: str = "monthly") -
 
     plan_config = PLANS[plan]
     if billing == "annual":
-        price_id = plan_config.get("stripe_price_annual_id", "") or plan_config.get("stripe_price_id", "")
+        annual_id = plan_config.get("stripe_price_annual_id", "")
+        if not annual_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"L'abonnement annuel n'est pas disponible pour le plan {plan}. Contactez-nous.",
+            )
+        price_id = annual_id
     else:
         price_id = plan_config.get("stripe_price_id", "")
     if not price_id:
