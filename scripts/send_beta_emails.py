@@ -250,6 +250,12 @@ def main():
         # Quand meme verifier les failed pour auto-correction
         milestone = None
 
+    # Si aucun milestone et pas de force → rien a faire, pas besoin de DB
+    if milestone is None and not args.force_milestone:
+        stats = {"sent": 0, "failed": 0, "skipped": 0, "corrected": 0}
+        _print_report(stats, days)
+        return
+
     conn = get_db()
     try:
         ensure_table(conn)
@@ -257,7 +263,12 @@ def main():
         stats = {"sent": 0, "failed": 0, "skipped": 0, "corrected": 0}
 
         # 1. Auto-correction des echecs precedents
-        failed = get_failed_notifications(conn)
+        try:
+            failed = get_failed_notifications(conn)
+        except Exception as e:
+            log.warning(f"Impossible de verifier les echecs precedents : {e}")
+            failed = []
+
         if failed:
             log.info(f"Auto-correction : {len(failed)} envoi(s) echoue(s) a retenter")
             for f in failed:
