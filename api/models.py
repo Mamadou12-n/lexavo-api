@@ -34,6 +34,7 @@ class AuthResponse(BaseModel):
     """Réponse d'authentification (register/login)."""
     user: UserResponse
     token: str
+    refresh_token: Optional[str] = None
 
 
 # ─── Lawyer models ──────────────────────────────────────────────────────────
