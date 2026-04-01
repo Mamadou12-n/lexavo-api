@@ -317,17 +317,19 @@ def register(request: RegisterRequest):
     return AuthResponse(
         user=UserResponse(**result["user"]),
         token=result["token"],
+        refresh_token=result.get("refresh_token"),
     )
 
 
 @app.post("/auth/login", response_model=AuthResponse)
 def login(request: LoginRequest):
-    """Connexion — retourne un JWT."""
+    """Connexion — retourne un JWT + refresh token."""
     from api.auth import login_user
     result = login_user(email=request.email, password=request.password)
     return AuthResponse(
         user=UserResponse(**result["user"]),
         token=result["token"],
+        refresh_token=result.get("refresh_token"),
     )
 
 
