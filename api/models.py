@@ -355,3 +355,39 @@ class AuditResponse(BaseModel):
     recommendations: List[AuditRecommendation] = []
     generated_at: str
     disclaimer: str = "Outil d'information juridique. Ne constitue pas un avis professionnel."
+
+
+# ─── Lexavo Defend models ──────────────────────────────────────────────
+
+class DefendRequest(BaseModel):
+    """Corps de la requete POST /defend/analyze."""
+    description: str = Field(..., min_length=20, max_length=5000, description="Description de la situation")
+    category: Optional[str] = Field(default=None, description="Type force : amende, consommation, bail, travail, huissier, social, scolaire, fiscal")
+    region: Optional[str] = Field(default=None, description="Region : bruxelles, wallonie, flandre")
+    user_name: Optional[str] = Field(default="", description="Nom de l'utilisateur (pour le document)")
+    user_address: Optional[str] = Field(default="", description="Adresse (pour le document)")
+
+
+class DefendLaw(BaseModel):
+    """Reference legale applicable."""
+    article: str
+    content: str
+    source: Optional[str] = None
+
+
+class DefendResponse(BaseModel):
+    """Resultat Lexavo Defend."""
+    detection: dict = Field(description="Type de situation detecte")
+    situation_analysis: str = Field(description="Analyse de la situation")
+    applicable_law: List[DefendLaw] = Field(default=[], description="Articles applicables")
+    contestation_possible: bool = Field(description="Contestation fondee juridiquement")
+    success_probability: str = Field(description="haute, moyenne, faible")
+    document_type: str = Field(description="contestation, mise_en_demeure, recours, reclamation, opposition")
+    document_text: str = Field(default="", description="Texte complet du document a envoyer")
+    recipient: Optional[str] = Field(default=None, description="Destinataire")
+    deadline: Optional[str] = Field(default=None, description="Delai legal")
+    next_steps: List[str] = Field(default=[], description="Etapes suivantes")
+    cost_estimate: Optional[str] = Field(default=None, description="Cout estime")
+    sources: List[SourceDoc] = Field(default=[], description="Sources juridiques")
+    generated_at: str = ""
+    disclaimer: str = "Lexavo est un assistant juridique. Il ne remplace pas un avocat."

@@ -55,6 +55,8 @@ from api.models import (
     ShieldUploadResponse,
     # Audit Entreprise models
     AuditRequest, AuditResponse,
+    # Defend models
+    DefendRequest, DefendResponse,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -972,6 +974,73 @@ def audit_history(current_user: dict = Depends(_get_current_user)):
     from api.database import get_audit_reports
     reports = get_audit_reports(current_user["id"])
     return {"reports": reports, "total": len(reports)}
+
+
+# ─── Lexavo Defend Endpoints ──────────────────────────────────────────────
+
+@app.get("/defend/categories")
+def defend_categories():
+    """Retourne les categories de situations contestables."""
+    from api.features.defend import get_defend_categories
+    return {"categories": get_defend_categories()}
+
+
+@app.post("/defend/detect")
+def defend_detect(request: dict):
+    """Detecte automatiquement le type de situation."""
+    from api.features.defend import detect_situation_type
+    description = request.get("description", "")
+    if len(description.strip()) < 10:
+        raise HTTPException(400, "Description trop courte")
+    return detect_situation_type(description)
+
+
+@app.post("/defend/analyze", response_model=DefendResponse)
+def defend_analyze(
+    body: DefendRequest,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Analyse la situation et genere le document de contestation/recours."""
+    from api.features.defend import analyze_and_generate
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+
+    check_quota(current_user["id"])
+
+    try:
+        result = analyze_and_generate(
+            description=body.description,
+            category=body.category,
+            region=body.region,
+            user_name=body.user_name or "",
+            user_address=body.user_address or "",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"Defend error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'analyse.")
+
+    increment_question_count(current_user["id"])
+
+    sources = [SourceDoc(**s) for s in result.get("sources", [])]
+    laws = [{"article": l.get("article", ""), "content": l.get("content", ""), "source": l.get("source")} for l in result.get("applicable_law", [])]
+
+    return DefendResponse(
+        detection=result.get("detection", {}),
+        situation_analysis=result.get("situation_analysis", ""),
+        applicable_law=laws,
+        contestation_possible=result.get("contestation_possible", False),
+        success_probability=result.get("success_probability", "indeterminee"),
+        document_type=result.get("document_type", "contestation"),
+        document_text=result.get("document_text", ""),
+        recipient=result.get("recipient"),
+        deadline=result.get("deadline"),
+        next_steps=result.get("next_steps", []),
+        cost_estimate=result.get("cost_estimate"),
+        sources=sources,
+        generated_at=result.get("generated_at", ""),
+    )
 
 
 # ─── Alerts Endpoints ─────────────────────────────────────────────────────
