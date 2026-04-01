@@ -33,7 +33,7 @@ beautifulsoup4>=4.12.0
 tenacity>=8.3.0                       # Retry logic for API calls
 
 # ─── PDF Generation ────────────────────────────────────────────────────────
-weasyprint>=62.0                     # PDF generation for contracts
+# weasyprint>=62.0                   # Disabled — requires pango/gdk system libs (too heavy for Railway free tier)
 
 # ─── Data Processing ────────────────────────────────────────────────────────
 # (used by processors/ and scrapers/)
