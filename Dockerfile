@@ -60,10 +60,9 @@ RUN apt-get update && \
 # Pre-download the embedding model at build time (avoids 60s delay on first /ask)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
-# Install runtime libs: libpq (psycopg2), pango/gdk (WeasyPrint PDF) + create non-root user
+# Install runtime libs: libpq for psycopg2 + create non-root user
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        libpq5 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 && \
+    apt-get install -y --no-install-recommends libpq5 && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser && \
