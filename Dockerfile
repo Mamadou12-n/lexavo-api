@@ -16,10 +16,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-# Install PyTorch CPU-only (lighter than CUDA) then all deps
-# --no-cache-dir keeps image size down
+# Install PyTorch CPU-only first (from lightweight index), then all deps
 RUN pip install --no-cache-dir --prefix=/install \
-        torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir --prefix=/install -r requirements.txt 2>&1 | tail -5
 
 # ---------------------------------------------------------------------------
