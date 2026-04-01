@@ -285,3 +285,70 @@ class ShieldUploadResponse(BaseModel):
     """Résultat d'analyse Shield via upload fichier."""
     extracted_text: str = Field(description="Texte extrait du document")
     analysis: ShieldAnalyzeResponse = Field(description="Analyse du contrat")
+
+
+# ─── Audit Entreprise models ──────────────────────────────────────────────
+
+class AuditAnswer(BaseModel):
+    """Une reponse a une question d'audit."""
+    question_id: int = Field(..., description="ID de la question")
+    answer: str = Field(..., description="yes, no, partial, na")
+
+
+class AuditRequest(BaseModel):
+    """Corps de la requete POST /audit/generate."""
+    answers: List[AuditAnswer] = Field(..., min_length=10, description="Reponses aux questions d'audit")
+    company_type: str = Field(default="srl", description="Type : srl, sa, sc, independant, asbl, pme, grande_entreprise")
+    company_name: Optional[str] = Field(default="", description="Nom de l'entreprise")
+    sector: Optional[str] = Field(default="", description="Secteur d'activite")
+    employees: Optional[int] = Field(default=0, description="Nombre d'employes")
+
+
+class AuditCategoryResult(BaseModel):
+    """Score par categorie juridique."""
+    label: str
+    icon: str
+    score: int
+    verdict: str
+    conformes: int
+    non_conformes: int
+    partiels: int
+
+
+class AuditRecommendation(BaseModel):
+    """Recommandation IA personnalisee."""
+    priority: str = Field(description="high ou medium")
+    action: str = Field(description="Action concrete a entreprendre")
+    deadline: Optional[str] = Field(default=None, description="Delai recommande")
+    cost_estimate: Optional[str] = Field(default=None, description="Cout estime")
+    legal_ref: Optional[str] = Field(default=None, description="Reference legale")
+
+
+class AuditItem(BaseModel):
+    """Un element du rapport d'audit."""
+    question_id: int
+    question: str
+    category: str
+    status: str = Field(description="conforme, non_conforme, partiel")
+    legal_ref: str
+    risk: str
+    weight: int
+
+
+class AuditResponse(BaseModel):
+    """Rapport d'audit complet."""
+    score: int = Field(description="Score de conformite sur 100")
+    verdict: str = Field(description="green, orange, ou red")
+    verdict_label: str
+    company_name: Optional[str] = None
+    company_type: str
+    total_questions: int
+    conformes: int
+    non_conformes: int
+    partiels: int
+    critical_risks: List[AuditItem] = []
+    category_results: dict = Field(default={}, description="Scores par categorie")
+    items: List[AuditItem] = []
+    recommendations: List[AuditRecommendation] = []
+    generated_at: str
+    disclaimer: str = "Outil d'information juridique. Ne constitue pas un avis professionnel."

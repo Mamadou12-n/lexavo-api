@@ -240,6 +240,17 @@ CREATE TABLE IF NOT EXISTS beta_notifications (
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, milestone)
 );
+
+CREATE TABLE IF NOT EXISTS audit_reports (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    company_name TEXT,
+    company_type TEXT NOT NULL DEFAULT 'srl',
+    score INTEGER NOT NULL,
+    verdict TEXT NOT NULL,
+    report_json TEXT NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 _PG_INDEXES = """
@@ -260,6 +271,7 @@ CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_beta_notif_user ON beta_notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_beta_notif_milestone ON beta_notifications(milestone);
 CREATE INDEX IF NOT EXISTS idx_beta_notif_status ON beta_notifications(status);
+CREATE INDEX IF NOT EXISTS idx_audit_reports_user ON audit_reports(user_id);
 """
 
 _SQLITE_SCHEMA = """
@@ -377,6 +389,18 @@ CREATE TABLE IF NOT EXISTS beta_notifications (
     sent_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, milestone)
+);
+
+CREATE TABLE IF NOT EXISTS audit_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    company_name TEXT,
+    company_type TEXT NOT NULL DEFAULT 'srl',
+    score INTEGER NOT NULL,
+    verdict TEXT NOT NULL,
+    report_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 """ + _PG_INDEXES
 
@@ -980,5 +1004,47 @@ def delete_conversation(conversation_id: int) -> bool:
         cur = _execute(conn, f"DELETE FROM conversations WHERE id = {PH}", (conversation_id,))
         conn.commit()
         return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# ─── Audit Reports CRUD ───────────────────────────────────────────────────
+
+def save_audit_report(user_id: int, company_name: str, company_type: str,
+                      score: int, verdict: str, report_json: str) -> dict:
+    conn = _get_conn()
+    try:
+        new_id = _insert_returning_id(
+            conn,
+            f"""INSERT INTO audit_reports (user_id, company_name, company_type, score, verdict, report_json)
+                VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH})""",
+            (user_id, company_name, company_type, score, verdict, report_json),
+        )
+        conn.commit()
+        return {"id": new_id}
+    finally:
+        conn.close()
+
+
+def get_audit_reports(user_id: int) -> list:
+    conn = _get_conn()
+    try:
+        if USE_PG:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, company_name, company_type, score, verdict, created_at "
+                "FROM audit_reports WHERE user_id = %s ORDER BY created_at DESC LIMIT 20",
+                (user_id,),
+            )
+            cols = ["id", "company_name", "company_type", "score", "verdict", "created_at"]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+        else:
+            cur = conn.execute(
+                "SELECT id, company_name, company_type, score, verdict, created_at "
+                "FROM audit_reports WHERE user_id = ? ORDER BY created_at DESC LIMIT 20",
+                (user_id,),
+            )
+            cols = ["id", "company_name", "company_type", "score", "verdict", "created_at"]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
     finally:
         conn.close()

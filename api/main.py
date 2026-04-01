@@ -53,6 +53,8 @@ from api.models import (
     # Shield models
     ShieldAnalyzeRequest, ShieldAnalyzeResponse, ShieldClause,
     ShieldUploadResponse,
+    # Audit Entreprise models
+    AuditRequest, AuditResponse,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -898,6 +900,66 @@ def compliance_audit(
     answers = request.get("answers", [])
     company_type = request.get("company_type", "independant")
     return generate_compliance_audit(answers=answers, company_type=company_type)
+
+
+# ─── Audit Entreprise Endpoints ───────────────────────────────────────────
+
+@app.get("/audit/questions")
+def audit_questions(
+    company_type: str = Query(default="srl", description="Type d'entreprise"),
+):
+    """Retourne les 30 questions d'audit adaptees au type d'entreprise."""
+    from api.features.audit_entreprise import get_audit_questions, get_company_types, get_audit_categories
+    return {
+        "questions": get_audit_questions(company_type),
+        "company_types": get_company_types(),
+        "categories": get_audit_categories(),
+    }
+
+
+@app.post("/audit/generate", response_model=AuditResponse)
+def audit_generate(
+    body: AuditRequest,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Genere un rapport d'audit de conformite complet pour PME/entreprise.
+    Reserve aux plans Business, Firm et Enterprise."""
+    from api.features.audit_entreprise import generate_audit_report
+    from api.stripe_billing import check_quota
+    from api.database import get_subscription
+    import json as _json
+
+    # Verifier le quota
+    check_quota(current_user["id"])
+
+    # Verifier le plan (business+ uniquement, sauf beta)
+    from api.stripe_billing import is_beta_active
+    if not is_beta_active():
+        sub = get_subscription(current_user["id"])
+        plan = sub.get("plan", "free") if sub else "free"
+        if plan in ("free", "basic"):
+            raise HTTPException(
+                status_code=403,
+                detail="L'audit entreprise est reserve aux plans Business, Firm et Enterprise. Mettez a niveau votre abonnement.",
+            )
+
+    result = generate_audit_report(
+        answers=[{"question_id": a.question_id, "answer": a.answer} for a in body.answers],
+        company_type=body.company_type,
+        company_name=body.company_name or "",
+        sector=body.sector or "",
+        employees=body.employees or 0,
+    )
+
+    return AuditResponse(**result)
+
+
+@app.get("/audit/history")
+def audit_history(current_user: dict = Depends(_get_current_user)):
+    """Historique des audits de l'utilisateur."""
+    from api.database import get_audit_reports
+    reports = get_audit_reports(current_user["id"])
+    return {"reports": reports, "total": len(reports)}
 
 
 # ─── Alerts Endpoints ─────────────────────────────────────────────────────
