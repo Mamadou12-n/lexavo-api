@@ -22,11 +22,12 @@ class LoginRequest(BaseModel):
 
 class UserResponse(BaseModel):
     """Profil utilisateur (sans mot de passe)."""
+    model_config = {"from_attributes": True}
     id: int
     email: str
     name: str
     language: str
-    created_at: str
+    created_at: Any  # str (SQLite) or datetime (PostgreSQL)
 
 
 class AuthResponse(BaseModel):
@@ -49,7 +50,7 @@ class LawyerResponse(BaseModel):
     description: Optional[str] = None
     rating: float
     verified: bool
-    created_at: str
+    created_at: Any  # str (SQLite) or datetime (PostgreSQL)
 
 
 class LawyerListResponse(BaseModel):
@@ -70,7 +71,7 @@ class ConversationResponse(BaseModel):
     id: int
     user_id: int
     title: str
-    created_at: str
+    created_at: Any  # str (SQLite) or datetime (PostgreSQL)
 
 
 class ConversationListResponse(BaseModel):
@@ -95,7 +96,7 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     sources_json: Any = []  # parsed JSON (list or dict)
-    created_at: str
+    created_at: Any  # str (SQLite) or datetime (PostgreSQL)
 
 
 class MessageListResponse(BaseModel):
