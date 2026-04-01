@@ -10,14 +10,13 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies needed by some Python packages
+# Install only build-time dependencies (minimal for pip compile)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc g++ libpq-dev \
-        libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev && \
+    apt-get install -y --no-install-recommends gcc libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-# Install PyTorch CPU-only first (200MB vs 2GB CUDA), then all other deps
+# Install PyTorch CPU-only first (lighter), then all other deps
 RUN pip install --no-cache-dir --prefix=/install \
         torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir --prefix=/install -r requirements.txt
@@ -61,9 +60,10 @@ RUN apt-get update && \
 # Pre-download the embedding model at build time (avoids 60s delay on first /ask)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
-# Install libpq runtime for psycopg2 + create non-root user
+# Install runtime libs: libpq (psycopg2), pango/gdk (WeasyPrint PDF) + create non-root user
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libpq5 && \
+    apt-get install -y --no-install-recommends \
+        libpq5 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser && \
