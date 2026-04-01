@@ -57,8 +57,8 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-# Pre-download the embedding model at build time (avoids 60s delay on first /ask)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
+# Note: embedding model downloads at first /ask (~60s one-time delay)
+# Pre-download removed to stay within Railway build disk limits
 
 # Install runtime libs: libpq for psycopg2 + create non-root user
 RUN apt-get update && \
