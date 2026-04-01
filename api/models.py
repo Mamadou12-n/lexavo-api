@@ -265,15 +265,18 @@ class ShieldClause(BaseModel):
 class ShieldAnalyzeRequest(BaseModel):
     """Requête d'analyse Shield (texte brut)."""
     contract_text: str = Field(..., min_length=50, max_length=50000, description="Texte du contrat")
-    contract_type: Optional[str] = Field(default=None, description="Type: bail, travail, vente, general")
+    contract_type: Optional[str] = Field(default=None, description="Type: bail, travail, vente, prestation, nda, cgv, licence, association, mandat, pret, general")
+    region: Optional[str] = Field(default=None, description="Region belge : bruxelles, wallonie, flandre")
 
 
 class ShieldAnalyzeResponse(BaseModel):
     """Résultat d'analyse Shield."""
     verdict: str = Field(description="green, orange, ou red — verdict global")
+    score: int = Field(default=50, description="Score de confiance 0-100")
     summary: str = Field(description="Résumé en 2-3 phrases")
     clauses: List[ShieldClause] = Field(description="Analyse clause par clause")
     contract_type_detected: Optional[str] = Field(default=None, description="Type de contrat détecté")
+    region: Optional[str] = Field(default=None, description="Region appliquee")
     legal_sources: List[SourceDoc] = Field(default=[], description="Sources juridiques utilisées")
     disclaimer: str = Field(
         default="Outil d'information juridique. Ne remplace pas un avis professionnel.",

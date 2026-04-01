@@ -592,10 +592,17 @@ def shield_analyze(
 
     check_quota(current_user["id"])
 
-    result = analyze_contract_text(
-        text=request.contract_text,
-        contract_type=request.contract_type,
-    )
+    try:
+        result = analyze_contract_text(
+            text=request.contract_text,
+            contract_type=request.contract_type,
+            region=request.region,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"Shield analysis error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'analyse du contrat.")
 
     increment_question_count(current_user["id"])
 
@@ -612,9 +619,11 @@ def shield_analyze(
 
     return ShieldAnalyzeResponse(
         verdict=result["verdict"],
+        score=result.get("score", 50),
         summary=result["summary"],
         clauses=[ShieldClause(**c) for c in result.get("clauses", [])],
         contract_type_detected=result.get("contract_type_detected"),
+        region=result.get("region"),
         legal_sources=sources,
     )
 
