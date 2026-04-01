@@ -7,12 +7,41 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
+import logging
+
 from api.database import (
     list_lawyers as db_list_lawyers,
     get_lawyer_by_id as db_get_lawyer,
     create_lawyer as db_create_lawyer,
     count_lawyers,
+    _get_conn, USE_PG,
 )
+
+log = logging.getLogger("lawyers")
+
+
+def _purge_duplicate_lawyers():
+    """Remove duplicate lawyers keeping the lowest id for each email."""
+    conn = _get_conn()
+    try:
+        if USE_PG:
+            cur = conn.cursor()
+            cur.execute("""
+                DELETE FROM lawyers WHERE id NOT IN (
+                    SELECT MIN(id) FROM lawyers GROUP BY email
+                );
+            """)
+        else:
+            conn.execute("""
+                DELETE FROM lawyers WHERE id NOT IN (
+                    SELECT MIN(id) FROM lawyers GROUP BY email
+                );
+            """)
+        conn.commit()
+        remaining = count_lawyers()
+        log.info(f"Purged duplicate lawyers, {remaining} remaining")
+    finally:
+        conn.close()
 
 
 def list_lawyers(
@@ -42,8 +71,14 @@ def seed_demo_lawyers() -> int:
     Only seeds if the lawyers table is empty.
     """
     existing = count_lawyers()
-    if existing >= 25:
-        return 0  # deja peuple avec les 25 avocats
+
+    # Purge duplicates if seed ran twice (48 instead of 24)
+    if existing > 25:
+        _purge_duplicate_lawyers()
+        existing = count_lawyers()
+
+    if existing >= 24:
+        return 0  # deja peuple
 
     # 25 avocats couvrant les 11 barreaux principaux et les 15 branches du droit
     # Donnees de demonstration — les emails @lexavo-demo.be ne sont pas reels
