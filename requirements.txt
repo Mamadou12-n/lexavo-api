@@ -12,7 +12,8 @@ python-multipart>=0.0.9              # Form data support for FastAPI
 # ─── LLM & Embeddings (RAG) ─────────────────────────────────────────────────
 anthropic>=0.28.0                     # Claude API
 chromadb>=0.5.0                       # Vector database (local, no server)
-sentence-transformers>=2.7.0          # Embedding model for query vectorization
+# sentence-transformers installed via Dockerfile (--no-deps, ONNX backend)
+# DO NOT add torch here — it would exceed Railway 4GB image limit
 
 # ─── Authentication ──────────────────────────────────────────────────────────
 pyjwt>=2.8.0                         # JWT token handling

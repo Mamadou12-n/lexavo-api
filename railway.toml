@@ -1,17 +1,13 @@
 # =============================================================================
 # railway.toml — Lexavo Backend Deployment
-# Nixpacks builder (lighter than Dockerfile for Railway free tier)
+# Dockerfile builder (ONNX Runtime, no PyTorch — under 4GB limit)
 # =============================================================================
 
 [build]
-builder = "NIXPACKS"
-
-[build.nixpacks]
-# Install system packages needed at runtime
-aptPkgs = ["libpq5", "wget"]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "bash start.sh"
 healthcheckPath = "/health"
 healthcheckTimeout = 180
 restartPolicyType = "ON_FAILURE"
