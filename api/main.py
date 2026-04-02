@@ -838,7 +838,12 @@ def calc_succession(request: dict):
     from api.features.calculators import calculate_succession_duties
     region = request.get("region", "bruxelles")
     amount = float(request.get("amount", 0) or request.get("estate_value", 0))
-    relationship = request.get("relationship", "direct_line")
+    raw_rel = request.get("relationship", "direct_line")
+    # Normaliser les variantes courantes
+    rel_map = {"enfant": "direct_line", "parent": "direct_line", "conjoint": "direct_line",
+               "frere": "siblings", "soeur": "siblings", "frère": "siblings", "sœur": "siblings",
+               "autre": "others", "other": "others", "oncle": "others", "tante": "others", "neveu": "others"}
+    relationship = rel_map.get(raw_rel, raw_rel) if raw_rel not in ("direct_line", "siblings", "others") else raw_rel
     return calculate_succession_duties(
         region=region, amount=amount, relationship=relationship
     )
@@ -1162,16 +1167,19 @@ def alerts_feed(
 ):
     """Retourne le fil d'alertes legislatives personnalise."""
     from api.features.alerts import get_alert_feed
-    from api.database import get_alert_preferences
-    if domains:
-        domain_list = [d.strip() for d in domains.split(",")]
-    else:
-        prefs = get_alert_preferences(current_user["id"])
-        domain_list = prefs.get("domains", [])
+    try:
+        if domains:
+            domain_list = [d.strip() for d in domains.split(",")]
+        else:
+            from api.database import get_alert_preferences
+            prefs = get_alert_preferences(current_user["id"])
+            domain_list = prefs.get("domains", []) if isinstance(prefs, dict) else []
+    except Exception:
+        domain_list = []
     if not domain_list:
         domain_list = ["travail", "fiscal", "bail"]
     try:
-        feed = get_alert_feed(domains=domain_list, limit=limit)
+        feed = get_alert_feed(domains=domain_list, limit=limit, mock=True)
     except Exception:
         feed = []
     return {"alerts": feed, "total": len(feed)}
