@@ -33,10 +33,12 @@ COLLECTION_NAME = "legal_docs_be"
 EMBED_MODEL     = "paraphrase-multilingual-MiniLM-L12-v2"
 
 # Paramètres de chunking
-CHUNK_SIZE    = 512    # chars par chunk (pas tokens)
-CHUNK_OVERLAP = 64     # chars de recouvrement
-MAX_CHUNKS_PER_DOC_DEFAULT = 20   # arrêts jurisprudence (courts, peu d'articles)
-MAX_CHUNKS_PER_DOC_CODE    = 600  # codes légaux / lois longues (textes complets obligatoires)
+CHUNK_SIZE          = 512    # chars par chunk pour jurisprudence
+CHUNK_SIZE_CODE     = 1500   # chars par chunk pour codes légaux (garde l'article entier dans son contexte)
+CHUNK_OVERLAP       = 64     # chars de recouvrement jurisprudence
+CHUNK_OVERLAP_CODE  = 200    # chars de recouvrement codes (plus de contexte entre articles)
+MAX_CHUNKS_PER_DOC_DEFAULT = 20    # arrêts jurisprudence (courts)
+MAX_CHUNKS_PER_DOC_CODE    = 2000  # codes légaux (textes complets, jamais tronqués)
 
 # Sources dont les textes doivent être indexés en entier
 SOURCES_CODES = {"JUSTEL", "Codex Vlaanderen", "GalliLex", "WalLex", "ETAAMB",
@@ -192,7 +194,8 @@ def build_index(
         # Construire le texte enrichi (titre + texte) pour meilleurs embeddings
         enriched_text = f"{title}\n\n{text}" if title and title not in text[:200] else text
 
-        # Limite dynamique : codes/lois = texte complet (600 chunks max), jurisprudence = 20
+        # Codes légaux : gros chunks (1500 chars) pour garder chaque article entier
+        # Jurisprudence : petits chunks (512 chars) pour précision
         is_code = (
             source in SOURCES_CODES
             or "coordonné" in doc_type.lower()
@@ -203,9 +206,12 @@ def build_index(
             or title.lower().startswith("décret ")
             or title.lower().startswith("constitution")
         )
-        max_chunks = MAX_CHUNKS_PER_DOC_CODE if is_code else MAX_CHUNKS_PER_DOC_DEFAULT
+        if is_code:
+            c_size, c_overlap, max_chunks = CHUNK_SIZE_CODE, CHUNK_OVERLAP_CODE, MAX_CHUNKS_PER_DOC_CODE
+        else:
+            c_size, c_overlap, max_chunks = CHUNK_SIZE, CHUNK_OVERLAP, MAX_CHUNKS_PER_DOC_DEFAULT
 
-        chunks = chunk_text(enriched_text)[:max_chunks]
+        chunks = chunk_text(enriched_text, chunk_size=c_size, overlap=c_overlap)[:max_chunks]
         if not chunks:
             continue
 

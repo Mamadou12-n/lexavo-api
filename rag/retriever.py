@@ -93,8 +93,8 @@ def get_model():
 
 def retrieve(
     query: str,
-    top_k: int = 5,
-    max_per_doc: int = 2,
+    top_k: int = 10,
+    max_per_doc: int = 3,
     source_filter: Optional[List[str]] = None,
     jurisdiction_filter: Optional[str] = None,
     date_from: Optional[str] = None,
@@ -147,9 +147,62 @@ def retrieve(
     if not results["documents"] or not results["documents"][0]:
         return []
 
+    # ─── Recherche hybride : mots-clés en complément des vecteurs ────────
+    # Si la requête mentionne un numéro d'article ou un terme juridique précis,
+    # on cherche aussi par mots-clés pour ne pas rater l'article exact
+    import re
+    keyword_chunks = []
+    art_match = re.search(r"art(?:icle)?\.?\s*(\d+[\w./]*)", query, re.IGNORECASE)
+    if art_match:
+        art_num = art_match.group(1)
+        # Chercher "Art. X" dans les documents ChromaDB
+        for pattern in [f"Art. {art_num}", f"Art.{art_num}", f"article {art_num}"]:
+            try:
+                kw_results = collection.get(
+                    where_document={"$contains": pattern},
+                    limit=5,
+                    include=["documents", "metadatas"],
+                )
+                for doc_text, meta in zip(kw_results["documents"], kw_results["metadatas"]):
+                    keyword_chunks.append((doc_text, meta))
+            except Exception:
+                pass
+            if keyword_chunks:
+                break
+
     # Construire la liste des résultats
     chunks = []
     seen_doc_ids = {}
+    seen_chunk_ids = set()
+
+    # Injecter les résultats mots-clés EN PREMIER (priorité maximale)
+    for doc_text, meta in keyword_chunks:
+        doc_id = meta.get("doc_id", "")
+        chunk_id = f"{doc_id}__{meta.get('chunk_idx', 0)}"
+        if chunk_id in seen_chunk_ids:
+            continue
+        seen_chunk_ids.add(chunk_id)
+
+        count = seen_doc_ids.get(doc_id, 0)
+        if count >= max_per_doc:
+            continue
+        seen_doc_ids[doc_id] = count + 1
+
+        source = meta.get("source", "")
+        chunks.append({
+            "chunk_text":   doc_text,
+            "doc_id":       doc_id,
+            "source":       source,
+            "doc_type":     meta.get("doc_type", ""),
+            "jurisdiction": meta.get("jurisdiction", ""),
+            "title":        meta.get("title", ""),
+            "date":         meta.get("date", ""),
+            "url":          meta.get("url", ""),
+            "ecli":         meta.get("ecli", ""),
+            "similarity":   0.95,  # score élevé car match exact par mot-clé
+            "score":        0.99,
+            "chunk_idx":    meta.get("chunk_idx", 0),
+        })
 
     for doc_text, meta, distance in zip(
         results["documents"][0],
@@ -159,6 +212,12 @@ def retrieve(
         doc_id  = meta.get("doc_id", "")
         source  = meta.get("source", "")
         date    = meta.get("date", "")
+
+        # Skip si déjà ajouté par la recherche mots-clés
+        chunk_id = f"{doc_id}__{meta.get('chunk_idx', 0)}"
+        if chunk_id in seen_chunk_ids:
+            continue
+        seen_chunk_ids.add(chunk_id)
 
         # Filtre par date (post-processing car ChromaDB ne supporte pas les comparaisons de chaînes)
         if date_from and date and date < date_from:
