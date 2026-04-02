@@ -145,7 +145,7 @@ def register_user(email: str, password: str, name: str, language: str = "fr") ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Le nom doit contenir au moins 2 caractères.",
         )
-    if language not in ("fr", "nl", "en"):
+    if language not in ("fr", "nl", "en", "de", "ar", "tr", "es", "pt"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Langue invalide. Choisissez parmi : fr, nl, en.",
