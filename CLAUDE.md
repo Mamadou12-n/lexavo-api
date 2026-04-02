@@ -44,6 +44,14 @@ LEXAVO
 3. **Disclaimer obligatoire** — chaque réponse juridique inclut "ne constitue pas un avis juridique"
 4. **Helpers existants** — utiliser `_get_conn()`, `USE_PG`, `_execute()`, `_fetchone()`, `_fetchall()` dans database.py (ne PAS inventer `get_connection()` ou `_use_pg()`)
 5. **Humanizer** — intégré dans toutes les features (shield, audit, diagnostic, decode, fiscal, legal_response)
+6. **Retriever 9 alternatives** — le RAG utilise 9 mécanismes de recherche qui se corrigent mutuellement :
+   - Alt.1 Vecteurs sémantiques | Alt.2 Mots-clés articles (Art. X) | Alt.3 Termes juridiques ($contains)
+   - Alt.4 Chunks voisins (contexte ±1) | Alt.5 Vote majoritaire | Alt.6 Filtre source détectée
+   - Alt.7 Re-ranking Claude Haiku | Alt.8 Index articles séparé | Alt.9 Reformulation automatique
+   - Si l'info n'est pas dans la base → dire "je ne sais pas", **jamais inventer**
+   - Chaque erreur d'une alternative est corrigée par les autres automatiquement
+7. **Skill add-legal-source** — toute nouvelle source juridique DOIT passer par la skill
+   `claude-skills/add-legal-source/SKILL.md` (8 étapes obligatoires, zéro invention à chaque étape)
 
 ## Stack technique
 

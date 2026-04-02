@@ -213,6 +213,29 @@ def ask(
             "branch_confidence": branch_confidence,
         }
 
+    # 1bis. Alt.6 — Garde-fou : verifier coherence branche ↔ sources
+    if detected_branch and branch_confidence >= 0.5:
+        config = get_branch_config(detected_branch)
+        if config:
+            expected_sources = config.get("source_filter", [])
+            if expected_sources:
+                from_right_source = sum(
+                    1 for c in chunks
+                    if c.get("source", "") in expected_sources
+                    or any(s.lower() in c.get("title", "").lower() for s in expected_sources)
+                )
+                # Si moins de 30% des chunks viennent de la bonne branche → refaire
+                if from_right_source < len(chunks) * 0.3:
+                    log.warning(
+                        f"  Alt.6 garde-fou : {from_right_source}/{len(chunks)} chunks de la bonne source, "
+                        f"re-recherche avec filtre {expected_sources[:3]}"
+                    )
+                    chunks_retry = retrieve(
+                        query=question, top_k=top_k, source_filter=expected_sources
+                    )
+                    if chunks_retry:
+                        chunks = chunks_retry
+
     # 2. Formater le contexte
     context = format_context(chunks, max_total_chars=6000)
     log.info(f"  {len(chunks)} chunks recuperes, contexte = {len(context)} chars")

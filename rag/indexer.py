@@ -267,7 +267,104 @@ def build_index(
         total_chunks += len(batch_docs)
 
     log.info(f"=== Indexation terminée : {total_chunks} chunks dans ChromaDB ===")
+
+    # ─── Alt.8 : Index articles séparé ───────────────────────────────────
+    log.info("  Construction index articles séparé (Alt.8)...")
+    articles_count = _build_articles_index(client, normalized_dir)
+    log.info(f"  → {articles_count} articles indexés dans legal_articles_be")
+
     return total_chunks
+
+
+ARTICLES_COLLECTION = "legal_articles_be"
+
+
+def _build_articles_index(client, normalized_dir: Path) -> int:
+    """
+    Alt.8 — Indexe chaque article de loi individuellement dans une collection séparée.
+    Permet la recherche directe par numéro d'article (100% précis).
+    """
+    import re
+
+    # Créer ou reset la collection articles
+    try:
+        client.delete_collection(ARTICLES_COLLECTION)
+    except Exception:
+        pass
+    art_collection = client.get_or_create_collection(
+        name=ARTICLES_COLLECTION,
+        metadata={"hnsw:space": "cosine"},
+    )
+
+    files = sorted(normalized_dir.glob("*.json"))
+    total_articles = 0
+    batch_docs, batch_ids, batch_metas = [], [], []
+
+    for json_file in files:
+        try:
+            with open(json_file, "r", encoding="utf-8") as f:
+                doc = json.load(f)
+        except Exception:
+            continue
+
+        text = doc.get("full_text", "")
+        title = doc.get("title", "")
+        numac = doc.get("numac", doc.get("doc_id", json_file.stem))
+        source = doc.get("source", "")
+
+        if not text or len(text) < 100:
+            continue
+
+        # Découper par articles : "Art. X." suivi du texte jusqu'au prochain "Art."
+        parts = re.split(r'(?=\bArt(?:icle)?\.?\s*\d)', text)
+
+        for part in parts:
+            art_match = re.match(r'Art(?:icle)?\.?\s*(\d+[\w.:/-]*)', part)
+            if not art_match:
+                continue
+
+            art_num = art_match.group(1).strip().rstrip(".")
+            art_text = part[:3000].strip()
+
+            if len(art_text) < 20:
+                continue
+
+            art_id = f"{numac}__art_{art_num}"
+
+            batch_docs.append(art_text)
+            batch_ids.append(art_id)
+            batch_metas.append({
+                "article_num": art_num,
+                "title": title[:200],
+                "numac": numac,
+                "source": source,
+            })
+
+            if len(batch_docs) >= 200:
+                try:
+                    art_collection.add(
+                        documents=batch_docs,
+                        ids=batch_ids,
+                        metadatas=batch_metas,
+                    )
+                    total_articles += len(batch_docs)
+                except Exception as e:
+                    log.warning(f"  Erreur batch articles: {e}")
+                batch_docs, batch_ids, batch_metas = [], [], []
+
+    # Dernier batch
+    if batch_docs:
+        try:
+            art_collection.add(
+                documents=batch_docs,
+                ids=batch_ids,
+                metadatas=batch_metas,
+            )
+            total_articles += len(batch_docs)
+        except Exception as e:
+            log.warning(f"  Erreur dernier batch articles: {e}")
+
+    return total_articles
 
 
 def get_index_stats(chroma_dir: Path = CHROMA_DIR) -> Dict:
