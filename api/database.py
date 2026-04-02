@@ -1078,56 +1078,39 @@ def get_audit_reports(user_id: int) -> list:
 # ── User Context ──────────────────────────────────────────────
 def get_user_context(user_id: int) -> dict:
     """Recuperer le contexte utilisateur (region, profession, langue)."""
-    conn = get_connection()
+    conn = _get_conn()
     try:
-        if _use_pg():
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT region, profession, language FROM users WHERE id = %s",
-                (user_id,),
-            )
-            row = cur.fetchone()
-        else:
-            row = conn.execute(
-                "SELECT region, profession, language FROM users WHERE id = ?",
-                (user_id,),
-            ).fetchone()
+        row = _fetchone(conn, "SELECT region, profession, language FROM users WHERE id = %s" if USE_PG else "SELECT region, profession, language FROM users WHERE id = ?", (user_id,))
         if not row:
             return {"region": None, "profession": None, "language": "fr"}
-        return {"region": row[0], "profession": row[1], "language": row[2]}
+        return {"region": row.get("region"), "profession": row.get("profession"), "language": row.get("language") or "fr"}
     finally:
         conn.close()
 
 
 def update_user_context(user_id: int, region: str = None, profession: str = None, language: str = None) -> dict:
     """Mettre a jour le contexte utilisateur."""
-    conn = get_connection()
-    try:
-        fields = []
-        values = []
-        if region is not None:
-            fields.append("region")
-            values.append(region)
-        if profession is not None:
-            fields.append("profession")
-            values.append(profession)
-        if language is not None:
-            fields.append("language")
-            values.append(language)
-        if not fields:
-            return get_user_context(user_id)
+    fields = []
+    values = []
+    if region is not None:
+        fields.append("region")
+        values.append(region)
+    if profession is not None:
+        fields.append("profession")
+        values.append(profession)
+    if language is not None:
+        fields.append("language")
+        values.append(language)
+    if not fields:
+        return get_user_context(user_id)
 
-        if _use_pg():
-            set_clause = ", ".join(f"{f} = %s" for f in fields)
-            values.append(user_id)
-            cur = conn.cursor()
-            cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s", tuple(values))
-            conn.commit()
-        else:
-            set_clause = ", ".join(f"{f} = ?" for f in fields)
-            values.append(user_id)
-            conn.execute(f"UPDATE users SET {set_clause} WHERE id = ?", tuple(values))
-            conn.commit()
+    conn = _get_conn()
+    try:
+        ph = "%s" if USE_PG else "?"
+        set_clause = ", ".join(f"{f} = {ph}" for f in fields)
+        values.append(user_id)
+        _execute(conn, f"UPDATE users SET {set_clause} WHERE id = {ph}", tuple(values))
+        conn.commit()
         return get_user_context(user_id)
     finally:
         conn.close()
