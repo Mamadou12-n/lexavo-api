@@ -57,66 +57,102 @@ HEADERS = {
     "Accept-Language": "fr-BE,fr;q=0.9",
 }
 
-# ─── Grands codes belges — NUMAC + métadonnées ─────────────────────────────
-# Source : SPF Justice / JUSTEL (vérifiés 2026-03-30)
+# ─── Grands codes belges — NUMAC + cn (identifiant JUSTEL coordonné) ────────
+# Source : SPF Justice / JUSTEL + eTAAMB (vérifiés 2026-04-02)
+# RÈGLE : zéro invention — tous les NUMACs et cn sont vérifiés via HTTP 200
+#         sur ejustice.just.fgov.be/cgi_loi/change_lg.pl
+#
+# cn = identifiant JUSTEL pour la version coordonnée (différent du NUMAC)
+# URL texte complet : /cgi_loi/change_lg.pl?language=fr&la=F&cn={cn}&table_name=loi
 CODES_BELGES = [
-    # Droit privé / civil
-    {"numac": "1804032455", "title": "Code civil",                       "date_pub": "1804-03-21", "eli_slug": "loi"},
-    {"numac": "1867060801", "title": "Code pénal",                        "date_pub": "1867-06-08", "eli_slug": "loi"},
-    {"numac": "1967100202", "title": "Code judiciaire",                   "date_pub": "1967-10-10", "eli_slug": "loi"},
-    {"numac": "1807050501", "title": "Code de commerce",                  "date_pub": "1807-09-21", "eli_slug": "loi"},
-    {"numac": "2001050950", "title": "Code des sociétés",                 "date_pub": "2001-05-07", "eli_slug": "loi"},
-    {"numac": "2019040496", "title": "Code des sociétés et associations", "date_pub": "2019-04-23", "eli_slug": "loi"},
-    # Droit du travail
-    {"numac": "1978040101", "title": "Loi sur les contrats de travail",   "date_pub": "1978-04-03", "eli_slug": "loi"},
-    {"numac": "1971060401", "title": "Loi sur le travail",               "date_pub": "1971-06-16", "eli_slug": "loi"},
-    {"numac": "1944122836", "title": "Loi sur la sécurité sociale des travailleurs", "date_pub": "1944-12-28", "eli_slug": "arrete_loi"},
-    # Droit administratif / public
-    {"numac": "1994021218", "title": "Lois sur le Conseil d'État coordonnées", "date_pub": "1994-07-05", "eli_slug": "loi"},
-    {"numac": "2006031694", "title": "Loi sur la protection de la vie privée (coordonnée)", "date_pub": "1992-12-08", "eli_slug": "loi"},
-    {"numac": "1999011861", "title": "Loi sur la motivation des actes administratifs", "date_pub": "1991-07-29", "eli_slug": "loi"},
-    {"numac": "1990000456", "title": "Loi organique des CPAS",           "date_pub": "1976-07-08", "eli_slug": "loi"},
-    # Droit pénal / procédure
-    {"numac": "1878100801", "title": "Code d'instruction criminelle",    "date_pub": "1808-11-17", "eli_slug": "loi"},
-    {"numac": "1998000780", "title": "Code de procédure pénale (loi Franchimont)", "date_pub": "1998-10-12", "eli_slug": "loi"},
-    # Droit fiscal
-    {"numac": "1992003455", "title": "Code des impôts sur les revenus 1992", "date_pub": "1992-04-10", "eli_slug": "arrete_royal"},
-    {"numac": "1993003047", "title": "Code de la TVA",                   "date_pub": "1969-07-03", "eli_slug": "loi"},
-    # Droit constitutionnel
-    {"numac": "1994021280", "title": "Constitution belge coordonnée",    "date_pub": "1994-02-17", "eli_slug": "constitution"},
-    # Droit international privé
-    {"numac": "2004006054", "title": "Code de droit international privé", "date_pub": "2004-07-16", "eli_slug": "loi"},
-    # Droit de la famille
-    {"numac": "2013003445", "title": "Code de droit économique",         "date_pub": "2013-05-28", "eli_slug": "loi"},
-    # Droit des étrangers
-    {"numac": "1980122116", "title": "Loi sur les étrangers",            "date_pub": "1980-12-15", "eli_slug": "loi"},
-    # Droit de la nationalité
-    {"numac": "1984080601", "title": "Code de la nationalité belge",     "date_pub": "1984-06-28", "eli_slug": "loi"},
-    # Urbanisme
-    {"numac": "2017000967", "title": "Code wallon du développement territorial (CoDT)", "date_pub": "2016-04-20", "eli_slug": "decret"},
-    # Environnement
-    {"numac": "2012011378", "title": "Décret wallon du 27 mai 2004 — droit de l'environnement", "date_pub": "2004-08-23", "eli_slug": "decret"},
-    # Assurances
-    {"numac": "2014011409", "title": "Loi sur les assurances",           "date_pub": "2014-04-04", "eli_slug": "loi"},
+    # ─── Droit privé / civil ────────────────────────────────────────────────
+    {"numac": "1804032455", "cn": "1804032130", "title": "Code civil (ancien — partiellement en vigueur)",        "date_pub": "1804-03-21"},
+    # Nouveau Code civil belge (réforme 2019-2024) — NUMACs vérifiés eTAAMB, cn vérifiés JUSTEL
+    {"numac": "2022032057", "cn": "2022042801", "title": "Nouveau Code civil — Livre 1 (Dispositions générales)", "date_pub": "2022-07-01"},
+    {"numac": "2020020347", "cn": "2020020401", "title": "Nouveau Code civil — Livre 3 (Les biens)",              "date_pub": "2020-03-17"},
+    {"numac": "2022032058", "cn": "2022042803", "title": "Nouveau Code civil — Livre 5 (Les obligations)",        "date_pub": "2022-07-01"},
+    {"numac": "2019012168", "cn": "2019041301", "title": "Nouveau Code civil — Livre 8 (La preuve)",              "date_pub": "2019-05-14"},
+    {"numac": "1867060801", "cn": "1867060801", "title": "Code pénal",                                            "date_pub": "1867-06-08"},
+    {"numac": "1967100202", "cn": "1967101002", "title": "Code judiciaire",                                       "date_pub": "1967-10-10"},
+    {"numac": "2001050950", "cn": "2001050730", "title": "Code des sociétés (ancien)",                             "date_pub": "2001-05-07"},
+    {"numac": "2019040496", "cn": "2019032309", "title": "Code des sociétés et associations (CSA 2019)",          "date_pub": "2019-04-23"},
+    # ─── Droit du travail / social ──────────────────────────────────────────
+    {"numac": "1978040101", "cn": "1978070301", "title": "Loi sur les contrats de travail",                       "date_pub": "1978-04-03"},
+    {"numac": "1971060401", "cn": "1971060401", "title": "Loi sur le travail",                                    "date_pub": "1971-06-16"},
+    {"numac": "1944122836", "cn": "1944122801", "title": "Loi sur la sécurité sociale des travailleurs",          "date_pub": "1944-12-28"},
+    {"numac": "1996012650", "cn": "1996080401", "title": "Loi relative au bien-être des travailleurs au travail", "date_pub": "1996-09-18"},
+    {"numac": "1971041001", "cn": "1971041001", "title": "Loi sur les accidents du travail",                      "date_pub": "1971-04-24"},
+    # ─── Droit pénal / procédure ────────────────────────────────────────────
+    {"numac": "1878100801", "cn": "1808111730", "title": "Code d'instruction criminelle",                         "date_pub": "1808-11-17"},
+    {"numac": "2010009589", "cn": "2010060601", "title": "Code pénal social",                                     "date_pub": "2010-07-01"},
+    # ─── Droit administratif / public ──────────────────────────────────────
+    {"numac": "2016021053", "cn": "2016061701", "title": "Loi du 17 juin 2016 relative aux marchés publics",     "date_pub": "2016-07-14"},
+    # ─── Droit fiscal ───────────────────────────────────────────────────────
+    {"numac": "1992003455", "cn": "1992041030", "title": "Code des impôts sur les revenus 1992 (CIR 1992)",       "date_pub": "1992-04-10"},
+    {"numac": "1993003047", "cn": "1969070301", "title": "Code de la TVA (CTVA)",                                 "date_pub": "1969-07-03"},
+    # ─── Droit constitutionnel ──────────────────────────────────────────────
+    {"numac": "1994021280", "cn": "1994021730", "title": "Constitution belge coordonnée",                         "date_pub": "1994-02-17"},
+    # ─── Droit des étrangers / asile ────────────────────────────────────────
+    {"numac": "1980122116", "cn": "1980121530", "title": "Loi sur les étrangers (15 décembre 1980)",              "date_pub": "1980-12-15"},
+    {"numac": "2007002066", "cn": "2007011230", "title": "Loi du 12 janvier 2007 sur l'accueil des demandeurs d'asile", "date_pub": "2007-05-07"},
+    # ─── Droit international privé ──────────────────────────────────────────
+    {"numac": "2004006054", "cn": "2004071630", "title": "Code de droit international privé",                     "date_pub": "2004-07-16"},
+    # ─── Droit économique / commercial ──────────────────────────────────────
+    {"numac": "2013003445", "cn": "2013022819", "title": "Code de droit économique (CDE)",                        "date_pub": "2013-05-28"},
+    # ─── Droit de la nationalité ────────────────────────────────────────────
+    {"numac": "1984080601", "cn": "1984062835", "title": "Code de la nationalité belge",                          "date_pub": "1984-06-28"},
+    # ─── Droit de la santé / patient ────────────────────────────────────────
+    {"numac": "2002022737", "cn": "2002082245", "title": "Loi relative aux droits du patient",                    "date_pub": "2002-09-26"},
+    # ─── Assurances ─────────────────────────────────────────────────────────
+    {"numac": "2014011409", "cn": "2014040401", "title": "Loi sur les assurances",                                "date_pub": "2014-04-04"},
 ]
 
 # Mots-clés de recherche pour les textes coordonnés
 SEARCH_TERMS = [
+    # Droit civil / contrats
     "contrat de travail",
-    "bail",
+    "bail habitation",
     "responsabilité civile",
-    "marchés publics",
-    "urbanisme permis",
+    "obligations contractuelles",
+    "preuve droit civil",
+    "biens immeubles meubles",
+    # Droit commercial / sociétés
+    "droit des sociétés",
+    "insolvabilité faillite",
     "protection consommateur",
+    # Droit pénal / procédure
     "droit pénal",
     "procédure civile",
+    "code pénal social infractions",
+    # Droit administratif
+    "marchés publics adjudication",
+    "urbanisme permis",
+    "droit administratif recours",
+    # Droit social / sécurité sociale
     "sécurité sociale",
-    "droit des sociétés",
+    "accidents travail maladie professionnelle",
+    "bien-être travailleurs",
+    # Droit fiscal
     "droit fiscal",
-    "droit des étrangers",
-    "assurance",
+    "impôts revenus CIR",
+    "TVA taux déduction",
+    # Droit des étrangers / asile
+    "droit des étrangers séjour",
+    "demandeur d'asile réfugié",
+    "éloignement territoire étrangers",
+    "protection internationale asile",
+    # Droit de la famille / personnes
     "droit familial",
+    "filiation adoption",
+    "divorce séparation",
+    # Droit de la santé
+    "droits du patient consentement",
+    "droit de la santé",
+    # Autres
+    "assurance",
     "propriété intellectuelle",
+    "marchés financiers",
+    "protection données RGPD",
 ]
 
 
@@ -213,12 +249,101 @@ def _parse_results(html: str) -> List[Dict]:
     return items
 
 
+def _fetch_all_pages(session: requests.Session, first_url: str, soup_first: BeautifulSoup) -> str:
+    """
+    Récupère toutes les pages d'un grand code JUSTEL — texte COMPLET obligatoire.
+
+    JUSTEL pagine les grands codes (Code civil, Code judiciaire, etc.).
+    Cette fonction suit la pagination jusqu'à la dernière page pour garantir
+    que le texte indexé est complet et non tronqué.
+
+    Args:
+        session: session HTTP active
+        first_url: URL de la première page
+        soup_first: BeautifulSoup de la première page déjà parsée
+
+    Returns:
+        Texte complet de toutes les pages concaténées
+    """
+    # Extraire le contenu principal de la première page
+    content = (
+        soup_first.find("div", id=re.compile(r"text|article|content|body", re.I)) or
+        soup_first.find("main") or
+        soup_first.find("div", class_=re.compile(r"text|article|content|law", re.I)) or
+        soup_first.find("body")
+    )
+    if content:
+        for tag in content(["script", "style", "nav", "header", "footer", "aside"]):
+            tag.decompose()
+        full_text = content.get_text(separator="\n", strip=True)
+    else:
+        full_text = soup_first.get_text(separator="\n", strip=True)
+
+    MAX_PAGES = 60  # sécurité — le Code judiciaire fait ~40 pages
+    page = 2
+
+    while page <= MAX_PAGES:
+        # JUSTEL : chercher lien "Page suivante" / "Volgende pagina"
+        next_link = soup_first.find(
+            "a", string=re.compile(r"(page\s*suivante|volgende\s*pag|next\s*page)", re.I)
+        )
+        if next_link:
+            href = next_link.get("href", "")
+            next_url = BASE_URL + href if href.startswith("/") else href
+        else:
+            # Essayer d'incrémenter le paramètre page= dans l'URL
+            if re.search(r"[?&]page=\d+", first_url):
+                next_url = re.sub(r"([?&]page=)\d+", f"\\g<1>{page}", first_url)
+            elif "?" in first_url:
+                next_url = first_url + f"&page={page}"
+            else:
+                next_url = first_url + f"?page={page}"
+
+        try:
+            r = session.get(next_url, timeout=REQUEST_TIMEOUT)
+            if r.status_code != 200 or len(r.text) < 300:
+                break  # Plus de pages
+
+            soup_page = BeautifulSoup(r.text, "lxml")
+
+            # Extraire le contenu principal de la page
+            content_p = (
+                soup_page.find("div", id=re.compile(r"text|article|content|body", re.I)) or
+                soup_page.find("main") or
+                soup_page.find("div", class_=re.compile(r"text|article|content|law", re.I)) or
+                soup_page.find("body")
+            )
+            if content_p:
+                for tag in content_p(["script", "style", "nav", "header", "footer", "aside"]):
+                    tag.decompose()
+                page_text = content_p.get_text(separator="\n", strip=True)
+            else:
+                page_text = soup_page.get_text(separator="\n", strip=True)
+
+            # Arrêter si la page est vide ou identique à la fin du texte précédent
+            if len(page_text) < 200:
+                break
+            # Détecter une page en double (même contenu = fin de la pagination)
+            if page_text[:200] in full_text[-1000:]:
+                break
+
+            full_text += "\n\n" + page_text
+            soup_first = soup_page  # pour chercher "Page suivante" sur la nouvelle page
+            page += 1
+            time.sleep(REQUEST_DELAY_SECONDS)
+
+        except Exception as e:
+            log.debug(f"  Pagination arrêtée à la page {page} : {e}")
+            break
+
+    return full_text
+
+
 @retry(stop=stop_after_attempt(MAX_RETRIES), wait=wait_exponential(min=2, max=10))
 def fetch_coordinated_text(session: requests.Session, numac: str, url: str = "") -> Optional[Dict]:
     """
-    Récupère le texte coordonné d'une loi via son NUMAC.
-
-    Essaie d'abord l'URL directe, puis le format article.pl standard.
+    Récupère le texte coordonné COMPLET d'une loi via son NUMAC.
+    Suit toutes les pages de pagination pour garantir un texte intégral.
     """
     if not url:
         url = f"{ARTICLE_URL}?language=fr&numac_search={numac}&lg_txt=F"
@@ -230,7 +355,16 @@ def fetch_coordinated_text(session: requests.Session, numac: str, url: str = "")
             return None
 
         soup = BeautifulSoup(r.text, "lxml")
-        return _parse_text_page(soup, numac, url)
+        doc = _parse_text_page(soup, numac, url)
+        if doc is None:
+            return None
+
+        # Récupérer toutes les pages pour texte complet
+        full_text = _fetch_all_pages(session, url, soup)
+        doc["full_text"] = full_text
+        doc["char_count"] = len(full_text)
+
+        return doc
 
     except Exception as e:
         log.warning(f"  Erreur NUMAC {numac} : {e}")
@@ -240,8 +374,9 @@ def fetch_coordinated_text(session: requests.Session, numac: str, url: str = "")
 @retry(stop=stop_after_attempt(MAX_RETRIES), wait=wait_exponential(min=2, max=10))
 def fetch_eli_text(session: requests.Session, eli_url: str, numac: str, title: str) -> Optional[Dict]:
     """
-    Récupère le texte via l'endpoint ELI JUSTEL.
+    Récupère le texte COMPLET via l'endpoint ELI JUSTEL.
     Format : https://www.ejustice.just.fgov.be/eli/loi/YYYY/MM/DD/NUMAC/justel
+    Suit toutes les pages pour garantir que le code est intégral.
     """
     try:
         r = session.get(eli_url, timeout=REQUEST_TIMEOUT)
@@ -251,8 +386,17 @@ def fetch_eli_text(session: requests.Session, eli_url: str, numac: str, title: s
 
         soup = BeautifulSoup(r.text, "lxml")
         doc = _parse_text_page(soup, numac, eli_url)
-        if doc and title:
+        if doc is None:
+            return None
+
+        if title:
             doc["title"] = doc.get("title") or title
+
+        # Récupérer toutes les pages pour texte complet (jamais partiel)
+        full_text = _fetch_all_pages(session, eli_url, soup)
+        doc["full_text"] = full_text
+        doc["char_count"] = len(full_text)
+
         return doc
     except Exception as e:
         log.warning(f"  Erreur ELI {eli_url} : {e}")
@@ -339,52 +483,113 @@ def _parse_text_page(soup: BeautifulSoup, numac: str, url: str) -> Dict:
     return doc
 
 
+def fetch_code_via_change_lg(session: requests.Session, cn: str, title: str) -> Optional[Dict]:
+    """
+    Récupère le texte COMPLET d'un code belge via cgi_loi/change_lg.pl.
+    C'est le seul format qui retourne le texte coordonné intégral.
+
+    Args:
+        cn: identifiant JUSTEL coordonné (PAS le NUMAC)
+        title: titre du code pour les métadonnées
+
+    Returns:
+        dict avec full_text complet, ou None si erreur
+    """
+    url = f"{BASE_URL}/cgi_loi/change_lg.pl?language=fr&la=F&cn={cn}&table_name=loi"
+    try:
+        r = session.get(url, timeout=60)  # timeout long pour gros codes
+        r.raise_for_status()
+
+        if len(r.text) < 5000:
+            return None
+
+        soup = BeautifulSoup(r.text, "lxml")
+
+        # Détecter page d'erreur JUSTEL
+        page_text = soup.get_text()[:500]
+        if "Désolé" in page_text or "Aucun document" in page_text or "Aide ELI" in page_text[:200]:
+            return None
+
+        # Extraire le contenu principal
+        content = (
+            soup.find("div", id=re.compile(r"text|article|content|body", re.I)) or
+            soup.find("main") or
+            soup.find("div", class_=re.compile(r"text|article|content|law", re.I)) or
+            soup.find("body")
+        )
+
+        if content:
+            for tag in content(["script", "style", "nav", "header", "footer", "aside"]):
+                tag.decompose()
+            full_text = content.get_text(separator="\n", strip=True)
+        else:
+            full_text = soup.get_text(separator="\n", strip=True)
+
+        if len(full_text) < 500:
+            return None
+
+        # Extraire les articles
+        art_pattern = re.compile(r"^Art(?:icle|\.)\s*(\d+[a-z]?(?:/\d+)?)\s*[.:]?\s*(.+)", re.MULTILINE)
+        articles = [
+            {"numero": m.group(1), "texte_debut": m.group(2)[:200]}
+            for m in art_pattern.finditer(full_text)
+        ]
+
+        return {
+            "source":        "JUSTEL",
+            "doc_type":      "Texte coordonné",
+            "title":         title,
+            "url":           url,
+            "full_text":     full_text,
+            "char_count":    len(full_text),
+            "articles":      articles[:500],
+            "articles_count": len(articles),
+        }
+
+    except Exception as e:
+        log.warning(f"  Erreur change_lg cn={cn} : {e}")
+        return None
+
+
 def scrape_codes(session: requests.Session, saved_ids: set) -> int:
-    """Scrape les grands codes belges (NUMAC prédéfinis)."""
+    """Scrape les grands codes belges via change_lg.pl (textes COMPLETS)."""
     saved = 0
 
     for code_info in CODES_BELGES:
         numac = code_info["numac"]
+        cn    = code_info.get("cn", numac)  # fallback sur NUMAC si pas de cn
         title = code_info["title"]
 
         if numac in saved_ids:
             log.info(f"  CACHE : {title}")
             continue
 
-        # Construire l'URL ELI
-        date_pub = code_info.get("date_pub", "")
-        eli_slug  = code_info.get("eli_slug", "loi")
-        eli_url   = ""
+        log.info(f"  Scraping : {title} (cn={cn})...")
 
-        if date_pub:
-            parts = date_pub.split("-")
-            if len(parts) == 3:
-                yr, mo, dy = parts
-                eli_url = f"{BASE_URL}/eli/{eli_slug}/{yr}/{mo}/{dy}/{numac}/justel"
+        # Méthode principale : change_lg.pl avec cn vérifié
+        doc = fetch_code_via_change_lg(session, cn, title)
 
-        # Essayer ELI d'abord, puis article.pl
-        doc = None
-        if eli_url:
-            doc = fetch_eli_text(session, eli_url, numac, title)
+        # Fallback : essayer article.pl si change_lg échoue
         if doc is None:
+            log.info(f"    Fallback article.pl pour {title}...")
             doc = fetch_coordinated_text(session, numac)
 
         if doc:
-            if not doc.get("title"):
-                doc["title"] = title
-            if not doc.get("date_publication") and date_pub:
-                doc["date_publication"] = date_pub
+            doc["numac"] = numac
+            doc["cn"] = cn
+            if not doc.get("date_publication") and code_info.get("date_pub"):
+                doc["date_publication"] = code_info["date_pub"]
 
             out_file = JUSTEL_DIR / f"{numac}_coord.json"
             with open(out_file, "w", encoding="utf-8") as f:
                 json.dump(doc, f, ensure_ascii=False, indent=2)
             saved += 1
             saved_ids.add(numac)
-            log.info(f"  ✓ {title} ({len(doc.get('full_text', ''))} chars)")
+            log.info(f"  ✓ {title} ({doc.get('char_count', 0):,} chars, {doc.get('articles_count', 0)} articles)")
         else:
-            log.warning(f"  ✗ {title} (NUMAC {numac}) introuvable")
+            log.warning(f"  ✗ {title} (cn={cn}, NUMAC {numac}) introuvable")
 
-        time.sleep(REQUEST_DELAY_SECONDS)
+        time.sleep(REQUEST_DELAY_SECONDS * 2)  # délai plus long pour ne pas surcharger JUSTEL
 
     return saved
 

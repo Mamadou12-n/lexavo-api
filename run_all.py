@@ -122,6 +122,17 @@ SCRAPERS = {
         "call":    "scrape_bruxelles",
         "desc":    "Bruxelles — Ordonnances et arrêtés RBC (ETAAMB / OpenJustice)",
     },
+    # Doctrine administrative et guides pratiques SPF
+    "spf_finances": {
+        "fn":      "scrapers.spf_finances_scraper",
+        "call":    "scrape_spf_finances",
+        "desc":    "SPF Finances — Doctrine fiscale belge (CIR 1992, TVA, succession, ISOC)",
+    },
+    "spf_emploi": {
+        "fn":      "scrapers.spf_emploi_scraper",
+        "call":    "scrape_spf_emploi",
+        "desc":    "SPF Emploi — Droit du travail pratique (contrats, licenciement, bien-être)",
+    },
 }
 
 
@@ -214,16 +225,24 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Sources disponibles :
-  hudoc, eurlex, juridat, moniteur,
-  consconst, conseil_etat, cce, cnt, justel
+  Codes légaux   : justel (Constitution, Code civil + Livres 1/3/5/8, Code pénal,
+                           Code judiciaire, Code pénal social, CSA, CIR 1992, TVA,
+                           Loi étrangers, Loi accueil asile, marchés publics, ...)
+  Jurisprudence  : juridat, hudoc, consconst, conseil_etat, cce, juportal
+  Législation UE : eurlex
+  Législation BE : moniteur, justel, codex_vlaanderen (39K docs), gallilex (15K docs),
+                   wallex, bruxelles, chambre, ccrek, cnt
+  Doctrine       : spf_finances (CIR/TVA/ISOC), spf_emploi (travail/licenciement)
+  Divers         : apd (RGPD), fsma (marchés financiers)
 
 Exemples :
-  python run_all.py                              # Tout (toutes sources)
-  python run_all.py --phase scraping             # Scraping uniquement
-  python run_all.py --phase cleaning             # Nettoyage uniquement
-  python run_all.py --phase indexing             # Indexation uniquement
-  python run_all.py --sources consconst,cce,cnt  # Nouvelles sources seulement
-  python run_all.py --sources consconst --max-docs 200
+  python run_all.py                                        # Tout (toutes sources)
+  python run_all.py --phase scraping                       # Scraping uniquement
+  python run_all.py --phase indexing                       # Indexation uniquement
+  python run_all.py --sources justel --max-docs 5000       # Codes légaux complets
+  python run_all.py --sources spf_finances,spf_emploi      # Doctrine administrative
+  python run_all.py --sources codex_vlaanderen --max-docs 50000  # Législation flamande complète
+  python run_all.py --sources gallilex --max-docs 20000    # Législation FWB complète
         """
     )
     parser.add_argument(

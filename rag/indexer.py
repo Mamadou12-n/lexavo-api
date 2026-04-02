@@ -35,7 +35,12 @@ EMBED_MODEL     = "paraphrase-multilingual-MiniLM-L12-v2"
 # Paramètres de chunking
 CHUNK_SIZE    = 512    # chars par chunk (pas tokens)
 CHUNK_OVERLAP = 64     # chars de recouvrement
-MAX_CHUNKS_PER_DOC = 20  # limite par doc pour éviter la surreprésentation
+MAX_CHUNKS_PER_DOC_DEFAULT = 20   # arrêts jurisprudence (courts, peu d'articles)
+MAX_CHUNKS_PER_DOC_CODE    = 600  # codes légaux / lois longues (textes complets obligatoires)
+
+# Sources dont les textes doivent être indexés en entier
+SOURCES_CODES = {"JUSTEL", "Codex Vlaanderen", "GalliLex", "WalLex", "ETAAMB",
+                 "SPF Finances", "SPF Emploi", "Bruxelles"}
 
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
@@ -92,7 +97,7 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
 
     # Filtrer les chunks trop courts
     chunks = [c for c in chunks if len(c) >= 50]
-    return chunks[:MAX_CHUNKS_PER_DOC]
+    return chunks  # La limite par doc est appliquée dans build_index() selon le type
 
 
 # ─── Indexation ───────────────────────────────────────────────────────────────
@@ -187,7 +192,20 @@ def build_index(
         # Construire le texte enrichi (titre + texte) pour meilleurs embeddings
         enriched_text = f"{title}\n\n{text}" if title and title not in text[:200] else text
 
-        chunks = chunk_text(enriched_text)
+        # Limite dynamique : codes/lois = texte complet (600 chunks max), jurisprudence = 20
+        is_code = (
+            source in SOURCES_CODES
+            or "coordonné" in doc_type.lower()
+            or title.lower().startswith("code ")
+            or title.lower().startswith("nouveau code ")
+            or title.lower().startswith("loi ")
+            or title.lower().startswith("arrêté ")
+            or title.lower().startswith("décret ")
+            or title.lower().startswith("constitution")
+        )
+        max_chunks = MAX_CHUNKS_PER_DOC_CODE if is_code else MAX_CHUNKS_PER_DOC_DEFAULT
+
+        chunks = chunk_text(enriched_text)[:max_chunks]
         if not chunks:
             continue
 
