@@ -37,12 +37,12 @@ sys.path.insert(0, str(BASE_DIR))
 SCRAPERS = {
     "hudoc": {
         "fn":      "scrapers.hudoc_scraper",
-        "call":    "scrape_hudoc_full",
+        "call":    "scrape_hudoc_belgium",
         "desc":    "HUDOC — CEDH (arrêts contre la Belgique)",
     },
     "eurlex": {
         "fn":      "scrapers.eurlex_scraper",
-        "call":    "scrape_eurlex_full",
+        "call":    "scrape_eurlex_judgments",
         "desc":    "EUR-Lex — Jurisprudence CJUE + législation UE",
     },
     "juridat": {
