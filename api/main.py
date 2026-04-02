@@ -1516,6 +1516,174 @@ def billing_restore(current_user: dict = Depends(_get_current_user)):
     return result
 
 
+# ─── Student Endpoints (Quiz + Flashcards + Résumés) ─────────────────────────
+
+STUDENT_BRANCHES = [
+    "Droit du travail", "Droit familial", "Droit fiscal", "Droit penal",
+    "Droit civil", "Droit administratif", "Droit commercial", "Droit immobilier",
+    "Droit de l'environnement", "Propriete intellectuelle", "Securite sociale",
+    "Droit des etrangers", "Droits fondamentaux", "Marches publics", "Droit europeen",
+]
+
+
+@app.get("/student/branches")
+def student_branches():
+    """Liste les branches du droit disponibles pour les étudiants."""
+    return {"branches": STUDENT_BRANCHES}
+
+
+@app.post("/student/quiz")
+def student_quiz(
+    request: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Génère un quiz de 10 questions QCM sur une branche du droit belge."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    import anthropic, json as _json
+
+    branch = request.get("branch", "Droit civil")
+    difficulty = request.get("difficulty", "moyen")
+    num_questions = min(int(request.get("num_questions", 10)), 15)
+
+    check_quota(current_user["id"])
+
+    client = anthropic.Anthropic()
+    prompt = f"""Tu es un professeur de droit belge. Génère un quiz de {num_questions} questions QCM
+sur la branche : {branch}. Difficulté : {difficulty}.
+
+Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
+{{
+  "branch": "{branch}",
+  "difficulty": "{difficulty}",
+  "questions": [
+    {{
+      "id": 1,
+      "question": "La question...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "correct": "A",
+      "explanation": "Explication juridique avec référence légale belge..."
+    }}
+  ]
+}}
+
+Chaque question doit référencer un article de loi belge ou un principe juridique belge réel.
+Ne jamais inventer de loi ou d'article."""
+
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = msg.content[0].text.strip()
+    # Nettoyer le JSON si enveloppé dans ```json
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    try:
+        result = _json.loads(text)
+    except _json.JSONDecodeError:
+        result = {"branch": branch, "raw_response": text}
+
+    increment_question_count(current_user["id"])
+    return result
+
+
+@app.post("/student/flashcards")
+def student_flashcards(
+    request: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Génère des flashcards recto/verso sur une branche du droit belge."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    import anthropic, json as _json
+
+    branch = request.get("branch", "Droit civil")
+    topic = request.get("topic", "")
+    num_cards = min(int(request.get("num_cards", 12)), 20)
+
+    check_quota(current_user["id"])
+
+    extra = f" Focus sur le sujet : {topic}." if topic else ""
+    client = anthropic.Anthropic()
+    prompt = f"""Tu es un professeur de droit belge. Génère {num_cards} flashcards pour réviser
+la branche : {branch}.{extra}
+
+Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
+{{
+  "branch": "{branch}",
+  "cards": [
+    {{
+      "id": 1,
+      "front": "Question ou concept (recto)",
+      "back": "Réponse détaillée avec article de loi belge (verso)",
+      "category": "sous-catégorie"
+    }}
+  ]
+}}
+
+Chaque carte doit référencer le droit belge réel. Ne jamais inventer."""
+
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = msg.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    try:
+        result = _json.loads(text)
+    except _json.JSONDecodeError:
+        result = {"branch": branch, "raw_response": text}
+
+    increment_question_count(current_user["id"])
+    return result
+
+
+@app.post("/student/summary")
+def student_summary(
+    request: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Génère un résumé structuré d'un sujet de droit belge pour étudiants."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    import anthropic
+
+    branch = request.get("branch", "Droit civil")
+    topic = request.get("topic", branch)
+
+    check_quota(current_user["id"])
+
+    client = anthropic.Anthropic()
+    prompt = f"""Tu es un professeur de droit belge. Rédige un résumé structuré et pédagogique sur :
+**{topic}** (branche : {branch}).
+
+Structure :
+1. Définition et principes fondamentaux
+2. Base légale (articles de loi belges réels)
+3. Conditions d'application
+4. Jurisprudence importante (arrêts réels belges)
+5. Points d'attention pour l'examen
+6. Schéma récapitulatif (en texte)
+
+Niveau : étudiant en droit (Bachelor/Master). Droit belge uniquement.
+Ne jamais inventer de loi, d'article ou de jurisprudence."""
+
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    increment_question_count(current_user["id"])
+    return {"branch": branch, "topic": topic, "summary": msg.content[0].text}
+
+
 # ─── SEO Routes ────────────────────────────────────────────────────────────────
 from fastapi.templating import Jinja2Templates  # noqa: E402
 from api.seo import router as seo_router
