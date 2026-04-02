@@ -91,7 +91,7 @@ def generate_response(
     from api.utils.model_router import select_model
     import anthropic
 
-    model = select_model("analysis")
+    model = select_model("response")
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
     response = client.messages.create(
