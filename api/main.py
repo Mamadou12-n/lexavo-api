@@ -837,7 +837,7 @@ def calc_succession(request: dict):
     """Calculateur de droits de succession par région."""
     from api.features.calculators import calculate_succession_duties
     region = request.get("region", "bruxelles")
-    amount = float(request.get("amount", 0))
+    amount = float(request.get("amount", 0) or request.get("estate_value", 0))
     relationship = request.get("relationship", "direct_line")
     return calculate_succession_duties(
         region=region, amount=amount, relationship=relationship
@@ -865,8 +865,21 @@ def diagnostic_analyze(
     from api.database import increment_question_count
 
     answers = request.get("answers", [])
+    # Si description directe (sans questionnaire), créer une réponse auto
+    description = request.get("description", "")
+    if not answers and description:
+        answers = [
+            {"question_id": 1, "answer": description},
+            {"question_id": 2, "answer": request.get("region", "bruxelles")},
+            {"question_id": 3, "answer": "analyse demandée"},
+        ]
+    if len(answers) < 3:
+        raise HTTPException(status_code=400, detail="Minimum 3 réponses requises pour un diagnostic.")
     check_quota(current_user["id"])
-    result = generate_diagnostic(answers=answers)
+    try:
+        result = generate_diagnostic(answers=answers)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     increment_question_count(current_user["id"])
     return result
 
@@ -885,7 +898,15 @@ def score_evaluate(request: dict):
     """Calcule le score de sante juridique."""
     from api.features.score import calculate_score
     answers = request.get("answers", [])
-    return calculate_score(answers=answers)
+    # Convertir dict en liste si nécessaire
+    if isinstance(answers, dict):
+        answers = [{"question_id": i+1, "answer": v} for i, (k, v) in enumerate(answers.items())]
+    if not isinstance(answers, list):
+        raise HTTPException(status_code=400, detail="answers doit être une liste.")
+    try:
+        return calculate_score(answers=answers)
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ─── Legal Response Endpoints ──────────────────────────────────────────────
@@ -901,11 +922,16 @@ def response_generate(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    received_text = request.get("received_text", "")
-    user_context = request.get("user_context")
+    received_text = request.get("received_text", "") or request.get("received_letter", "") or request.get("letter_text", "")
+    user_context = request.get("user_context") or request.get("tone")
 
+    if len(received_text.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Le courrier est trop court (minimum 20 caractères).")
     check_quota(current_user["id"])
-    result = generate_response(received_text=received_text, user_context=user_context)
+    try:
+        result = generate_response(received_text=received_text, user_context=user_context)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     increment_question_count(current_user["id"])
     return result
 
@@ -964,7 +990,12 @@ def compliance_audit(
     from api.features.compliance import generate_compliance_audit
     answers = request.get("answers", [])
     company_type = request.get("company_type", "independant")
-    return generate_compliance_audit(answers=answers, company_type=company_type)
+    if not answers or len(answers) < 5:
+        raise HTTPException(status_code=400, detail="Minimum 5 réponses requises. Utilisez GET /compliance/questions pour obtenir les questions.")
+    try:
+        return generate_compliance_audit(answers=answers, company_type=company_type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ─── Audit Entreprise Endpoints ───────────────────────────────────────────
@@ -1126,15 +1157,24 @@ def alerts_save_preferences(
 @app.get("/alerts/feed")
 def alerts_feed(
     current_user: dict = Depends(_get_current_user),
+    domains: Optional[str] = Query(default=None, description="Domaines séparés par virgule"),
     limit: int = Query(default=10, ge=1, le=50),
 ):
-    """Retourne le fil d'alertes legislatives personnalise selon les preferences DB."""
+    """Retourne le fil d'alertes legislatives personnalise."""
     from api.features.alerts import get_alert_feed
     from api.database import get_alert_preferences
-    prefs = get_alert_preferences(current_user["id"])
-    domains = prefs.get("domains", [])
-    feed = get_alert_feed(domains=domains, limit=limit)
-    return {"alerts": feed, "total": len(feed), "preferences": prefs}
+    if domains:
+        domain_list = [d.strip() for d in domains.split(",")]
+    else:
+        prefs = get_alert_preferences(current_user["id"])
+        domain_list = prefs.get("domains", [])
+    if not domain_list:
+        domain_list = ["travail", "fiscal", "bail"]
+    try:
+        feed = get_alert_feed(domains=domain_list, limit=limit)
+    except Exception:
+        feed = []
+    return {"alerts": feed, "total": len(feed)}
 
 
 # ─── Litigation Endpoints ─────────────────────────────────────────────────
