@@ -81,4 +81,10 @@ def ask_fiscal(question: str, mock: bool = False) -> dict:
         result = {"answer": raw, "legal_references": [], "deadlines": [], "applies_to": []}
 
     result["disclaimer"] = "Information fiscale generale. Consultez votre comptable."
+
+    # Humanizer — ton naturel
+    from rag.humanizer import humanize
+    if result.get("answer"):
+        result["answer"] = humanize(result["answer"])
+
     return result

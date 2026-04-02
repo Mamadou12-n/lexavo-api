@@ -137,6 +137,10 @@ class AskRequest(BaseModel):
         default=None,
         description="Region belge de l'utilisateur : bruxelles, wallonie, flandre. Permet de prioriser le droit regional applicable.",
     )
+    conversation_id: Optional[int] = Field(
+        default=None,
+        description="ID de la conversation pour memoire contextuelle. Si absent, cree une nouvelle conversation.",
+    )
 
 
 class SourceDoc(BaseModel):
@@ -159,6 +163,7 @@ class AskResponse(BaseModel):
     branch: Optional[str] = Field(default=None, description="Branche du droit detectee")
     branch_label: Optional[str] = Field(default=None, description="Label de la branche (ex: Droit du travail)")
     branch_confidence: float = Field(default=0.0, description="Confiance de la detection (0.0 a 1.0)")
+    conversation_id: Optional[int] = Field(default=None, description="ID de la conversation (pour continuer le fil)")
 
 
 class SearchRequest(BaseModel):

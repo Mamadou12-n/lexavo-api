@@ -144,6 +144,7 @@ def ask(
     branch: Optional[str] = None,
     auto_detect_branch: bool = True,
     region: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
 ) -> Dict:
     """
     Pipeline RAG complet : question → detection branche → retrieval → reponse humanisee.
@@ -156,6 +157,8 @@ def ask(
         anthropic_api_key: Cle API (fallback sur env ANTHROPIC_API_KEY)
         branch: Branche du droit forcee (ex: "droit_travail")
         auto_detect_branch: Detecter automatiquement la branche (defaut: True)
+        region: Region belge (bruxelles, wallonie, flandre)
+        history: Historique conversationnel [{"role": "user"|"assistant", "content": "..."}]
 
     Returns:
         {
@@ -225,7 +228,7 @@ def ask(
 
 Question : {question}"""
 
-    # 4. Appel Claude
+    # 4. Appel Claude avec historique conversationnel
     api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError(
@@ -236,12 +239,21 @@ Question : {question}"""
     import anthropic
     client = anthropic.Anthropic(api_key=api_key)
 
-    log.info(f"  Appel Claude {model}...")
+    # Construire les messages avec historique (fenetre glissante : 10 derniers echanges max)
+    messages = []
+    if history:
+        # Limiter a 10 echanges pour ne pas exploser le contexte
+        recent = history[-20:]  # 20 messages = ~10 echanges user/assistant
+        for msg in recent:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_message})
+
+    log.info(f"  Appel Claude {model}... ({len(messages)} messages)")
     message = client.messages.create(
         model=model,
         max_tokens=MAX_TOKENS_OUT,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
+        messages=messages,
     )
 
     if not message.content:

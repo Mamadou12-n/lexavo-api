@@ -59,8 +59,16 @@ def decode_document(text: str, mock: bool = False) -> dict:
     try:
         json_match = re.search(r'\{[\s\S]*\}', raw)
         if json_match:
-            return json.loads(json_match.group())
-        raise ValueError("Pas de JSON")
+            result = json.loads(json_match.group())
+        else:
+            raise ValueError("Pas de JSON")
     except (json.JSONDecodeError, ValueError):
         log.warning("Decode JSON parsing failed, using fallback")
-        return {"plain_language": raw, "key_points": [], "actions_required": [], "deadlines": []}
+        result = {"plain_language": raw, "key_points": [], "actions_required": [], "deadlines": []}
+
+    # Humanizer — ton naturel
+    from rag.humanizer import humanize
+    if result.get("plain_language"):
+        result["plain_language"] = humanize(result["plain_language"])
+
+    return result

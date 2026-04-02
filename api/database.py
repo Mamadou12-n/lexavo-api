@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     language TEXT NOT NULL DEFAULT 'fr',
+    region TEXT DEFAULT NULL,
+    profession TEXT DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -281,6 +283,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     language TEXT NOT NULL DEFAULT 'fr' CHECK(language IN ('fr', 'nl', 'en')),
+    region TEXT DEFAULT NULL,
+    profession TEXT DEFAULT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS lawyers (
@@ -419,9 +423,30 @@ def init_db():
         else:
             conn.executescript(_SQLITE_SCHEMA)
             conn.commit()
+        # Migration safe : ajouter region/profession si absents
+        _safe_add_column(conn, "users", "region", "TEXT DEFAULT NULL")
+        _safe_add_column(conn, "users", "profession", "TEXT DEFAULT NULL")
         log.info("Database schema initialized")
     finally:
         conn.close()
+
+
+def _safe_add_column(conn, table: str, column: str, col_type: str):
+    """Ajoute une colonne si elle n'existe pas encore (safe pour migration)."""
+    try:
+        if USE_PG:
+            cur = conn.cursor()
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type};")
+            conn.commit()
+        else:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+            conn.commit()
+    except Exception:
+        # Colonne existe deja — ignorer
+        try:
+            conn.rollback()
+        except Exception:
+            pass
 
 
 # ─── Users CRUD ──────────────────────────────────────────────────────────────
@@ -1046,5 +1071,63 @@ def get_audit_reports(user_id: int) -> list:
             )
             cols = ["id", "company_name", "company_type", "score", "verdict", "created_at"]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+# ── User Context ──────────────────────────────────────────────
+def get_user_context(user_id: int) -> dict:
+    """Recuperer le contexte utilisateur (region, profession, langue)."""
+    conn = get_connection()
+    try:
+        if _use_pg():
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT region, profession, language FROM users WHERE id = %s",
+                (user_id,),
+            )
+            row = cur.fetchone()
+        else:
+            row = conn.execute(
+                "SELECT region, profession, language FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+        if not row:
+            return {"region": None, "profession": None, "language": "fr"}
+        return {"region": row[0], "profession": row[1], "language": row[2]}
+    finally:
+        conn.close()
+
+
+def update_user_context(user_id: int, region: str = None, profession: str = None, language: str = None) -> dict:
+    """Mettre a jour le contexte utilisateur."""
+    conn = get_connection()
+    try:
+        fields = []
+        values = []
+        if region is not None:
+            fields.append("region")
+            values.append(region)
+        if profession is not None:
+            fields.append("profession")
+            values.append(profession)
+        if language is not None:
+            fields.append("language")
+            values.append(language)
+        if not fields:
+            return get_user_context(user_id)
+
+        if _use_pg():
+            set_clause = ", ".join(f"{f} = %s" for f in fields)
+            values.append(user_id)
+            cur = conn.cursor()
+            cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s", tuple(values))
+            conn.commit()
+        else:
+            set_clause = ", ".join(f"{f} = ?" for f in fields)
+            values.append(user_id)
+            conn.execute(f"UPDATE users SET {set_clause} WHERE id = ?", tuple(values))
+            conn.commit()
+        return get_user_context(user_id)
     finally:
         conn.close()

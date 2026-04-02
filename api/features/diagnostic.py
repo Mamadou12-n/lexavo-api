@@ -169,4 +169,16 @@ def generate_diagnostic(answers: List[dict], mock: bool = False) -> dict:
         {"source": c.get("source", ""), "title": c.get("title", ""), "similarity": c.get("similarity", 0.0)}
         for c in chunks[:4]
     ]
+
+    # Humanizer — ton naturel
+    from rag.humanizer import humanize
+    if result.get("situation_summary"):
+        result["situation_summary"] = humanize(result["situation_summary"])
+    for risk in result.get("risks", []):
+        if isinstance(risk, dict) and risk.get("explanation"):
+            risk["explanation"] = humanize(risk["explanation"])
+    for action in result.get("priority_actions", []):
+        if isinstance(action, dict) and action.get("action"):
+            action["action"] = humanize(action["action"])
+
     return result

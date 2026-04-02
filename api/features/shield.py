@@ -238,4 +238,12 @@ def analyze_contract_text(
         for c in chunks[:5]
     ]
 
+    # Humanizer — ton naturel sur les textes generes
+    from rag.humanizer import humanize
+    if result.get("summary"):
+        result["summary"] = humanize(result["summary"])
+    for clause in result.get("clauses", []):
+        if clause.get("explanation"):
+            clause["explanation"] = humanize(clause["explanation"])
+
     return result

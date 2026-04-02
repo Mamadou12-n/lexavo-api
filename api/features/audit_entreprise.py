@@ -242,6 +242,12 @@ def generate_audit_report(
             critical_risks, company_type, company_name, sector, employees
         )
 
+    # Humanizer — ton naturel sur les recommandations generees par IA
+    from rag.humanizer import humanize
+    for rec in recommendations:
+        if rec.get("action"):
+            rec["action"] = humanize(rec["action"])
+
     return {
         "score": score,
         "verdict": verdict,

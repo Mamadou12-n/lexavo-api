@@ -128,4 +128,11 @@ def generate_response(
         {"source": c.get("source", ""), "title": c.get("title", "")}
         for c in chunks[:4]
     ]
+
+    # Humanizer — ton naturel (pas sur la lettre formelle, seulement les explications)
+    from rag.humanizer import humanize
+    for arg in result.get("key_arguments", []):
+        if isinstance(arg, dict) and arg.get("basis"):
+            arg["basis"] = humanize(arg["basis"])
+
     return result

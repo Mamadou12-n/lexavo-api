@@ -185,11 +185,16 @@ def ask_endpoint(
     """
     Endpoint principal : question juridique → reponse RAG avec detection de branche.
     Authentification requise. Quota selon le plan (free: 5/mois, pro/cabinet: illimite).
+    Memoire conversationnelle : passer conversation_id pour continuer un fil.
     """
     from rag.pipeline import ask
     from rag.indexer import CHROMA_DIR
     from api.stripe_billing import check_quota
-    from api.database import increment_question_count
+    from api.database import (
+        increment_question_count, create_conversation,
+        list_messages, create_message, get_conversation_by_id,
+    )
+    import json
 
     # Vérifier que l'index est disponible avant de charger le modèle
     if not CHROMA_DIR.exists():
@@ -201,6 +206,23 @@ def ask_endpoint(
     # Verifier le quota avant d'appeler Claude
     check_quota(current_user["id"])
 
+    # Memoire conversationnelle : charger l'historique si conversation_id fourni
+    conversation_id = body.conversation_id
+    history = None
+
+    if conversation_id:
+        conv = get_conversation_by_id(conversation_id)
+        if not conv or conv["user_id"] != current_user["id"]:
+            raise HTTPException(404, "Conversation non trouvee.")
+        prev_messages = list_messages(conversation_id)
+        if prev_messages:
+            history = [{"role": m["role"], "content": m["content"]} for m in prev_messages]
+    else:
+        # Creer une nouvelle conversation avec les premiers mots de la question
+        title = body.question[:60] + ("..." if len(body.question) > 60 else "")
+        conv = create_conversation(current_user["id"], title)
+        conversation_id = conv["id"]
+
     try:
         result = ask(
             question=body.question,
@@ -210,6 +232,7 @@ def ask_endpoint(
             anthropic_api_key=api_key,
             branch=body.branch,
             region=body.region,
+            history=history,
         )
     except RuntimeError as e:
         raise HTTPException(
@@ -223,6 +246,11 @@ def ask_endpoint(
     # Incrementer le compteur seulement si la reponse a reussi
     increment_question_count(current_user["id"])
 
+    # Sauvegarder la question et la reponse dans la conversation
+    sources_list = result.get("sources", [])
+    create_message(conversation_id, "user", body.question)
+    create_message(conversation_id, "assistant", result["answer"], json.dumps(sources_list, default=str))
+
     sources = [
         SourceDoc(
             doc_id=s.get("doc_id", ""),
@@ -233,7 +261,7 @@ def ask_endpoint(
             url=s.get("url", ""),
             similarity=s.get("similarity", 0.0),
         )
-        for s in result.get("sources", [])
+        for s in sources_list
     ]
 
     return AskResponse(
@@ -244,6 +272,7 @@ def ask_endpoint(
         branch=result.get("branch"),
         branch_label=result.get("branch_label"),
         branch_confidence=result.get("branch_confidence", 0.0),
+        conversation_id=conversation_id,
     )
 
 
@@ -404,6 +433,32 @@ def lawyer_detail(lawyer_id: int):
     from api.lawyers import get_lawyer
     result = get_lawyer(lawyer_id)
     return LawyerResponse(**result)
+
+
+# ─── User Context Endpoints ──────────────────────────────────────────────────
+
+@app.get("/user/context")
+def get_user_context_endpoint(
+    current_user: dict = Depends(_get_current_user),
+):
+    """Recuperer le contexte utilisateur (region, profession, langue)."""
+    from api.database import get_user_context
+    return get_user_context(current_user["id"])
+
+
+@app.put("/user/context")
+def update_user_context_endpoint(
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Mettre a jour le contexte utilisateur (region, profession, langue)."""
+    from api.database import update_user_context
+    return update_user_context(
+        current_user["id"],
+        region=body.get("region"),
+        profession=body.get("profession"),
+        language=body.get("language"),
+    )
 
 
 # ─── Conversation Endpoints ─────────────────────────────────────────────────
