@@ -45,16 +45,16 @@ COPY rag/ ./rag/
 COPY processors/ ./processors/
 COPY config.py ./config.py
 
-# Download ChromaDB legal index from GitHub Releases
-# 43,005 chunks — droit belge FR/NL/EN/DE
+# Download ChromaDB v2.0.1 legal index from GitHub Releases
+# 47,047 chunks — 8 sources officielles, 28 codes belges complets, vérifié 5x
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget && \
     mkdir -p /app/output && \
     wget -q --show-progress \
-      https://github.com/Mamadou12-n/lexavo-api/releases/download/v1.0-chroma/chroma_db.tar.gz \
+      https://github.com/Mamadou12-n/lexavo-api/releases/download/v2.0-chroma/chroma_db_v2.tar.gz \
       -O /tmp/chroma_db.tar.gz && \
     tar -xzf /tmp/chroma_db.tar.gz -C /app/output/ && \
-    if [ -d "/app/output/chroma_db_new" ]; then mv /app/output/chroma_db_new /app/output/chroma_db; fi && \
+    echo "2.0.1" > /app/output/chroma_db/.version && \
     rm /tmp/chroma_db.tar.gz && \
     apt-get remove -y wget && \
     apt-get autoremove -y && \
