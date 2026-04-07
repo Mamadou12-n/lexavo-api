@@ -446,9 +446,12 @@ def init_db():
         else:
             conn.executescript(_SQLITE_SCHEMA)
             conn.commit()
-        # Migration safe : ajouter region/profession si absents
+        # Migration safe : ajouter colonnes si absentes
         _safe_add_column(conn, "users", "region", "TEXT DEFAULT NULL")
         _safe_add_column(conn, "users", "profession", "TEXT DEFAULT NULL")
+        _safe_add_column(conn, "users", "role", "TEXT NOT NULL DEFAULT 'user'")
+        # emergency_requests : colonne paid si absente (ancien schema)
+        _safe_add_column(conn, "emergency_requests", "paid", "BOOLEAN NOT NULL DEFAULT FALSE")
         log.info("Database schema initialized")
     finally:
         conn.close()

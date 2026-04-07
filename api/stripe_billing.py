@@ -192,21 +192,24 @@ def create_checkout_session(user_id: int, plan: str, billing: str = "monthly") -
         )
 
     plan_config = PLANS[plan]
+
+    # Choisir le montant selon la fréquence
     if billing == "annual":
-        annual_id = plan_config.get("stripe_price_annual_id", "")
-        if not annual_id:
-            raise HTTPException(
-                status_code=400,
-                detail=f"L'abonnement annuel n'est pas disponible pour le plan {plan}. Contactez-nous.",
-            )
-        price_id = annual_id
+        amount = plan_config.get("price_annual")
+        interval = "year"
     else:
-        price_id = plan_config.get("stripe_price_id", "")
-    if not price_id:
+        amount = plan_config.get("price_monthly")
+        interval = "month"
+
+    if not amount or amount <= 0:
         raise HTTPException(
-            status_code=503,
-            detail=f"Prix Stripe non configure pour le plan {plan}.",
+            status_code=400,
+            detail=f"Tarif non disponible pour ce plan en mode {billing}. Contactez-nous.",
         )
+
+    # Utiliser le price_id préconfiguré si dispo, sinon price_data inline
+    price_id_key = "stripe_price_annual_id" if billing == "annual" else "stripe_price_id"
+    price_id = plan_config.get(price_id_key, "")
 
     user = get_user_by_id(user_id)
     if not user:
@@ -229,11 +232,28 @@ def create_checkout_session(user_id: int, plan: str, billing: str = "monthly") -
             stripe_customer_id=customer_id,
         )
 
+    # Construire le line_item (price_id configuré ou price_data inline)
+    if price_id:
+        line_item = {"price": price_id, "quantity": 1}
+    else:
+        line_item = {
+            "price_data": {
+                "currency": "eur",
+                "unit_amount": int(amount * 100),  # en centimes
+                "recurring": {"interval": interval},
+                "product_data": {
+                    "name": plan_config["label"],
+                    "description": plan_config.get("subtitle", ""),
+                },
+            },
+            "quantity": 1,
+        }
+
     try:
         session = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=["card"],
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=[line_item],
             mode="subscription",
             success_url=f"{FRONTEND_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{FRONTEND_URL}/billing/cancel",
@@ -245,7 +265,7 @@ def create_checkout_session(user_id: int, plan: str, billing: str = "monthly") -
         return {"checkout_url": session.url, "session_id": session.id}
     except stripe.error.StripeError as e:
         log.error(f"Stripe checkout error: {e}")
-        raise HTTPException(status_code=502, detail="Erreur Stripe. Reessayez.")
+        raise HTTPException(status_code=502, detail=f"Erreur Stripe : {str(e)}")
 
 
 # ─── Customer Portal ────────────────────────────────────────────────────────
