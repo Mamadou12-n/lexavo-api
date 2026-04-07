@@ -29,6 +29,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+# Charger .env avant tout (ANTHROPIC_API_KEY, JWT_SECRET, STRIPE...)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env", override=True, encoding="utf-8-sig")
+except ImportError:
+    pass
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -44,6 +51,7 @@ from api.models import (
     IndexStats,
     # Auth models
     RegisterRequest, LoginRequest, UserResponse, AuthResponse,
+    ForgotPasswordRequest, ResetPasswordRequest,
     LawyerResponse, LawyerListResponse,
     CreateConversationRequest, ConversationResponse, ConversationListResponse,
     CreateMessageRequest, MessageResponse, MessageListResponse,
@@ -59,7 +67,23 @@ from api.models import (
     DefendRequest, DefendResponse,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+def _setup_json_logging():
+    try:
+        from pythonjsonlogger import jsonlogger
+        handler = logging.StreamHandler()
+        formatter = jsonlogger.JsonFormatter(
+            fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+            rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger"},
+        )
+        handler.setFormatter(formatter)
+        root = logging.getLogger()
+        root.handlers.clear()
+        root.addHandler(handler)
+        root.setLevel(logging.INFO)
+    except ImportError:
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+_setup_json_logging()
 log = logging.getLogger("api")
 
 # ─── Rate limiter ──────────────────────────────────────────────────────────────
@@ -84,16 +108,19 @@ app = FastAPI(
 
 # Origines autorisées — lire depuis l'env pour ne pas hardcoder en prod
 _CORS_ORIGINS_ENV = os.getenv("LEXAVO_ALLOWED_ORIGINS", "")
-_ALLOWED_ORIGINS: list[str] = (
-    [o.strip() for o in _CORS_ORIGINS_ENV.split(",") if o.strip()]
-    if _CORS_ORIGINS_ENV
-    else [
-        "http://localhost:8081",   # Expo web (dev)
-        "http://localhost:19000",  # Expo Go (dev)
-        "http://localhost:3000",   # Éventuel front web
-        "exp://localhost:8081",    # Expo Go mobile (dev)
-    ]
-)
+if _CORS_ORIGINS_ENV:
+    _ALLOWED_ORIGINS: list[str] = [o.strip() for o in _CORS_ORIGINS_ENV.split(",") if o.strip()]
+else:
+    if os.getenv("DATABASE_URL"):
+        log.warning("PRODUCTION sans LEXAVO_ALLOWED_ORIGINS — CORS restreint a lexavo.be")
+        _ALLOWED_ORIGINS = ["https://lexavo.be", "https://www.lexavo.be"]
+    else:
+        _ALLOWED_ORIGINS = [
+            "http://localhost:8081",
+            "http://localhost:19000",
+            "http://localhost:3000",
+            "exp://localhost:8081",
+        ]
 
 app.add_middleware(
     CORSMiddleware,
@@ -104,6 +131,44 @@ app.add_middleware(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Masque les erreurs internes — ne jamais exposer de stack trace en prod."""
+    log.error("Erreur non gérée sur %s %s : %s", request.method, request.url.path, exc, exc_info=True)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=500, content={"detail": "Erreur interne. Veuillez réessayer."})
+
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    """Log chaque requête : endpoint, user_id, duration_ms, status_code."""
+    import time
+    start = time.monotonic()
+    response = await call_next(request)
+    duration_ms = int((time.monotonic() - start) * 1000)
+    # Extraire user_id depuis Authorization header (best-effort, sans lever d'exception)
+    user_id = None
+    try:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            from api.auth import decode_token
+            payload = decode_token(auth[7:])
+            user_id = payload.get("sub")
+    except Exception:
+        pass
+    log.info(
+        "request",
+        extra={
+            "endpoint": request.url.path,
+            "method": request.method,
+            "status_code": response.status_code,
+            "duration_ms": duration_ms,
+            "user_id": user_id,
+        },
+    )
+    return response
 
 
 # ─── Startup : init DB + seed ───────────────────────────────────────────────
@@ -124,6 +189,25 @@ def on_startup():
     seeded = seed_demo_lawyers()
     if seeded:
         log.info(f"Base de données initialisée. {seeded} avocats de démo ajoutés.")
+
+    # ─── Alembic migrations automatiques ─────────────────────────────────────
+    try:
+        from alembic.config import Config as AlembicConfig
+        from alembic import command as alembic_command
+        alembic_cfg = AlembicConfig("alembic.ini")
+        alembic_command.upgrade(alembic_cfg, "head")
+        log.info("Alembic migrations appliquées")
+    except Exception as e:
+        log.warning(f"Alembic skip: {e}")
+
+    # ─── Préchargement modèle embedding (évite timeout au 1er /ask) ───────────
+    try:
+        from rag.retriever import get_model
+        log.info("Préchargement du modèle SentenceTransformer...")
+        get_model()
+        log.info("Modèle embedding prêt.")
+    except Exception as exc:
+        log.warning(f"Préchargement modèle échoué (non bloquant) : {exc}")
 
 
 # ─── Dependency : utilisateur authentifié ───────────────────────────────────
@@ -167,7 +251,7 @@ def stats():
 @app.post("/admin/backup")
 def admin_backup(current_user: dict = Depends(_get_current_user)):
     """Cree un backup SQLite. Reserve aux admins (user_id=1 pour le MVP)."""
-    if current_user["id"] != 1:
+    if current_user.get("role") != "admin":
         raise HTTPException(403, "Acces reserve a l'administrateur.")
     from api.database import backup_database
     path = backup_database()
@@ -223,9 +307,20 @@ def ask_endpoint(
         conv = create_conversation(current_user["id"], title)
         conversation_id = conv["id"]
 
+    # OCR des photos si fournies
+    enriched_question = body.question
+    if body.photos_base64:
+        try:
+            from api.utils.ocr import extract_text_from_base64_list
+            ocr_text = extract_text_from_base64_list(body.photos_base64)
+            if ocr_text:
+                enriched_question = f"{body.question}\n\n[Texte extrait des photos jointes]\n{ocr_text}"
+        except Exception as e:
+            log.warning(f"OCR photos /ask ignoré : {e}")
+
     try:
         result = ask(
-            question=body.question,
+            question=enriched_question,
             top_k=body.top_k,
             source_filter=body.source_filter,
             model=body.model,
@@ -285,7 +380,8 @@ def branches_list():
 
 
 @app.post("/search", response_model=SearchResponse)
-def search_endpoint(request: SearchRequest):
+@limiter.limit("20/minute")
+def search_endpoint(request: Request, body: SearchRequest):
     """
     Recherche vectorielle seule (sans appel LLM).
     Utile pour explorer la base documentaire directement.
@@ -301,9 +397,9 @@ def search_endpoint(request: SearchRequest):
 
     try:
         chunks = retrieve(
-            query=request.query,
-            top_k=request.top_k,
-            source_filter=request.source_filter,
+            query=body.query,
+            top_k=body.top_k,
+            source_filter=body.source_filter,
         )
     except RuntimeError as e:
         raise HTTPException(
@@ -329,7 +425,7 @@ def search_endpoint(request: SearchRequest):
     ]
 
     return SearchResponse(
-        query=request.query,
+        query=body.query,
         results=results,
         total=len(results),
     )
@@ -338,14 +434,15 @@ def search_endpoint(request: SearchRequest):
 # ─── Auth Endpoints ──────────────────────────────────────────────────────────
 
 @app.post("/auth/register", response_model=AuthResponse)
-def register(request: RegisterRequest):
+@limiter.limit("3/minute")
+def register(request: Request, body: RegisterRequest):
     """Inscription d'un nouvel utilisateur."""
     from api.auth import register_user
     result = register_user(
-        email=request.email,
-        password=request.password,
-        name=request.name,
-        language=request.language,
+        email=body.email,
+        password=body.password,
+        name=body.name,
+        language=body.language,
     )
     return AuthResponse(
         user=UserResponse(**result["user"]),
@@ -355,10 +452,11 @@ def register(request: RegisterRequest):
 
 
 @app.post("/auth/login", response_model=AuthResponse)
-def login(request: LoginRequest):
+@limiter.limit("5/minute")
+def login(request: Request, body: LoginRequest):
     """Connexion — retourne un JWT + refresh token."""
     from api.auth import login_user
-    result = login_user(email=request.email, password=request.password)
+    result = login_user(email=body.email, password=body.password)
     return AuthResponse(
         user=UserResponse(**result["user"]),
         token=result["token"],
@@ -373,12 +471,12 @@ def me(current_user: dict = Depends(_get_current_user)):
 
 
 @app.post("/auth/refresh")
-def refresh_token_endpoint(request: dict):
+def refresh_token_endpoint(body: dict):
     """Echange un refresh token contre un nouveau access token + nouveau refresh token."""
     from api.database import get_refresh_token, delete_refresh_token, save_refresh_token, get_user_by_id
     from api.auth import create_token, create_refresh_token, REFRESH_TOKEN_EXPIRY_DAYS
 
-    rt = request.get("refresh_token", "")
+    rt = body.get("refresh_token", "")
     if not rt:
         raise HTTPException(status_code=400, detail="refresh_token requis.")
 
@@ -408,6 +506,26 @@ def refresh_token_endpoint(request: dict):
     save_refresh_token(user["id"], new_refresh, new_expires)
 
     return {"token": new_access, "refresh_token": new_refresh, "user": user}
+
+
+@app.post("/auth/forgot-password")
+@limiter.limit("3/minute")
+def forgot_password_endpoint(request: Request, body: ForgotPasswordRequest):
+    """Génère un token de reset (valable 1h). En prod, l'envoyer par email."""
+    from api.auth import forgot_password
+    token = forgot_password(body.email)
+    # En prod : envoyer par email. En dev : logger dans les logs serveur.
+    log.info("Password reset token pour %s : %s", body.email, token)
+    return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
+
+
+@app.post("/auth/reset-password")
+@limiter.limit("5/minute")
+def reset_password_endpoint(request: Request, body: ResetPasswordRequest):
+    """Valide le token et met à jour le mot de passe."""
+    from api.auth import reset_password
+    reset_password(body.token, body.new_password)
+    return {"message": "Mot de passe mis à jour avec succès. Vous pouvez vous reconnecter."}
 
 
 # ─── Lawyer Endpoints ───────────────────────────────────────────────────────
@@ -628,6 +746,8 @@ async def stripe_webhook(request: Request):
     from api.stripe_billing import handle_webhook
     payload = await request.body()
     sig = request.headers.get("stripe-signature", "")
+    if not sig:
+        raise HTTPException(400, "Stripe signature manquante")
     result = handle_webhook(payload, sig)
     return result
 
@@ -635,8 +755,10 @@ async def stripe_webhook(request: Request):
 # ─── Shield Endpoints ─────────────────────────────────────────────────────
 
 @app.post("/shield/analyze", response_model=ShieldAnalyzeResponse)
+@limiter.limit("5/minute")
 def shield_analyze(
-    request: ShieldAnalyzeRequest,
+    request: Request,
+    body: ShieldAnalyzeRequest,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -651,9 +773,9 @@ def shield_analyze(
 
     try:
         result = analyze_contract_text(
-            text=request.contract_text,
-            contract_type=request.contract_type,
-            region=request.region,
+            text=body.contract_text,
+            contract_type=body.contract_type,
+            region=body.region,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -686,7 +808,9 @@ def shield_analyze(
 
 
 @app.post("/shield/upload", response_model=ShieldUploadResponse)
+@limiter.limit("5/minute")
 async def shield_upload(
+    request: Request,
     file: UploadFile = File(..., description="Contrat PDF ou image (JPG/PNG)"),
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
@@ -701,6 +825,10 @@ async def shield_upload(
     check_quota(current_user["id"])
 
     content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Fichier trop volumineux (max 10 MB)")
+    if not (content[:4] == b'%PDF' or content[:3] == b'\xff\xd8\xff' or content[:4] == b'\x89PNG'):
+        raise HTTPException(400, "Format non supporté. PDF, JPG ou PNG uniquement.")
     filename = file.filename.lower() if file.filename else ""
 
     if filename.endswith(".pdf"):
@@ -755,8 +883,10 @@ def shield_history(current_user: dict = Depends(_get_current_user)):
 # ─── Decode Endpoints ──────────────────────────────────────────────────────
 
 @app.post("/decode/analyze")
+@limiter.limit("5/minute")
 def decode_analyze(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -765,7 +895,7 @@ def decode_analyze(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    text = request.get("document_text") or request.get("text", "")
+    text = body.get("document_text") or body.get("text", "")
     if len(text.strip()) < 20:
         raise HTTPException(400, "Le document est trop court.")
 
@@ -776,7 +906,9 @@ def decode_analyze(
 
 
 @app.post("/decode/upload")
+@limiter.limit("5/minute")
 async def decode_upload(
+    request: Request,
     file: UploadFile = File(...),
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
@@ -790,6 +922,10 @@ async def decode_upload(
     check_quota(current_user["id"])
 
     content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Fichier trop volumineux (max 10 MB)")
+    if not (content[:4] == b'%PDF' or content[:3] == b'\xff\xd8\xff' or content[:4] == b'\x89PNG'):
+        raise HTTPException(400, "Format non supporté. PDF, JPG ou PNG uniquement.")
     filename = file.filename.lower() if file.filename else ""
 
     if filename.endswith(".pdf"):
@@ -810,35 +946,44 @@ async def decode_upload(
 # ─── Calculator Endpoints ──────────────────────────────────────────────────
 
 @app.post("/calculators/notice-period")
-def calc_notice(request: dict):
+def calc_notice(body: dict):
     """Calculateur de préavis de licenciement (CCT n 109)."""
     from api.features.calculators import calculate_notice_period
-    years = int(request.get("years", 0))
-    monthly_salary = float(request.get("monthly_salary", 0))
+    try:
+        years = int(body.get("years", 0))
+        monthly_salary = float(body.get("monthly_salary", 0))
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
     if monthly_salary <= 0:
         raise HTTPException(400, "Salaire mensuel requis (> 0)")
     return calculate_notice_period(years=years, monthly_salary=monthly_salary)
 
 
 @app.post("/calculators/alimony")
-def calc_alimony(request: dict):
+def calc_alimony(body: dict):
     """Calculateur de pension alimentaire (barème Renard)."""
     from api.features.calculators import calculate_alimony_renard
-    income_high = float(request.get("income_high", 0))
-    income_low = float(request.get("income_low", 0))
-    children = int(request.get("children", 0))
+    try:
+        income_high = float(body.get("income_high", 0))
+        income_low = float(body.get("income_low", 0))
+        children = int(body.get("children", 0))
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
     return calculate_alimony_renard(
         income_high=income_high, income_low=income_low, children=children
     )
 
 
 @app.post("/calculators/succession")
-def calc_succession(request: dict):
+def calc_succession(body: dict):
     """Calculateur de droits de succession par région."""
     from api.features.calculators import calculate_succession_duties
-    region = request.get("region", "bruxelles")
-    amount = float(request.get("amount", 0) or request.get("estate_value", 0))
-    raw_rel = request.get("relationship", "direct_line")
+    region = body.get("region", "bruxelles")
+    try:
+        amount = float(body.get("amount", 0) or body.get("estate_value", 0))
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
+    raw_rel = body.get("relationship", "direct_line")
     # Normaliser les variantes courantes
     rel_map = {"enfant": "direct_line", "parent": "direct_line", "conjoint": "direct_line",
                "frere": "siblings", "soeur": "siblings", "frère": "siblings", "sœur": "siblings",
@@ -859,8 +1004,10 @@ def diagnostic_questions():
 
 
 @app.post("/diagnostic/analyze")
+@limiter.limit("5/minute")
 def diagnostic_analyze(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -869,13 +1016,13 @@ def diagnostic_analyze(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    answers = request.get("answers", [])
+    answers = body.get("answers", [])
     # Si description directe (sans questionnaire), créer une réponse auto
-    description = request.get("description", "")
+    description = body.get("description", "")
     if not answers and description:
         answers = [
             {"question_id": 1, "answer": description},
-            {"question_id": 2, "answer": request.get("region", "bruxelles")},
+            {"question_id": 2, "answer": body.get("region", "bruxelles")},
             {"question_id": 3, "answer": "analyse demandée"},
         ]
     if len(answers) < 3:
@@ -899,10 +1046,10 @@ def score_questions():
 
 
 @app.post("/score/evaluate")
-def score_evaluate(request: dict):
+def score_evaluate(body: dict):
     """Calcule le score de sante juridique."""
     from api.features.score import calculate_score
-    answers = request.get("answers", [])
+    answers = body.get("answers", [])
     # Convertir dict en liste si nécessaire
     if isinstance(answers, dict):
         answers = [{"question_id": i+1, "answer": v} for i, (k, v) in enumerate(answers.items())]
@@ -917,8 +1064,10 @@ def score_evaluate(request: dict):
 # ─── Legal Response Endpoints ──────────────────────────────────────────────
 
 @app.post("/response/generate")
+@limiter.limit("5/minute")
 def response_generate(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -927,8 +1076,8 @@ def response_generate(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    received_text = request.get("received_text", "") or request.get("received_letter", "") or request.get("letter_text", "")
-    user_context = request.get("user_context") or request.get("tone")
+    received_text = body.get("received_text", "") or body.get("received_letter", "") or body.get("letter_text", "")
+    user_context = body.get("user_context") or body.get("tone")
 
     if len(received_text.strip()) < 20:
         raise HTTPException(status_code=400, detail="Le courrier est trop court (minimum 20 caractères).")
@@ -967,12 +1116,12 @@ def contracts_get(template_id: str):
 @app.post("/contracts/{template_id}/generate")
 def contracts_generate(
     template_id: str,
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Genere un contrat HTML rempli."""
     from api.features.contracts import generate_contract_html
-    variables = request.get("variables", {})
+    variables = body.get("variables", {})
     html = generate_contract_html(template_id=template_id, variables=variables)
     return {"html": html, "template_id": template_id}
 
@@ -987,14 +1136,16 @@ def compliance_questions():
 
 
 @app.post("/compliance/audit")
+@limiter.limit("3/minute")
 def compliance_audit(
-    request: dict,
+    request: Request,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Genere un rapport d'audit de conformite."""
     from api.features.compliance import generate_compliance_audit
-    answers = request.get("answers", [])
-    company_type = request.get("company_type", "independant")
+    answers = body.get("answers", [])
+    company_type = body.get("company_type", "independant")
     if not answers or len(answers) < 5:
         raise HTTPException(status_code=400, detail="Minimum 5 réponses requises. Utilisez GET /compliance/questions pour obtenir les questions.")
     try:
@@ -1019,7 +1170,9 @@ def audit_questions(
 
 
 @app.post("/audit/generate", response_model=AuditResponse)
+@limiter.limit("3/minute")
 def audit_generate(
+    request: Request,
     body: AuditRequest,
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1077,17 +1230,19 @@ def defend_categories():
 
 
 @app.post("/defend/detect")
-def defend_detect(request: dict):
+def defend_detect(body: dict):
     """Detecte automatiquement le type de situation."""
     from api.features.defend import detect_situation_type
-    description = request.get("description", "")
+    description = body.get("description", "")
     if len(description.strip()) < 10:
         raise HTTPException(400, "Description trop courte")
     return detect_situation_type(description)
 
 
 @app.post("/defend/analyze", response_model=DefendResponse)
+@limiter.limit("5/minute")
 def defend_analyze(
+    request: Request,
     body: DefendRequest,
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1105,6 +1260,7 @@ def defend_analyze(
             region=body.region,
             user_name=body.user_name or "",
             user_address=body.user_address or "",
+            photos_base64=body.photos_base64 or [],
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1145,14 +1301,14 @@ def alerts_domains():
 
 @app.post("/alerts/preferences")
 def alerts_save_preferences(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Sauvegarde les preferences d'alertes de l'utilisateur (persistees en DB)."""
     from api.database import update_alert_preferences
-    domains = request.get("domains", [])
-    frequency = request.get("frequency")
-    enabled = request.get("enabled")
+    domains = body.get("domains", [])
+    frequency = body.get("frequency")
+    enabled = body.get("enabled")
     prefs = update_alert_preferences(
         user_id=current_user["id"], domains=domains, frequency=frequency, enabled=enabled,
     )
@@ -1179,7 +1335,7 @@ def alerts_feed(
     if not domain_list:
         domain_list = ["travail", "fiscal", "bail"]
     try:
-        feed = get_alert_feed(domains=domain_list, limit=limit, mock=True)
+        feed = get_alert_feed(domains=domain_list, limit=limit)
     except Exception:
         feed = []
     return {"alerts": feed, "total": len(feed)}
@@ -1195,19 +1351,21 @@ def litigation_stages():
 
 
 @app.post("/litigation/start")
+@limiter.limit("5/minute")
 def litigation_start(
-    request: dict,
+    request: Request,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Demarre une procedure de recouvrement d'impaye."""
     from api.features.litigation import start_litigation
     try:
         result = start_litigation(
-            creditor_name=request.get("creditor_name", ""),
-            debtor_name=request.get("debtor_name", ""),
-            amount=request.get("amount", 0),
-            invoice_number=request.get("invoice_number", ""),
-            due_date=request.get("due_date", ""),
+            creditor_name=body.get("creditor_name", ""),
+            debtor_name=body.get("debtor_name", ""),
+            amount=body.get("amount", 0),
+            invoice_number=body.get("invoice_number", ""),
+            due_date=body.get("due_date", ""),
         )
         return result
     except ValueError as e:
@@ -1218,17 +1376,17 @@ def litigation_start(
 
 @app.post("/match/find")
 def match_find(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Trouve les avocats les mieux adaptes a la situation."""
     from api.features.match import find_matching_lawyers
     try:
         result = find_matching_lawyers(
-            description=request.get("description", ""),
-            city=request.get("city"),
-            language=request.get("language", "fr"),
-            budget=request.get("budget"),
+            description=body.get("description", ""),
+            city=body.get("city"),
+            language=body.get("language", "fr"),
+            budget=body.get("budget"),
         )
         return result
     except ValueError as e:
@@ -1246,40 +1404,72 @@ def emergency_categories():
 
 @app.post("/emergency/request")
 def emergency_request(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
-    """Cree une demande d'assistance juridique urgente (49 EUR)."""
-    from api.features.emergency import create_emergency_request
+    """Cree une demande d'assistance juridique urgente (49 EUR) + Stripe checkout."""
+    from api.features.emergency import create_emergency_request, EMERGENCY_PRICE_CENTS
     try:
         result = create_emergency_request(
             user_id=current_user["id"],
-            category=request.get("category", "autre"),
-            description=request.get("description", ""),
-            phone=request.get("phone", ""),
-            city=request.get("city", ""),
+            category=body.get("category", "autre"),
+            description=body.get("description", ""),
+            phone=body.get("phone", ""),
+            city=body.get("city", ""),
         )
-        return result
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+    # Creer la session Stripe 49 EUR (paiement unique)
+    try:
+        import stripe as _stripe
+        from api.stripe_billing import FRONTEND_URL
+        session = _stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "eur",
+                    "unit_amount": EMERGENCY_PRICE_CENTS,
+                    "product_data": {"name": "Lexavo Emergency — Avocat en 2h"},
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=f"{FRONTEND_URL}/emergency/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{FRONTEND_URL}/emergency/cancel",
+            metadata={
+                "lexavo_user_id": str(current_user["id"]),
+                "lexavo_type": "emergency",
+                "emergency_id": str(result["id"]),
+            },
+        )
+        result["checkout_url"] = session.url
+        result["stripe_session_id"] = session.id
+    except Exception as e:
+        log.error(f"Stripe emergency checkout error: {e}")
+        # Retourner le résultat sans checkout_url — mobile gère le cas
+        result["checkout_url"] = None
+        result["stripe_session_id"] = None
+
+    return result
 
 
 # ─── Proof Endpoints ─────────────────────────────────────────────────────
 
 @app.post("/proof/create")
 def proof_create(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Cree un nouveau dossier de preuves (persiste en DB)."""
     from api.database import create_proof_case
-    title = request.get("title", "")
+    title = body.get("title", "")
     if not title or len(title.strip()) < 3:
         raise HTTPException(400, "Le titre du dossier doit contenir au moins 3 caracteres.")
     result = create_proof_case(
         user_id=current_user["id"],
         title=title.strip(),
-        description=request.get("description", ""),
+        description=body.get("description", ""),
     )
     return result
 
@@ -1295,7 +1485,7 @@ def proof_list(current_user: dict = Depends(_get_current_user)):
 @app.post("/proof/{case_id}/add-entry")
 def proof_add_entry(
     case_id: int,
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """Ajoute une piece au dossier de preuves (persiste en DB)."""
@@ -1307,9 +1497,9 @@ def proof_add_entry(
         raise HTTPException(403, "Acces refuse a ce dossier.")
     entry = add_proof_entry(
         case_id=case_id,
-        entry_type=request.get("type", "note"),
-        content=request.get("content", ""),
-        metadata=request.get("metadata"),
+        entry_type=body.get("type", "note"),
+        content=body.get("content", ""),
+        metadata=body.get("metadata"),
     )
     return entry
 
@@ -1333,16 +1523,16 @@ def proof_entries(
 # ─── Heritage Endpoints ──────────────────────────────────────────────────
 
 @app.post("/heritage/guide")
-def heritage_guide(request: dict):
+def heritage_guide(body: dict):
     """Genere un guide succession personnalise par region."""
     from api.features.heritage import generate_heritage_guide
     try:
         result = generate_heritage_guide(
-            region=request.get("region", ""),
-            relationship=request.get("relationship", "direct_line"),
-            has_testament=request.get("has_testament", False),
-            has_real_estate=request.get("has_real_estate", False),
-            estimated_value=request.get("estimated_value", 0),
+            region=body.get("region", ""),
+            relationship=body.get("relationship", "direct_line"),
+            has_testament=body.get("has_testament", False),
+            has_real_estate=body.get("has_real_estate", False),
+            estimated_value=body.get("estimated_value", 0),
         )
         return result
     except ValueError as e:
@@ -1352,8 +1542,10 @@ def heritage_guide(request: dict):
 # ─── Fiscal Endpoints ────────────────────────────────────────────────────
 
 @app.post("/fiscal/ask")
+@limiter.limit("5/minute")
 def fiscal_ask(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1362,10 +1554,11 @@ def fiscal_ask(
     from api.stripe_billing import check_quota
     from api.database import increment_question_count
 
-    question = request.get("question", "")
+    question = body.get("question", "")
+    photos_base64 = body.get("photos_base64") or []
     check_quota(current_user["id"])
     try:
-        result = ask_fiscal(question=question)
+        result = ask_fiscal(question=question, photos_base64=photos_base64)
         increment_question_count(current_user["id"])
         return result
     except ValueError as e:
@@ -1388,7 +1581,7 @@ def newsletter_preview(week: int = Query(default=1, ge=1, le=52, description="Nu
 
 
 @app.post("/newsletter/subscribe")
-def newsletter_subscribe(request: dict):
+def newsletter_subscribe(body: dict):
     """
     POST /newsletter/subscribe
     Body : { "email": "...", "domains": ["travail", "fiscal"] }
@@ -1397,8 +1590,8 @@ def newsletter_subscribe(request: dict):
     from api.database import subscribe_newsletter
     import re
 
-    email = request.get("email", "").strip().lower()
-    domains = request.get("domains", [])
+    email = body.get("email", "").strip().lower()
+    domains = body.get("domains", [])
 
     if not email or not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
         raise HTTPException(status_code=400, detail="Adresse email invalide.")
@@ -1443,7 +1636,7 @@ def newsletter_unsubscribe(token: str = Query(..., description="Token de désins
 
 @app.post("/notifications/register")
 def notifications_register(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """
@@ -1453,7 +1646,7 @@ def notifications_register(
     """
     from api.database import save_push_token
 
-    token = request.get("token", "").strip()
+    token = body.get("token", "").strip()
     if not token:
         raise HTTPException(status_code=400, detail="Token push manquant.")
 
@@ -1463,7 +1656,7 @@ def notifications_register(
 
 @app.post("/notifications/preferences")
 def notifications_preferences(
-    request: dict,
+    body: dict,
     current_user: dict = Depends(_get_current_user),
 ):
     """
@@ -1476,8 +1669,8 @@ def notifications_preferences(
     """
     from api.database import update_push_preferences
 
-    token       = request.get("token", "").strip()
-    preferences = request.get("preferences", {})
+    token       = body.get("token", "").strip()
+    preferences = body.get("preferences", {})
 
     if not isinstance(preferences, dict):
         raise HTTPException(status_code=400, detail="Préférences invalides.")
@@ -1533,8 +1726,10 @@ def student_branches():
 
 
 @app.post("/student/quiz")
+@limiter.limit("10/minute")
 def student_quiz(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1543,9 +1738,12 @@ def student_quiz(
     from api.database import increment_question_count
     import anthropic, json as _json
 
-    branch = request.get("branch", "Droit civil")
-    difficulty = request.get("difficulty", "moyen")
-    num_questions = min(int(request.get("num_questions", 10)), 15)
+    branch = body.get("branch", "Droit civil")
+    difficulty = body.get("difficulty", "moyen")
+    try:
+        num_questions = min(int(body.get("num_questions", 10)), 15)
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
 
     check_quota(current_user["id"])
 
@@ -1571,11 +1769,15 @@ Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
 Chaque question doit référencer un article de loi belge ou un principe juridique belge réel.
 Ne jamais inventer de loi ou d'article."""
 
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude (quiz): {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du quiz: {e}")
     text = msg.content[0].text.strip()
     # Nettoyer le JSON si enveloppé dans ```json
     if text.startswith("```"):
@@ -1590,8 +1792,10 @@ Ne jamais inventer de loi ou d'article."""
 
 
 @app.post("/student/flashcards")
+@limiter.limit("10/minute")
 def student_flashcards(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1600,9 +1804,12 @@ def student_flashcards(
     from api.database import increment_question_count
     import anthropic, json as _json
 
-    branch = request.get("branch", "Droit civil")
-    topic = request.get("topic", "")
-    num_cards = min(int(request.get("num_cards", 12)), 20)
+    branch = body.get("branch", "Droit civil")
+    topic = body.get("topic", "")
+    try:
+        num_cards = min(int(body.get("num_cards", 12)), 20)
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
 
     check_quota(current_user["id"])
 
@@ -1626,11 +1833,15 @@ Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
 
 Chaque carte doit référencer le droit belge réel. Ne jamais inventer."""
 
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude (flashcards): {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération des flashcards: {e}")
     text = msg.content[0].text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
@@ -1644,8 +1855,10 @@ Chaque carte doit référencer le droit belge réel. Ne jamais inventer."""
 
 
 @app.post("/student/summary")
+@limiter.limit("10/minute")
 def student_summary(
-    request: dict,
+    request: Request,
+    body: dict,
     api_key: str = Depends(get_api_key),
     current_user: dict = Depends(_get_current_user),
 ):
@@ -1654,8 +1867,8 @@ def student_summary(
     from api.database import increment_question_count
     import anthropic
 
-    branch = request.get("branch", "Droit civil")
-    topic = request.get("topic", branch)
+    branch = body.get("branch", "Droit civil")
+    topic = body.get("topic", branch)
 
     check_quota(current_user["id"])
 
@@ -1674,11 +1887,15 @@ Structure :
 Niveau : étudiant en droit (Bachelor/Master). Droit belge uniquement.
 Ne jamais inventer de loi, d'article ou de jurisprudence."""
 
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude (summary): {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du résumé: {e}")
 
     increment_question_count(current_user["id"])
     return {"branch": branch, "topic": topic, "summary": msg.content[0].text}

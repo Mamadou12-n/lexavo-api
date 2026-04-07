@@ -14,10 +14,13 @@ ChromaDB : base vectorielle locale (pas de serveur requis)
 
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import List, Optional, Dict
 from dataclasses import dataclass
+
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -107,7 +110,7 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
 def build_index(
     normalized_dir: Path = NORMALIZED_DIR,
     chroma_dir: Path = CHROMA_DIR,
-    batch_size: int = 100,
+    batch_size: int = 500,
     max_docs: Optional[int] = None,
     reset: bool = False,
 ) -> int:
@@ -149,7 +152,13 @@ def build_index(
 
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
+        metadata={
+            "hnsw:space": "cosine",
+            "hnsw:M": 8,                    # Réduire de 16→8 (2x moins de RAM)
+            "hnsw:construction_ef": 64,      # Réduire de 200→64 (plus rapide, moins de RAM)
+            "hnsw:search_ef": 32,            # Réduire pour les recherches
+            "hnsw:batch_size": 1000,
+        },
     )
 
     # Charger les documents normalisés
@@ -160,11 +169,34 @@ def build_index(
     log.info(f"  {len(files)} documents à indexer")
 
     # IDs déjà indexés pour éviter les doublons
+    skip_dedup = reset  # pas besoin de vérifier les doublons après un reset
+    existing_doc_ids = set()
     try:
         existing_count = collection.count()
         log.info(f"  Chunks déjà indexés : {existing_count}")
+        if existing_count == 0:
+            skip_dedup = True
+        else:
+            # Charger les doc_ids existants pour skip rapide (par doc, pas par chunk)
+            log.info("  Chargement des doc_ids existants pour dedup rapide...")
+            offset = 0
+            while True:
+                res = collection.get(limit=5000, offset=offset, include=["metadatas"])
+                metas = res.get("metadatas") or []
+                if not metas:
+                    break
+                for m in metas:
+                    existing_doc_ids.add(m.get("doc_id", ""))
+                offset += len(metas)
+                if len(metas) < 5000:
+                    break
+            log.info(f"  {len(existing_doc_ids)} docs déjà indexés — skip rapide activé")
     except Exception:
         existing_count = 0
+        skip_dedup = True
+
+    if skip_dedup:
+        log.info("  Mode rapide : pas de vérification de doublons")
 
     # Indexer en batches
     total_chunks = 0
@@ -189,6 +221,10 @@ def build_index(
         jurisdiction = doc.get("jurisdiction", "")
 
         if not text:
+            continue
+
+        # Skip rapide : doc déjà indexé (par doc_id, pas par chunk)
+        if existing_doc_ids and doc_id in existing_doc_ids:
             continue
 
         # Construire le texte enrichi (titre + texte) pour meilleurs embeddings
@@ -216,16 +252,7 @@ def build_index(
             continue
 
         for j, chunk in enumerate(chunks):
-            chunk_id = f"{doc_id}__chunk_{j:03d}"
-
-            # Vérifier si déjà indexé (mode incrémental)
-            try:
-                existing = collection.get(ids=[chunk_id])
-                if existing["ids"]:
-                    total_chunks += 1
-                    continue
-            except Exception:
-                pass
+            chunk_id = f"{json_file.stem}__chunk_{j:03d}"
 
             batch_docs.append(chunk)
             batch_ids.append(chunk_id)

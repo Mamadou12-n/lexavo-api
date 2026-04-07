@@ -89,7 +89,7 @@ def _get_collection():
     if not CHROMA_DIR.exists():
         raise RuntimeError(f"Index ChromaDB non trouvé à {CHROMA_DIR}.")
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return client.get_collection(COLLECTION_NAME)
+    return client.get_or_create_collection(COLLECTION_NAME)
 
 
 def _get_articles_collection():
@@ -172,7 +172,11 @@ def _rerank_with_llm(question: str, chunks: List[Dict], top_n: int = 6) -> List[
             }]
         )
 
-        nums = [int(x.strip()) for x in response.content[0].text.strip().split(",")]
+        try:
+            nums = [int(x.strip()) for x in response.content[0].text.strip().split(",")]
+        except (ValueError, IndexError):
+            log.warning("Rerank LLM parsing échoué — ordre original conservé")
+            return chunks[:top_n]
         reranked = [chunks[i] for i in nums if 0 <= i < len(chunks)]
         # Compléter avec les restants si pas assez
         seen = set(nums)
@@ -262,6 +266,13 @@ def retrieve(
 
     # --- Alt.2 : Mots-clés articles (Art. X) ---
     keyword_chunks = []
+    # --- Alt.6 : Détection source dans la question (AVANT les recherches par article) ---
+    detected_source = None
+    for pattern, source_title in SOURCE_DETECT.items():
+        if re.search(pattern, query, re.IGNORECASE):
+            detected_source = source_title
+            break
+
     art_match = re.search(r"art(?:icle)?\.?\s*(\d+[\w./:,-]*)", query, re.IGNORECASE)
     if art_match:
         art_num = art_match.group(1)
@@ -328,12 +339,7 @@ def retrieve(
             if len(keyword_chunks) >= 5:
                 break
 
-    # --- Alt.6 : Détection source dans la question ---
-    detected_source = None
-    for pattern, source_title in SOURCE_DETECT.items():
-        if re.search(pattern, query, re.IGNORECASE):
-            detected_source = source_title
-            break
+    # Alt.6 déplacé plus haut (avant Alt.2) pour éviter NameError
 
     # ═══ FUSION : Construire la liste unifiée ═══════════════════════════════
 

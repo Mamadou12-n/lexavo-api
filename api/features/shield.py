@@ -176,24 +176,30 @@ def analyze_contract_text(
 
     model = select_model("contract", len(text))
     api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
     client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=3000,
-        system=SHIELD_SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"CONTRAT A ANALYSER (type detecte : {detected_type}) :\n\n"
-                    f"{text}\n\n"
-                    f"---\n\nSOURCES JURIDIQUES BELGES PERTINENTES :\n\n{context}"
-                    f"{region_info}"
-                ),
-            }
-        ],
-    )
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=3000,
+            system=SHIELD_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"CONTRAT A ANALYSER (type detecte : {detected_type}) :\n\n"
+                        f"{text}\n\n"
+                        f"---\n\nSOURCES JURIDIQUES BELGES PERTINENTES :\n\n{context}"
+                        f"{region_info}"
+                    ),
+                }
+            ],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
 
@@ -204,14 +210,9 @@ def analyze_contract_text(
             result = json.loads(json_match.group())
         else:
             raise ValueError("Pas de JSON dans la reponse")
-    except (json.JSONDecodeError, ValueError) as e:
-        log.warning(f"JSON parsing echoue, fallback : {e}")
-        result = {
-            "verdict": "orange",
-            "score": 50,
-            "summary": raw[:300] if raw else "Analyse non disponible",
-            "clauses": [],
-        }
+    except (json.JSONDecodeError, ValueError):
+        log.error("Shield: Claude n'a pas retourné de JSON valide")
+        raise ValueError("L'analyse du contrat n'a pas pu aboutir. Réessayez.")
 
     # Calculer le score si absent
     if "score" not in result or not isinstance(result.get("score"), (int, float)):

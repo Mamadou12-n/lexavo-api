@@ -152,6 +152,7 @@ def analyze_and_generate(
     region: Optional[str] = None,
     user_name: str = "",
     user_address: str = "",
+    photos_base64: Optional[List[str]] = None,
     mock: bool = False,
 ) -> dict:
     """Analyse la situation et genere le document de contestation.
@@ -160,6 +161,16 @@ def analyze_and_generate(
     """
     if len(description.strip()) < 20:
         raise ValueError("Decrivez votre situation en au moins 20 caracteres")
+
+    # OCR des photos si fournies
+    if photos_base64:
+        try:
+            from api.utils.ocr import extract_text_from_base64_list
+            ocr_text = extract_text_from_base64_list(photos_base64)
+            if ocr_text:
+                description = f"{description}\n\n[Texte extrait des photos jointes]\n{ocr_text}"
+        except Exception as e:
+            log.warning(f"OCR photos defend ignoré : {e}")
 
     # Detecter le type de situation
     if category:
@@ -216,6 +227,8 @@ def analyze_and_generate(
 
     model = select_model("defend", len(description))
     api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
     client = anthropic.Anthropic(api_key=api_key)
 
     user_info = ""
@@ -224,22 +237,26 @@ def analyze_and_generate(
     if user_address:
         user_info += f"\nAdresse : {user_address}"
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=3000,
-        system=DEFEND_SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"SITUATION A ANALYSER :\n\n{description}\n\n"
-                    f"Type detecte : {detection.get('category', 'general')} ({detection.get('category_label', '')})\n"
-                    f"{user_info}{region_info}\n\n"
-                    f"---\n\nSOURCES JURIDIQUES BELGES :\n\n{context}"
-                ),
-            }
-        ],
-    )
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=3000,
+            system=DEFEND_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"SITUATION A ANALYSER :\n\n{description}\n\n"
+                        f"Type detecte : {detection.get('category', 'general')} ({detection.get('category_label', '')})\n"
+                        f"{user_info}{region_info}\n\n"
+                        f"---\n\nSOURCES JURIDIQUES BELGES :\n\n{context}"
+                    ),
+                }
+            ],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
 

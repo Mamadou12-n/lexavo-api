@@ -61,17 +61,21 @@ def generate_response(
         raise ValueError("Le courrier est trop court (minimum 30 caracteres)")
 
     if mock:
+        mock_letter = "Madame, Monsieur,\n\nPar la presente, je fais suite a votre courrier du [date]. En application de l'article [X], je vous informe que [reponse].\n\nJe vous prie d'agreer l'expression de mes salutations distinguees."
         return {
-            "response_letter": "Madame, Monsieur,\n\nPar la presente, je fais suite a votre courrier du [date]. En application de l'article [X], je vous informe que [reponse].\n\nJe vous prie d'agreer l'expression de mes salutations distinguees.",
+            "response_letter": mock_letter,
+            "response_text": mock_letter,
             "tone": "firm",
             "key_arguments": ["Argument de test base sur l'article X"],
             "legal_references": [
                 {"article": "Art. 1 Code civil", "relevance": "Applicable au litige (test)"}
             ],
+            "legal_basis": "Art. 1 Code civil — Applicable au litige (test)",
             "sender_type_detected": "proprietaire",
             "urgency": "medium",
             "next_steps": ["Envoyer par recommande", "Conserver une copie"],
             "disclaimer": "Ce modele ne constitue pas un acte d'avocat. En cas de litige complexe, consultez un professionnel.",
+            "model": "mock",
         }
 
     # RAG pour le contexte juridique
@@ -92,17 +96,24 @@ def generate_response(
     import anthropic
 
     model = select_model("response")
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
+    client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=2048,
-        system=RESPONSE_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": f"COURRIER RECU :\n\n{received_text}{user_info}\n\n---\nSOURCES JURIDIQUES :\n{context}"
-        }],
-    )
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=2048,
+            system=RESPONSE_PROMPT,
+            messages=[{
+                "role": "user",
+                "content": f"COURRIER RECU :\n\n{received_text}{user_info}\n\n---\nSOURCES JURIDIQUES :\n{context}"
+            }],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
     try:
@@ -124,10 +135,24 @@ def generate_response(
         }
 
     result["disclaimer"] = "Ce modele ne constitue pas un acte d'avocat. En cas de litige complexe, consultez un professionnel."
+    result["model"] = model
     result["sources"] = [
         {"source": c.get("source", ""), "title": c.get("title", "")}
         for c in chunks[:4]
     ]
+
+    # Cles attendues par le frontend mobile
+    if "response_text" not in result:
+        result["response_text"] = result.get("response_letter", "")
+    if "legal_basis" not in result:
+        refs = result.get("legal_references", [])
+        if refs:
+            result["legal_basis"] = " | ".join(
+                r.get("article", "") + (" — " + r.get("relevance", "") if r.get("relevance") else "")
+                for r in refs if isinstance(r, dict)
+            )
+        else:
+            result["legal_basis"] = None
 
     # Humanizer — ton naturel (pas sur la lettre formelle, seulement les explications)
     from rag.humanizer import humanize

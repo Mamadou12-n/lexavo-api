@@ -308,16 +308,33 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict:
 
 
 def _handle_checkout_completed(session: dict):
-    """Checkout completed — activate subscription."""
+    """Checkout completed — activate subscription or mark emergency paid."""
     customer_id = session.get("customer")
     metadata = session.get("metadata", {})
     user_id = metadata.get("lexavo_user_id")
-    plan = metadata.get("lexavo_plan", "pro")
-    subscription_id = session.get("subscription")
+    lexavo_type = metadata.get("lexavo_type", "subscription")
 
     if not user_id:
         log.warning("Checkout sans lexavo_user_id dans metadata")
         return
+
+    user = get_user_by_id(int(user_id))
+    if not user:
+        log.error(f"Webhook: user_id {user_id} introuvable en DB")
+        return
+
+    # Paiement unique Emergency (49 EUR)
+    if lexavo_type == "emergency":
+        emergency_id = metadata.get("emergency_id")
+        if emergency_id:
+            from api.database import update_emergency_paid
+            update_emergency_paid(int(emergency_id))
+            log.info(f"Emergency payee: user={user_id}, emergency_id={emergency_id}")
+        return
+
+    # Abonnement classique
+    plan = metadata.get("lexavo_plan", "pro")
+    subscription_id = session.get("subscription")
 
     update_subscription(
         user_id=int(user_id),

@@ -33,9 +33,19 @@ FORMAT (JSON strict) :
 Disclaimer : Information fiscale generale. Consultez votre comptable."""
 
 
-def ask_fiscal(question: str, mock: bool = False) -> dict:
+def ask_fiscal(question: str, photos_base64: list = None, mock: bool = False) -> dict:
     if len(question.strip()) < 10:
         raise ValueError("Question trop courte (minimum 10 caracteres)")
+
+    # OCR des photos si fournies
+    if photos_base64:
+        try:
+            from api.utils.ocr import extract_text_from_base64_list
+            ocr_text = extract_text_from_base64_list(photos_base64)
+            if ocr_text:
+                question = f"{question}\n\n[Texte extrait des photos jointes]\n{ocr_text}"
+        except Exception as e:
+            log.warning(f"OCR photos fiscal ignoré : {e}")
 
     if mock:
         return {
@@ -62,12 +72,19 @@ def ask_fiscal(question: str, mock: bool = False) -> dict:
     import anthropic
 
     model = select_model("fiscal")
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
+    client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=model, max_tokens=1024, system=FISCAL_PROMPT,
-        messages=[{"role": "user", "content": f"QUESTION :\n{question}\n\n---\nSOURCES :\n{context}"}],
-    )
+    try:
+        response = client.messages.create(
+            model=model, max_tokens=1024, system=FISCAL_PROMPT,
+            messages=[{"role": "user", "content": f"QUESTION :\n{question}\n\n---\nSOURCES :\n{context}"}],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
     try:

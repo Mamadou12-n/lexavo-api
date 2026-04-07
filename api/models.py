@@ -20,6 +20,15 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="Mot de passe")
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., description="Adresse email du compte")
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., description="Token reçu par email")
+    new_password: str = Field(..., min_length=6, description="Nouveau mot de passe (min 6 car.)")
+
+
 class UserResponse(BaseModel):
     """Profil utilisateur (sans mot de passe)."""
     model_config = {"from_attributes": True}
@@ -27,6 +36,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     language: str
+    role: str = "user"
     created_at: Any  # str (SQLite) or datetime (PostgreSQL)
 
 
@@ -140,6 +150,10 @@ class AskRequest(BaseModel):
     conversation_id: Optional[int] = Field(
         default=None,
         description="ID de la conversation pour memoire contextuelle. Si absent, cree une nouvelle conversation.",
+    )
+    photos_base64: Optional[List[str]] = Field(
+        default=None,
+        description="Photos jointes encodées en base64 (OCR automatique)",
     )
 
 
@@ -371,6 +385,7 @@ class DefendRequest(BaseModel):
     region: Optional[str] = Field(default=None, description="Region : bruxelles, wallonie, flandre")
     user_name: Optional[str] = Field(default="", description="Nom de l'utilisateur (pour le document)")
     user_address: Optional[str] = Field(default="", description="Adresse (pour le document)")
+    photos_base64: Optional[List[str]] = Field(default=None, description="Photos jointes encodées en base64 (OCR automatique)")
 
 
 class DefendLaw(BaseModel):

@@ -113,6 +113,11 @@ def generate_diagnostic(answers: List[dict], mock: bool = False) -> dict:
             "recommended_professional": "Avocat specialise",
             "estimated_complexity": "simple",
             "branch_detected": branch,
+            "model": "mock",
+            "branches": [domain_answer] if domain_answer != "Autre" else [],
+            "applicable_law": ["Droit de test (Art. 1 Code civil)"],
+            "recommended_steps": ["Action de test"],
+            "urgency_level": "low",
         }
 
     # Construire le contexte des reponses
@@ -141,17 +146,24 @@ def generate_diagnostic(answers: List[dict], mock: bool = False) -> dict:
     import anthropic
 
     model = select_model("diagnostic")
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
+    client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=1500,
-        system=DIAGNOSTIC_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": f"REPONSES AU QUESTIONNAIRE :\n{answers_text}\n\n---\nSOURCES JURIDIQUES :\n{context}"
-        }],
-    )
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=1500,
+            system=DIAGNOSTIC_PROMPT,
+            messages=[{
+                "role": "user",
+                "content": f"REPONSES AU QUESTIONNAIRE :\n{answers_text}\n\n---\nSOURCES JURIDIQUES :\n{context}"
+            }],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
     try:
@@ -165,10 +177,29 @@ def generate_diagnostic(answers: List[dict], mock: bool = False) -> dict:
         result = {"title": "Diagnostic", "situation_summary": raw[:300], "applicable_rights": [], "risks": [], "priority_actions": []}
 
     result["branch_detected"] = branch
+    result["model"] = model
     result["sources"] = [
         {"source": c.get("source", ""), "title": c.get("title", ""), "similarity": c.get("similarity", 0.0)}
         for c in chunks[:4]
     ]
+
+    # Cles attendues par le frontend mobile
+    if "branches" not in result and branch:
+        result["branches"] = [domain_answer]
+    elif "branches" not in result:
+        result["branches"] = []
+    if "applicable_law" not in result:
+        result["applicable_law"] = [
+            r.get("right", "") + (" (" + r.get("legal_basis", "") + ")" if r.get("legal_basis") else "")
+            for r in result.get("applicable_rights", [])
+        ]
+    if "recommended_steps" not in result:
+        result["recommended_steps"] = [
+            a.get("action", "") for a in result.get("priority_actions", [])
+        ]
+    if "urgency_level" not in result:
+        complexity = result.get("estimated_complexity", "simple")
+        result["urgency_level"] = {"complex": "high", "moderate": "medium"}.get(complexity, "low")
 
     # Humanizer — ton naturel
     from rag.humanizer import humanize

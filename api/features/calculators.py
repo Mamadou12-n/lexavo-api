@@ -40,13 +40,11 @@ def calculate_notice_period(years: int, monthly_salary: float) -> dict:
     indemnity = round(monthly_salary * (weeks / 4.33), 2)
 
     return {
-        "weeks": weeks,
-        "months": round(weeks / 4.33, 1),
-        "indemnity_euros": indemnity,
-        "monthly_salary": monthly_salary,
-        "years_service": years,
-        "legal_basis": "CCT n°109",
-        "disclaimer": "Calcul indicatif base sur le bareme legal. Des exceptions existent (motif grave, contre-preavis).",
+        "result": indemnity,
+        "unit": "€ (indemnité compensatoire)",
+        "details": {"weeks": weeks, "months": round(weeks / 4.33, 1), "monthly_salary": monthly_salary, "years_service": years},
+        "legal_basis": "CCT n°109 du CNT — Art. 37/2 Loi du 3 juillet 1978",
+        "disclaimer": "Estimation indicative. Consultez votre secrétariat social.",
     }
 
 
@@ -65,15 +63,13 @@ def calculate_alimony_renard(
     if monthly_amount > cap:
         monthly_amount = round(cap, 2)
 
+    formula = "Bareme Renard : (revenus eleves - revenus faibles) / 3"
     return {
-        "monthly_amount": monthly_amount,
-        "annual_amount": round(monthly_amount * 12, 2),
-        "income_high": income_high,
-        "income_low": income_low,
-        "children": children,
-        "formula": "Bareme Renard : (revenus eleves - revenus faibles) / 3",
-        "legal_basis": "Art. 301 par.3 Code civil (criteres de fixation)",
-        "disclaimer": "Calcul indicatif. Le juge fixe le montant selon les circonstances.",
+        "result": monthly_amount,
+        "unit": "€/mois",
+        "details": {"annual_amount": round(monthly_amount * 12, 2), "income_high": income_high, "income_low": income_low, "children": children, "formula": formula},
+        "legal_basis": "Méthode Renard — Art. 301 §3 Code civil belge",
+        "disclaimer": "Estimation selon la méthode Renard. Le juge reste souverain.",
     }
 
 
@@ -163,13 +159,9 @@ def calculate_succession_duties(
     effective_rate = (total_duty / amount * 100) if amount > 0 else 0
 
     return {
-        "total_duty": round(total_duty, 2),
-        "net_amount": round(amount - total_duty, 2),
-        "effective_rate": f"{effective_rate:.1f}%",
-        "region": region,
-        "relationship": relationship,
-        "amount": amount,
-        "breakdown": breakdown,
-        "legal_basis": f"Code des droits de succession — Region de {region.capitalize()}",
-        "disclaimer": "Calcul indicatif. Des exemptions et reductions peuvent s'appliquer.",
+        "result": round(total_duty, 2),
+        "unit": "€ de droits de succession",
+        "details": {"net_amount": round(amount - total_duty, 2), "effective_rate": f"{effective_rate:.1f}%", "region": region, "relationship": relationship, "amount": amount, "breakdown": breakdown},
+        "legal_basis": f"Code des droits de succession — Région de {region.capitalize()}",
+        "disclaimer": "Estimation indicative. Les exemptions et abattements spécifiques ne sont pas inclus.",
     }

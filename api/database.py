@@ -78,6 +78,8 @@ def _insert_returning_id(conn, sql, params=None) -> int:
         cur = conn.cursor()
         cur.execute(sql + " RETURNING id", params or ())
         row = cur.fetchone()
+        if row is None:
+            raise RuntimeError("INSERT n'a retourné aucune ligne")
         return row["id"]
     else:
         cur = conn.execute(sql, params or ())
@@ -105,6 +107,7 @@ CREATE TABLE IF NOT EXISTS users (
     language TEXT NOT NULL DEFAULT 'fr',
     region TEXT DEFAULT NULL,
     profession TEXT DEFAULT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -253,6 +256,15 @@ CREATE TABLE IF NOT EXISTS audit_reports (
     report_json TEXT NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 _PG_INDEXES = """
@@ -285,6 +297,7 @@ CREATE TABLE IF NOT EXISTS users (
     language TEXT NOT NULL DEFAULT 'fr' CHECK(language IN ('fr', 'nl', 'en')),
     region TEXT DEFAULT NULL,
     profession TEXT DEFAULT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS lawyers (
@@ -406,6 +419,16 @@ CREATE TABLE IF NOT EXISTS audit_reports (
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 """ + _PG_INDEXES
 
 
@@ -454,10 +477,13 @@ def _safe_add_column(conn, table: str, column: str, col_type: str):
 def create_user(email: str, password_hash: str, name: str, language: str = "fr") -> dict:
     conn = _get_conn()
     try:
+        # Le premier utilisateur inscrit (id=1) recoit le role admin
+        count_row = _fetchone(conn, "SELECT COUNT(*) AS cnt FROM users")
+        role = "admin" if (count_row and count_row["cnt"] == 0) else "user"
         new_id = _insert_returning_id(
             conn,
-            f"INSERT INTO users (email, password_hash, name, language) VALUES ({PH}, {PH}, {PH}, {PH})",
-            (email, password_hash, name, language),
+            f"INSERT INTO users (email, password_hash, name, language, role) VALUES ({PH}, {PH}, {PH}, {PH}, {PH})",
+            (email, password_hash, name, language, role),
         )
         conn.commit()
         return get_user_by_id(new_id)
@@ -471,7 +497,7 @@ def create_user(email: str, password_hash: str, name: str, language: str = "fr")
 def get_user_by_id(user_id: int) -> Optional[dict]:
     conn = _get_conn()
     try:
-        return _fetchone(conn, f"SELECT id, email, name, language, created_at FROM users WHERE id = {PH}", (user_id,))
+        return _fetchone(conn, f"SELECT id, email, name, language, role, created_at FROM users WHERE id = {PH}", (user_id,))
     finally:
         conn.close()
 
@@ -481,7 +507,7 @@ def get_user_by_email(email: str) -> Optional[dict]:
     try:
         return _fetchone(
             conn,
-            f"SELECT id, email, password_hash, name, language, created_at FROM users WHERE email = {PH}",
+            f"SELECT id, email, password_hash, name, language, role, created_at FROM users WHERE email = {PH}",
             (email,),
         )
     finally:
@@ -693,7 +719,10 @@ def increment_question_count(user_id: int) -> dict:
         _execute(conn, f"UPDATE subscriptions SET questions_used = questions_used + 1, updated_at = {PH} WHERE user_id = {PH}",
                  (now.strftime("%Y-%m-%d %H:%M:%S"), user_id))
         conn.commit()
-        limits = {"free": 5, "pro": -1, "cabinet": -1}
+        limits = {
+            "free": 5, "basic": 50, "pro": -1, "business": -1,
+            "firm_s": -1, "firm_m": -1, "enterprise": -1, "cabinet": -1,
+        }
         plan = sub.get("plan", "free")
         return {"questions_used": sub["questions_used"] + 1, "limit": limits.get(plan, 5), "plan": plan}
     finally:
@@ -982,6 +1011,15 @@ def list_emergency_requests(user_id: int) -> list:
         conn.close()
 
 
+def update_emergency_paid(emergency_id: int) -> None:
+    conn = _get_conn()
+    try:
+        _execute(conn, f"UPDATE emergency_requests SET status = 'completed' WHERE id = {PH}", (emergency_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # ─── Refresh Tokens CRUD ────────────────────────────────────────────────────
 
 def save_refresh_token(user_id: int, token: str, expires_at: str) -> None:
@@ -1016,6 +1054,48 @@ def delete_user_refresh_tokens(user_id: int) -> None:
     conn = _get_conn()
     try:
         _execute(conn, f"DELETE FROM refresh_tokens WHERE user_id = {PH}", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ─── Password Reset Tokens ───────────────────────────────────────────────────
+
+def create_password_reset_token(user_id: int, token: str, expires_at: str) -> None:
+    conn = _get_conn()
+    try:
+        # Invalider les anciens tokens non utilisés pour cet utilisateur
+        _used_false = "FALSE" if USE_PG else "0"
+        _execute(conn, f"DELETE FROM password_reset_tokens WHERE user_id = {PH} AND used = {_used_false}", (user_id,))
+        _execute(conn, f"INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ({PH}, {PH}, {PH})",
+                 (user_id, token, expires_at))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_password_reset_token(token: str) -> Optional[dict]:
+    conn = _get_conn()
+    try:
+        return _fetchone(conn, f"SELECT * FROM password_reset_tokens WHERE token = {PH}", (token,))
+    finally:
+        conn.close()
+
+
+def mark_password_reset_token_used(token: str) -> None:
+    conn = _get_conn()
+    try:
+        _used_true = "TRUE" if USE_PG else "1"
+        _execute(conn, f"UPDATE password_reset_tokens SET used = {_used_true} WHERE token = {PH}", (token,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_user_password(user_id: int, password_hash: str) -> None:
+    conn = _get_conn()
+    try:
+        _execute(conn, f"UPDATE users SET password_hash = {PH} WHERE id = {PH}", (password_hash, user_id))
         conn.commit()
     finally:
         conn.close()

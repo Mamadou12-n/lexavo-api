@@ -265,9 +265,17 @@ Question : {question}"""
     # Construire les messages avec historique (fenetre glissante : 10 derniers echanges max)
     messages = []
     if history:
-        # Limiter a 10 echanges pour ne pas exploser le contexte
-        recent = history[-20:]  # 20 messages = ~10 echanges user/assistant
-        for msg in recent:
+        recent = history[-20:]
+        # Limiter à ~6000 tokens pour laisser de la place au contexte et à la question
+        total_chars = 0
+        truncated = []
+        for msg in reversed(recent):
+            msg_chars = len(msg.get("content", ""))
+            if total_chars + msg_chars > 24000:  # ~6000 tokens ≈ 24000 chars
+                break
+            truncated.insert(0, msg)
+            total_chars += msg_chars
+        for msg in truncated:
             messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": user_message})
 

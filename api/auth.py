@@ -206,3 +206,43 @@ def login_user(email: str, password: str) -> dict:
     save_refresh_token(safe_user["id"], refresh, expires)
 
     return {"user": safe_user, "token": token, "refresh_token": refresh}
+
+
+def forgot_password(email: str) -> str:
+    """Génère un token de reset valable 1h. Retourne le token (à envoyer par email en prod).
+    Ne révèle pas si l'email existe (sécurité anti-énumération).
+    """
+    from api.database import create_password_reset_token
+    import uuid
+    user = get_user_by_email(email)
+    if user:
+        token = secrets.token_urlsafe(32)
+        expires = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        create_password_reset_token(user["id"], token, expires)
+        return token
+    # Retourner un token factice pour ne pas révéler si l'email existe
+    return secrets.token_urlsafe(32)
+
+
+def reset_password(token: str, new_password: str) -> bool:
+    """Valide le token et met à jour le mot de passe. Retourne True si succès."""
+    from api.database import get_password_reset_token, mark_password_reset_token_used, update_user_password
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères.")
+    row = get_password_reset_token(token)
+    if not row:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré.")
+    if row.get("used") in (True, 1):
+        raise HTTPException(status_code=400, detail="Ce token a déjà été utilisé.")
+    raw_expires = row["expires_at"]
+    if isinstance(raw_expires, str):
+        expires = datetime.strptime(raw_expires, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    else:
+        # PostgreSQL retourne un datetime objet directement
+        expires = raw_expires if raw_expires.tzinfo else raw_expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="Token expiré. Refaites une demande.")
+    new_hash = hash_password(new_password)
+    update_user_password(row["user_id"], new_hash)
+    mark_password_reset_token_used(token)
+    return True

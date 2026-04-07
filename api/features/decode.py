@@ -46,14 +46,21 @@ def decode_document(text: str, mock: bool = False) -> dict:
     import anthropic
 
     model = select_model("translation", len(text))
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY non configurée")
+    client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=1024,
-        system=DECODE_PROMPT,
-        messages=[{"role": "user", "content": f"DOCUMENT A TRADUIRE :\n\n{text}"}],
-    )
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            system=DECODE_PROMPT,
+            messages=[{"role": "user", "content": f"DOCUMENT A TRADUIRE :\n\n{text}"}],
+        )
+    except Exception as e:
+        log.error(f"Erreur API Claude: {e}")
+        raise ValueError(f"Erreur lors de l'analyse: {e}")
 
     raw = response.content[0].text.strip()
     try:

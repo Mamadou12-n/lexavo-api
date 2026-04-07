@@ -72,6 +72,7 @@ def calculate_score(answers: List[dict]) -> dict:
                 "question": question["question"],
                 "category": cat,
                 "recommendation": _get_recommendation(q_id),
+                "legal_basis": _get_legal_basis(q_id),
             })
         elif value == 1.0:
             strong_points.append({
@@ -102,6 +103,8 @@ def calculate_score(answers: List[dict]) -> dict:
 
     return {
         "score": score,
+        "percentage": float(score),
+        "total_possible": total_weight,
         "rating": rating,
         "message": message,
         "total_questions": len(answers),
@@ -109,7 +112,25 @@ def calculate_score(answers: List[dict]) -> dict:
         "strong_points": strong_points,
         "category_breakdown": cat_breakdown,
         "disclaimer": "Score indicatif d'auto-evaluation. Ne constitue pas un avis juridique.",
+        "model": "local",
     }
+
+
+def _get_legal_basis(question_id: int) -> str:
+    """Base legale par question."""
+    bases = {
+        1: "Loi du 3 juillet 1978, art. 3 — Contrats de travail",
+        2: "Code des droits d'enregistrement, art. 227",
+        3: "Code civil, art. 893 et suivants — Testaments",
+        4: "Loi du 4 avril 2014 relative aux assurances",
+        5: "CCT n°109 — Motivation du licenciement",
+        6: "Loi du 17 mars 2013 — Protection extrajudiciaire",
+        7: "Code des impots sur les revenus 1992 (CIR 92)",
+        8: "Code civil, art. 1387 et suivants — Regimes matrimoniaux",
+        9: "RGPD, art. 15-17 — Droits de la personne concernee",
+        10: "Loi du 28 aout 2011 — Protection du consommateur",
+    }
+    return bases.get(question_id, "")
 
 
 def _get_recommendation(question_id: int) -> str:

@@ -103,17 +103,37 @@ def generate_compliance_audit(
         cat_score = round((data["earned"] / data["total"]) * 100) if data["total"] > 0 else 0
         cat_breakdown[cat] = {"score": cat_score, "status": "conforme" if cat_score >= 80 else "a_risque" if cat_score < 50 else "attention"}
 
+    # Construire non_compliant_items avec les cles attendues par le frontend
+    non_compliant_items = []
+    for item in non_compliant:
+        nc_item = {
+            "question": item.get("question", ""),
+            "category": item.get("category", ""),
+            "status": item.get("status", ""),
+            "risk": item.get("status", "non"),
+            "action_required": item.get("risk", ""),
+            "risk_description": item.get("risk", ""),
+        }
+        # Determiner le niveau de risque pour la couleur frontend
+        q_id_match = next((q for q in COMPLIANCE_QUESTIONS if q["question"] == item.get("question")), None)
+        if q_id_match:
+            weight = q_id_match.get("weight", 5)
+            nc_item["risk"] = "high" if weight >= 8 else "medium" if weight >= 6 else "low"
+        non_compliant_items.append(nc_item)
+
     return {
         "compliance_score": score,
         "overall_status": overall_status,
         "risk_level": risk_level,
         "company_type": company_type,
         "non_compliant": non_compliant,
+        "non_compliant_items": non_compliant_items,
         "partially_compliant": partially_compliant,
         "compliant_count": len(compliant),
         "category_breakdown": cat_breakdown,
         "priority_actions": [item["risk"] for item in non_compliant[:5]],
         "disclaimer": "Audit indicatif d'auto-evaluation. Ne remplace pas un audit professionnel.",
+        "model": "local",
     }
 
 

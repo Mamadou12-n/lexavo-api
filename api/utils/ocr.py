@@ -1,6 +1,10 @@
 """OCR partagé pour Shield et Decode — pytesseract."""
+import base64
 import io
-from typing import Optional
+import logging
+from typing import List, Optional
+
+log = logging.getLogger("ocr")
 
 
 def extract_text_from_image(image_bytes: bytes, lang: str = "fra+nld") -> str:
@@ -13,6 +17,25 @@ def extract_text_from_image(image_bytes: bytes, lang: str = "fra+nld") -> str:
     raw_text = pytesseract.image_to_string(image, lang=lang)
     lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
     return "\n".join(lines)
+
+
+def extract_text_from_base64_list(photos_base64: List[str], lang: str = "fra+nld") -> str:
+    """Extrait le texte OCR d'une liste d'images encodées en base64."""
+    texts = []
+    for b64 in photos_base64:
+        if not b64:
+            continue
+        try:
+            # Supprimer le data URI prefix si présent (data:image/jpeg;base64,...)
+            if "," in b64:
+                b64 = b64.split(",", 1)[1]
+            image_bytes = base64.b64decode(b64)
+            text = extract_text_from_image(image_bytes, lang=lang)
+            if text.strip():
+                texts.append(text.strip())
+        except Exception as e:
+            log.warning(f"OCR base64 ignoré: {e}")
+    return "\n\n".join(texts)
 
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:

@@ -74,4 +74,39 @@ def generate_heritage_guide(
         guide["estimated_duties"] = duties
 
     guide["disclaimer"] = "Guide informatif. Les successions necessitent l'intervention d'un notaire."
+
+    # Cles attendues par le frontend mobile
+    guide["model"] = "local"
+
+    # summary — combine les notes en texte lisible
+    if not guide.get("summary"):
+        parts = [f"Succession en region {region.capitalize()}."]
+        parts.extend(guide.get("notes", []))
+        parts.append(f"Autorite competente : {regional.get('authority', 'N/A')}.")
+        parts.append(f"Delai de declaration : {regional.get('deadline_declaration', 'N/A')}.")
+        guide["summary"] = " ".join(parts)
+
+    # succession_duties et effective_rate depuis estimated_duties
+    if duties and isinstance(duties, dict):
+        guide["succession_duties"] = duties.get("total_duties", duties.get("duties", 0))
+        if estimated_value > 0 and guide["succession_duties"]:
+            guide["effective_rate"] = (guide["succession_duties"] / estimated_value) * 100
+        else:
+            guide["effective_rate"] = 0.0
+    elif duties and isinstance(duties, (int, float)):
+        guide["succession_duties"] = duties
+        guide["effective_rate"] = (duties / estimated_value * 100) if estimated_value > 0 else 0.0
+    else:
+        guide["succession_duties"] = None
+        guide["effective_rate"] = None
+
+    # applicable_rates depuis regional_info
+    if not guide.get("applicable_rates"):
+        guide["applicable_rates"] = None
+        rates_info = regional.get("rates_info", "")
+        if rates_info:
+            guide["legal_basis"] = rates_info
+        else:
+            guide["legal_basis"] = None
+
     return guide

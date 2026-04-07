@@ -29,13 +29,61 @@ def save_preferences(user_id: int, domains: List[str]) -> dict:
     return {"user_id": user_id, "domains": selected, "saved_at": datetime.now().isoformat()}
 
 
+# Correspondance domaine → termes de recherche ChromaDB
+_DOMAIN_QUERIES = {
+    "travail":      "droit du travail contrat emploi licenciement salaire CCT",
+    "bail":         "bail loyer locataire propriétaire expulsion garantie locative",
+    "fiscal":       "impôt taxe TVA IPP ISOC déclaration fiscale",
+    "famille":      "divorce pension alimentaire garde enfant mariage succession",
+    "entreprise":   "société entreprise RGPD concurrence CSA faillite",
+    "social":       "sécurité sociale chômage INAMI pension maladie",
+    "immobilier":   "urbanisme permis construire copropriété vente immeuble",
+    "environnement": "environnement permis pollution énergie déchet protection",
+}
+
+
 def get_alert_feed(domains: List[str], limit: int = 10, mock: bool = False) -> list:
-    if mock:  # Demo feed — real feed via Moniteur belge scraping planned
-        feed = [
-            {"id": 1, "domain": "travail", "title": "Nouvelle CCT sur le teletravail structurel", "summary": "Le CNT a adopte la CCT n°149/2 rendant obligatoire une politique de teletravail ecrite.", "date": "2026-03-15", "source": "Moniteur belge", "url": ""},
-            {"id": 2, "domain": "fiscal", "title": "Modification des tranches IPP 2026", "summary": "Indexation annuelle des baremes de l'impot des personnes physiques.", "date": "2026-03-10", "source": "SPF Finances", "url": ""},
-            {"id": 3, "domain": "bail", "title": "Plafonnement de l'indexation des loyers prolonge", "summary": "Le mecanisme de protection contre l'indexation excessive des loyers est prolonge jusqu'en 2027.", "date": "2026-03-01", "source": "Moniteur belge", "url": ""},
-            {"id": 4, "domain": "entreprise", "title": "Nouvelles obligations RGPD pour les PME", "summary": "L'APD publie de nouvelles lignes directrices simplifiees pour les PME de moins de 50 travailleurs.", "date": "2026-02-28", "source": "APD", "url": ""},
-            {"id": 5, "domain": "social", "title": "Revalorisation des allocations de chomage", "summary": "Augmentation de 2% des allocations de chomage a partir du 1er avril 2026.", "date": "2026-02-25", "source": "ONEM", "url": ""},
-        ]
-        return [a for a in feed if a["domain"] in domains][:limit] if domains else feed[:limit]
+    """Retourne des alertes depuis ChromaDB (données réelles)."""
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        from rag.retriever import retrieve
+
+        effective_domains = domains if domains else list(_DOMAIN_QUERIES.keys())
+        results = []
+        seen_doc_ids = set()
+
+        per_domain = max(1, limit // len(effective_domains)) if effective_domains else limit
+
+        for domain in effective_domains:
+            query = _DOMAIN_QUERIES.get(domain, domain)
+            try:
+                chunks = retrieve(query, top_k=per_domain * 2)
+                count = 0
+                for chunk in chunks:
+                    if count >= per_domain:
+                        break
+                    doc_id = chunk.get("doc_id", "")
+                    if doc_id in seen_doc_ids:
+                        continue
+                    seen_doc_ids.add(doc_id)
+                    title = chunk.get("title") or doc_id or "Document juridique"
+                    results.append({
+                        "id": len(results) + 1,
+                        "domain": domain,
+                        "title": title[:120],
+                        "summary": (chunk.get("chunk_text") or "")[:300].strip(),
+                        "date": chunk.get("date", ""),
+                        "source": chunk.get("source", "Base juridique Lexavo"),
+                        "url": chunk.get("url", ""),
+                    })
+                    count += 1
+            except Exception as e:
+                log.warning("Erreur retrieve domaine %s : %s", domain, e)
+
+        return results[:limit]
+
+    except Exception as e:
+        log.error("get_alert_feed erreur : %s", e)
+        return []

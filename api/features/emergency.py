@@ -8,13 +8,13 @@ from datetime import datetime
 log = logging.getLogger("emergency")
 
 EMERGENCY_CATEGORIES = [
-    {"id": "garde_a_vue", "label": "Garde a vue / Arrestation", "priority": "critical"},
-    {"id": "expulsion", "label": "Expulsion imminente", "priority": "critical"},
-    {"id": "licenciement", "label": "Licenciement immediat", "priority": "high"},
-    {"id": "violence", "label": "Violence domestique", "priority": "critical"},
-    {"id": "saisie", "label": "Saisie de biens", "priority": "high"},
-    {"id": "accident", "label": "Accident / Blessure", "priority": "high"},
-    {"id": "autre", "label": "Autre urgence juridique", "priority": "medium"},
+    {"id": "garde_a_vue", "label": "Garde a vue / Arrestation", "name": "Garde a vue", "emoji": "\ud83d\ude94", "description": "Arrestation, detention, garde a vue", "priority": "critical"},
+    {"id": "expulsion", "label": "Expulsion imminente", "name": "Expulsion", "emoji": "\ud83c\udfe0", "description": "Menace d'expulsion du logement", "priority": "critical"},
+    {"id": "licenciement", "label": "Licenciement immediat", "name": "Licenciement", "emoji": "\ud83d\udc77", "description": "Licenciement abusif ou immediat", "priority": "high"},
+    {"id": "violence", "label": "Violence domestique", "name": "Violence", "emoji": "\ud83d\udee1\ufe0f", "description": "Violence conjugale ou domestique", "priority": "critical"},
+    {"id": "saisie", "label": "Saisie de biens", "name": "Saisie", "emoji": "\ud83d\udce6", "description": "Saisie mobiliere ou immobiliere", "priority": "high"},
+    {"id": "accident", "label": "Accident / Blessure", "name": "Accident", "emoji": "\ud83d\ude91", "description": "Accident de la route ou du travail", "priority": "high"},
+    {"id": "autre", "label": "Autre urgence juridique", "name": "Autre urgence", "emoji": "\u26a0\ufe0f", "description": "Toute autre situation urgente", "priority": "medium"},
 ]
 
 EMERGENCY_PRICE_CENTS = 4900  # 49 EUR
