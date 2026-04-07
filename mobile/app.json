@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Lexavo",
+    "slug": "lexavo",
+    "version": "2.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "description": "Recherche juridique belge IA — 18 sources officielles, jurisprudence CEDH, Juridat, EUR-Lex.",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1F33"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "be.lexavo.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Lexavo utilise la caméra pour photographier vos documents juridiques.",
+        "NSPhotoLibraryUsageDescription": "Lexavo accède à vos photos pour analyser vos documents."
+      }
+    },
+    "android": {
+      "package": "be.lexavo.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D1F33"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": ["INTERNET", "CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Lexavo accède à vos photos pour analyser vos documents.",
+          "cameraPermission": "Lexavo utilise la caméra pour photographier vos documents juridiques."
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "defaultApiUrl": "http://localhost:8000"
+    }
+  }
+}
