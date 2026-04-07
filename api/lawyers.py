@@ -72,10 +72,14 @@ def seed_demo_lawyers() -> int:
     """
     existing = count_lawyers()
 
-    # Purge duplicates if seed ran twice (48 instead of 24)
-    if existing > 25:
-        _purge_duplicate_lawyers()
-        existing = count_lawyers()
+    # Purger tous les avocats si plus de 5 (migration vers 5 demo)
+    if existing > 5:
+        from api.database import _get_conn, _execute
+        conn = _get_conn()
+        _execute(conn, "DELETE FROM lawyers")
+        conn.commit()
+        conn.close()
+        existing = 0
 
     if existing >= 5:
         return 0  # deja peuple
