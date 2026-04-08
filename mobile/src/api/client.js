@@ -575,18 +575,18 @@ export async function getStudentBranches() {
   return r.data;
 }
 
-export async function generateQuiz(branch, difficulty = 'moyen', numQuestions = 10) {
-  const r = await api.post('/student/quiz', { branch, difficulty, num_questions: numQuestions });
+export async function generateQuiz(branch, difficulty = 'moyen', numQuestions = 10, documentContent = '') {
+  const r = await api.post('/student/quiz', { branch, difficulty, num_questions: numQuestions, ...(documentContent ? { document_content: documentContent } : {}) });
   return r.data;
 }
 
-export async function generateFlashcards(branch, topic = '', numCards = 12) {
-  const r = await api.post('/student/flashcards', { branch, topic, num_cards: numCards });
+export async function generateFlashcards(branch, topic = '', numCards = 12, documentContent = '') {
+  const r = await api.post('/student/flashcards', { branch, topic, num_cards: numCards, ...(documentContent ? { document_content: documentContent } : {}) });
   return r.data;
 }
 
-export async function generateSummary(branch, topic = '') {
-  const r = await api.post('/student/summary', { branch, topic: topic || branch });
+export async function generateSummary(branch, topic = '', documentContent = '') {
+  const r = await api.post('/student/summary', { branch, topic: topic || branch, ...(documentContent ? { document_content: documentContent } : {}) });
   return r.data;
 }
 
@@ -639,8 +639,8 @@ export async function getStudentWeakBranches() {
   return r.data;
 }
 
-export async function generateFreeRecall(branch) {
-  const r = await api.post('/student/free-recall', { branch });
+export async function generateFreeRecall(branch, documentContent = '') {
+  const r = await api.post('/student/free-recall', { branch, ...(documentContent ? { document_content: documentContent } : {}) });
   return r.data;
 }
 

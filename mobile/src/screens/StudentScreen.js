@@ -97,6 +97,7 @@ export default function StudentScreen() {
   const [activeNote, setActiveNote] = useState(null);
   const [shareForm, setShareForm] = useState({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadedDoc, setUploadedDoc] = useState({ text: '', filename: '' }); // document importé pour génération
 
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
@@ -198,6 +199,7 @@ export default function StudentScreen() {
     setActiveMode(m);
     setResult(null); setError(null); setBranch(null); setTopic(''); setPhotos([]);
     setSelected({}); setShowCorr(false); setFlipped({});
+    setUploadedDoc({ text: '', filename: '' });
     // Tuteur IA → chat direct
     if (m.id === 'chat') { setView('chat'); return; }
     // Tous les autres modes → écran conversationnel unifié
@@ -214,6 +216,7 @@ export default function StudentScreen() {
     setCaseStep('config'); setExamStep('config'); setRecallStep('config');
     setExamData(null); setCaseData(null); setRecallQuestion(null);
     setMixBranches([]); setMixResult(null);
+    setUploadedDoc({ text: '', filename: '' });
     clearInterval(timerRef.current);
   };
 
@@ -243,9 +246,10 @@ export default function StudentScreen() {
     setSelected({}); setShowCorr(false); setFlipped({});
     try {
       let data;
-      if (activeMode.id === 'quiz') data = await generateQuiz(branchName, 'moyen', 10);
-      else if (activeMode.id === 'flashcards') data = await generateFlashcards(branchName, topic, 12);
-      else data = await generateSummary(branchName, topic || branchName);
+      const docContent = uploadedDoc.text || '';
+      if (activeMode.id === 'quiz') data = await generateQuiz(branchName, 'moyen', 10, docContent);
+      else if (activeMode.id === 'flashcards') data = await generateFlashcards(branchName, topic, 12, docContent);
+      else data = await generateSummary(branchName, topic || branchName, docContent);
       setResult(data);
       setView(activeMode.id);
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur réseau'); }
@@ -318,6 +322,27 @@ export default function StudentScreen() {
         title: p.title || asset.name.replace(/\.[^.]+$/, ''),
       }));
       Alert.alert('Fichier importé', `${data.char_count} caractères extraits depuis "${asset.name}". Tu peux relire et modifier avant de partager.`);
+    } catch (e) {
+      Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handlePickDocForStudy = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf',
+               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+               'text/plain'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      setUploadLoading(true);
+      const data = await uploadNoteFile(asset.uri, asset.name, asset.mimeType || 'application/octet-stream');
+      setUploadedDoc({ text: data.extracted_text, filename: asset.name });
+      if (!topic.trim()) setTopic(asset.name.replace(/\.[^.]+$/, ''));
     } catch (e) {
       Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
     } finally {
@@ -405,7 +430,7 @@ export default function StudentScreen() {
     setBranch(subject);
     setLoading(true); setRecallQuestion(null); setError(null);
     try {
-      const d = await generateFreeRecall(subject);
+      const d = await generateFreeRecall(subject, uploadedDoc.text || '');
       setRecallQuestion(d); setRecallStep('writing'); setRecallAnswer('');
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
@@ -605,6 +630,27 @@ export default function StudentScreen() {
               onChangeText={(t) => { setTopic(t); setBranch(t); }}
               autoFocus
             />
+          </View>
+
+          {/* Import fichier */}
+          <View style={{ marginHorizontal: 16, marginBottom: 4 }}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: uploadedDoc.text ? T.neon1 : T.neon2, borderRadius: 12, borderStyle: 'dashed', padding: 13, marginBottom: 8 }}
+              onPress={handlePickDocForStudy}
+              disabled={uploadLoading}
+            >
+              {uploadLoading
+                ? <ActivityIndicator color={T.neon2} size="small" />
+                : uploadedDoc.filename
+                  ? <Text style={{ color: T.neon1, fontWeight: '700', fontSize: 13 }}>✅ {uploadedDoc.filename} — Tap pour changer</Text>
+                  : <Text style={{ color: T.neon2, fontWeight: '700', fontSize: 13 }}>📎 Importer mon cours (PDF, DOCX, TXT)</Text>
+              }
+            </TouchableOpacity>
+            {uploadedDoc.text ? (
+              <Text style={{ color: T.muted, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Document chargé — le contenu sera utilisé comme source</Text>
+            ) : (
+              <Text style={{ color: T.dimmed, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>ou entre le sujet manuellement ci-dessus</Text>
+            )}
           </View>
 
           {/* Photo */}

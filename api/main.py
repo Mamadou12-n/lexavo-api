@@ -1803,6 +1803,7 @@ def student_quiz(
 
     branch = body.get("branch", "Droit civil")
     difficulty = body.get("difficulty", "moyen")
+    document_content = (body.get("document_content") or "").strip()
     try:
         num_questions = min(int(body.get("num_questions", 10)), 15)
     except (ValueError, TypeError):
@@ -1811,10 +1812,21 @@ def student_quiz(
     check_quota(current_user["id"])
 
     client = anthropic.Anthropic()
-    prompt = f"""Tu es un professeur de droit belge. Génère un quiz de {num_questions} questions QCM
-sur la branche : {branch}. Difficulté : {difficulty}.
+    if document_content:
+        doc_excerpt = document_content[:6000]
+        source_instruction = f"""Voici les notes de cours de l'étudiant. Génère les questions EXCLUSIVEMENT à partir de ce document :
 
-Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
+---
+{doc_excerpt}
+---
+
+Si le document dépasse ce que tu vois, concentre-toi sur le contenu fourni."""
+    else:
+        source_instruction = f"Génère un quiz sur la branche : {branch}. Difficulté : {difficulty}."
+
+    prompt = f"""Tu es un professeur de droit belge. {source_instruction}
+
+Génère {num_questions} questions QCM. Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
 {{
   "branch": "{branch}",
   "difficulty": "{difficulty}",
@@ -1869,6 +1881,7 @@ def student_flashcards(
 
     branch = body.get("branch", "Droit civil")
     topic = body.get("topic", "")
+    document_content = (body.get("document_content") or "").strip()
     try:
         num_cards = min(int(body.get("num_cards", 12)), 20)
     except (ValueError, TypeError):
@@ -1876,12 +1889,21 @@ def student_flashcards(
 
     check_quota(current_user["id"])
 
-    extra = f" Focus sur le sujet : {topic}." if topic else ""
     client = anthropic.Anthropic()
-    prompt = f"""Tu es un professeur de droit belge. Génère {num_cards} flashcards pour réviser
-la branche : {branch}.{extra}
+    if document_content:
+        doc_excerpt = document_content[:6000]
+        source_instruction = f"""Voici les notes de cours de l'étudiant. Génère les flashcards EXCLUSIVEMENT à partir de ce document :
 
-Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
+---
+{doc_excerpt}
+---"""
+    else:
+        extra = f" Focus sur le sujet : {topic}." if topic else ""
+        source_instruction = f"Génère {num_cards} flashcards pour réviser la branche : {branch}.{extra}"
+
+    prompt = f"""Tu es un professeur de droit belge. {source_instruction}
+
+Génère {num_cards} flashcards. Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de ```):
 {{
   "branch": "{branch}",
   "cards": [
@@ -1932,11 +1954,30 @@ def student_summary(
 
     branch = body.get("branch", "Droit civil")
     topic = body.get("topic", branch)
+    document_content = (body.get("document_content") or "").strip()
 
     check_quota(current_user["id"])
 
     client = anthropic.Anthropic()
-    prompt = f"""Tu es un professeur de droit belge. Rédige un résumé structuré et pédagogique sur :
+    if document_content:
+        doc_excerpt = document_content[:6000]
+        prompt = f"""Tu es un professeur de droit belge. L'étudiant t'a fourni ses notes de cours.
+Rédige un résumé structuré et pédagogique BASÉ SUR CES NOTES (complète avec le droit belge réel si besoin) :
+
+---
+{doc_excerpt}
+---
+
+Structure :
+1. Définition et principes fondamentaux
+2. Base légale (articles de loi belges réels)
+3. Conditions d'application
+4. Points clés à retenir (tirés du document)
+5. Points d'attention pour l'examen
+
+Niveau : étudiant en droit (Bachelor/Master). Ne jamais inventer de loi ou de jurisprudence."""
+    else:
+        prompt = f"""Tu es un professeur de droit belge. Rédige un résumé structuré et pédagogique sur :
 **{topic}** (branche : {branch}).
 
 Structure :
@@ -2161,8 +2202,9 @@ def student_free_recall(
     from api.features.student import generate_free_recall_question
 
     branch = body.get("branch", "Droit civil")
+    document_content = (body.get("document_content") or "").strip()
     check_quota(current_user["id"])
-    result = generate_free_recall_question(branch)
+    result = generate_free_recall_question(branch, document_content=document_content)
     increment_question_count(current_user["id"])
     return result
 

@@ -360,9 +360,21 @@ def evaluate_mock_exam(exam_data: dict, student_answers: dict) -> dict:
 
 # ─── Free Recall (rappel libre) ────────────────────────────────────────────
 
-def generate_free_recall_question(branch: str) -> dict:
+def generate_free_recall_question(branch: str, document_content: str = "") -> dict:
     """Generate an open-ended question for free recall (active recall max)."""
-    prompt = f"""Tu es un professeur de droit belge. Genere UNE question ouverte en {branch}.
+    if document_content:
+        doc_excerpt = document_content[:4000]
+        source = f"""Voici les notes de cours de l'etudiant. Genere UNE question ouverte BASEE SUR CE DOCUMENT :
+
+---
+{doc_excerpt}
+---
+
+La question doit porter sur un concept cle du document."""
+    else:
+        source = f"Genere UNE question ouverte en {branch}."
+
+    prompt = f"""Tu es un professeur de droit belge. {source}
 La question doit demander a l'etudiant de FORMULER une regle de droit, pas juste la reconnaitre.
 C'est du rappel libre (active recall maximal).
 
