@@ -38,7 +38,7 @@ pypdf2>=3.0.0                        # Extraction texte depuis PDF (notes étudi
 python-docx>=1.1.0                   # Extraction texte depuis DOCX (notes étudiants)
 
 # ─── NotebookLM Integration ─────────────────────────────────────────────────
-notebooklm-py>=0.3.4                 # API non-officielle Google NotebookLM (auth via NOTEBOOKLM_AUTH_JSON)
+# notebooklm-py est importé en lazy dans l'endpoint — pas besoin ici (Railway ne peut pas installer playwright)
 
 # ─── Data Processing ────────────────────────────────────────────────────────
 # (used by processors/ and scrapers/)
