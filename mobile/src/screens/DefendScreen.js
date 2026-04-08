@@ -163,6 +163,7 @@ export default function DefendScreen() {
 
   // Résultats
   const [result, setResult]           = useState(null);
+  const [showLetter, setShowLetter]   = useState(false);
 
   const cat = getCatById(categoryId);
   const { score, level } = computeScore(categoryId, answers);
@@ -232,6 +233,7 @@ export default function DefendScreen() {
         res = await defendAnalyze(description.trim(), categoryId, savedRegion, '', photos);
       }
       setResult(res);
+      setShowLetter(false);
       setStep(3);
     } catch (e) {
       setError(e.response?.data?.detail || e.message || 'Erreur réseau');
@@ -412,7 +414,7 @@ export default function DefendScreen() {
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={s.analyzeBtnText}>⚡ Générer ma lettre de contestation</Text>
+                : <Text style={s.analyzeBtnText}>🔍 Analyser ma situation</Text>
               }
             </TouchableOpacity>
           </>
@@ -427,18 +429,35 @@ export default function DefendScreen() {
               <Text style={s.backText}>← Modifier mes réponses</Text>
             </TouchableOpacity>
 
-            {/* Score de contestabilité (si checklist) */}
+            {/* ── BLOC 1 : ANALYSE COMPLÈTE ── */}
+
+            {/* Score de contestabilité */}
             {result.contestability_score !== undefined && (
-              <ScoreGauge
-                score={result.contestability_score}
-                level={result.contestability_level}
-              />
+              <ScoreGauge score={result.contestability_score} level={result.contestability_level} />
+            )}
+
+            {/* Probabilité de succès (flow libre) */}
+            {result.success_probability && !result.contestability_score && (
+              <View style={[s.resultCard, { borderLeftWidth: 4, borderLeftColor: result.success_probability === 'elevee' ? '#10B981' : result.success_probability === 'moyenne' ? '#F59E0B' : '#EF4444' }]}>
+                <Text style={s.resultTitle}>📊 Probabilité de succès</Text>
+                <Text style={[s.resultText, { fontWeight: '700', fontSize: 16 }]}>
+                  {result.success_probability === 'elevee' ? '🟢 Élevée' : result.success_probability === 'moyenne' ? '🟠 Moyenne' : '🔴 Faible'}
+                </Text>
+              </View>
             )}
 
             {/* Recommandation */}
             {result.recommendation && (
               <View style={s.recCard}>
                 <Text style={s.recText}>{result.recommendation}</Text>
+              </View>
+            )}
+
+            {/* Analyse situation détaillée */}
+            {result.situation_analysis && (
+              <View style={s.resultCard}>
+                <Text style={s.resultTitle}>📋 Analyse de votre situation</Text>
+                <Text style={s.resultText}>{result.situation_analysis}</Text>
               </View>
             )}
 
@@ -455,38 +474,7 @@ export default function DefendScreen() {
               </View>
             )}
 
-            {/* Lettre générée */}
-            {(result.letter || result.document_text) && (
-              <View style={s.resultCard}>
-                <Text style={s.resultTitle}>📄 Lettre de contestation</Text>
-                <View style={s.letterBox}>
-                  <Text style={s.letterText}>{result.letter || result.document_text}</Text>
-                </View>
-                <TouchableOpacity style={s.shareBtn} onPress={shareResult}>
-                  <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Analyse situation (flow libre) */}
-            {result.situation_analysis && !result.letter && (
-              <View style={s.resultCard}>
-                <Text style={s.resultTitle}>📋 Analyse</Text>
-                <Text style={s.resultText}>{result.situation_analysis}</Text>
-              </View>
-            )}
-
-            {/* Probabilité (flow libre) */}
-            {result.success_probability && !result.contestability_score && (
-              <View style={[s.resultCard, { borderLeftWidth: 4, borderLeftColor: result.success_probability === 'elevee' ? '#10B981' : result.success_probability === 'moyenne' ? '#F59E0B' : '#EF4444' }]}>
-                <Text style={s.resultTitle}>📊 Probabilité de succès</Text>
-                <Text style={[s.resultText, { fontWeight: '700', fontSize: 16 }]}>
-                  {result.success_probability === 'elevee' ? '🟢 Élevée' : result.success_probability === 'moyenne' ? '🟠 Moyenne' : '🔴 Faible'}
-                </Text>
-              </View>
-            )}
-
-            {/* Contexte légal */}
+            {/* Contexte juridique */}
             {result.legal_context && (
               <View style={s.legalBox}>
                 <Text style={s.legalTitle}>⚖️ Contexte juridique</Text>
@@ -504,6 +492,32 @@ export default function DefendScreen() {
                     <Text style={s.stepText}>{st}</Text>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {/* ── SÉPARATEUR ── */}
+            <View style={s.letterSeparator}>
+              <View style={s.letterSepLine} />
+              <Text style={s.letterSepText}>Passer à l'action</Text>
+              <View style={s.letterSepLine} />
+            </View>
+
+            {/* ── BLOC 2 : LETTRE DE CONTESTATION ── */}
+            {(result.letter || result.document_text) && !showLetter && (
+              <TouchableOpacity style={s.generateLetterBtn} activeOpacity={0.85} onPress={() => setShowLetter(true)}>
+                <Text style={s.generateLetterBtnText}>📄 Générer ma lettre de contestation</Text>
+              </TouchableOpacity>
+            )}
+
+            {(result.letter || result.document_text) && showLetter && (
+              <View style={s.resultCard}>
+                <Text style={s.resultTitle}>📄 Lettre de contestation</Text>
+                <View style={s.letterBox}>
+                  <Text style={s.letterText}>{result.letter || result.document_text}</Text>
+                </View>
+                <TouchableOpacity style={s.shareBtn} onPress={shareResult}>
+                  <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -618,4 +632,18 @@ const s = StyleSheet.create({
 
   resetBtn: { marginHorizontal: 16, backgroundColor: '#1F2937', borderRadius: 14, padding: 16, alignItems: 'center' },
   resetBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+
+  // Séparateur analyse / lettre
+  letterSeparator: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 16, gap: 10 },
+  letterSepLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
+  letterSepText: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 },
+
+  // Bouton générer lettre
+  generateLetterBtn: {
+    marginHorizontal: 16, marginBottom: 16,
+    backgroundColor: '#1C2B3A',
+    borderRadius: 14, padding: 16, alignItems: 'center',
+    borderWidth: 2, borderColor: '#C45A2D',
+  },
+  generateLetterBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
 });
