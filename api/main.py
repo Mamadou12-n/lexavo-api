@@ -2232,6 +2232,187 @@ def list_groups(
     return {"groups": get_user_groups(current_user["id"])}
 
 
+# ─── LMS Integration Endpoints ─────────────────────────────────────────────────
+
+@app.get("/student/lms/universities")
+@limiter.limit("30/minute")
+def lms_universities(request: Request):
+    """Liste les universités belges connues avec leurs URLs Moodle."""
+    from api.features.lms import KNOWN_UNIVERSITIES
+    return {"universities": KNOWN_UNIVERSITIES}
+
+
+@app.post("/student/lms/connect")
+@limiter.limit("5/minute")
+def lms_connect(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Connecte l'étudiant à son Moodle. Stocke le token."""
+    from api.features.lms import moodle_authenticate, get_site_info
+    from api.database import save_lms_connection
+
+    site_url = body.get("site_url", "").strip().rstrip("/")
+    username = body.get("username", "").strip()
+    password = body.get("password", "")
+    platform = body.get("platform", "moodle")
+
+    if not site_url or not username or not password:
+        raise HTTPException(status_code=400, detail="URL, identifiant et mot de passe requis")
+
+    try:
+        token = moodle_authenticate(site_url, username, password)
+        info = get_site_info(site_url, token)
+        conn_data = save_lms_connection(
+            user_id=current_user["id"],
+            platform=platform,
+            site_url=site_url,
+            token=token,
+            site_name=info.get("site_name", ""),
+            user_fullname=info.get("user_fullname", ""),
+            moodle_user_id=info.get("moodle_user_id"),
+        )
+        return {
+            "connected": True,
+            "site_name": info.get("site_name", ""),
+            "user_fullname": info.get("user_fullname", ""),
+            "platform": platform,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"/student/lms/connect error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur de connexion à la plateforme")
+
+
+@app.get("/student/lms/status")
+@limiter.limit("20/minute")
+def lms_status(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Vérifie si l'étudiant a une connexion LMS active."""
+    from api.database import get_lms_connection
+    conn = get_lms_connection(current_user["id"])
+    if conn:
+        return {
+            "connected": True,
+            "platform": conn["platform"],
+            "site_name": conn.get("site_name", ""),
+            "user_fullname": conn.get("user_fullname", ""),
+            "site_url": conn["site_url"],
+        }
+    return {"connected": False}
+
+
+@app.get("/student/lms/courses")
+@limiter.limit("10/minute")
+def lms_courses(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Récupère les cours Moodle de l'étudiant."""
+    from api.database import get_lms_connection, save_lms_course, get_lms_courses
+    from api.features.lms import get_courses
+
+    conn = get_lms_connection(current_user["id"])
+    if not conn:
+        raise HTTPException(status_code=400, detail="Aucune connexion LMS. Connecte-toi d'abord.")
+
+    try:
+        courses = get_courses(conn["site_url"], conn["token"], conn.get("moodle_user_id"))
+        # Cache les cours en DB
+        for c in courses:
+            save_lms_course(
+                user_id=current_user["id"],
+                connection_id=conn["id"],
+                course_id=c["id"],
+                course_name=c["name"],
+                course_shortname=c.get("shortname", ""),
+            )
+        return {"courses": courses}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"/student/lms/courses error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des cours")
+
+
+@app.get("/student/lms/course/{course_id}/content")
+@limiter.limit("10/minute")
+def lms_course_content(
+    request: Request,
+    course_id: int,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Récupère le contenu détaillé d'un cours (sections, modules, fichiers)."""
+    from api.database import get_lms_connection
+    from api.features.lms import get_course_content
+
+    conn = get_lms_connection(current_user["id"])
+    if not conn:
+        raise HTTPException(status_code=400, detail="Aucune connexion LMS")
+
+    try:
+        content = get_course_content(conn["site_url"], conn["token"], course_id)
+        return {"course_id": course_id, "sections": content}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/student/lms/import")
+@limiter.limit("5/minute")
+def lms_import_content(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Importe et extrait le texte d'un fichier Moodle pour alimenter les quiz/flashcards."""
+    from api.database import get_lms_connection, save_lms_course
+    from api.features.lms import download_and_extract
+
+    conn = get_lms_connection(current_user["id"])
+    if not conn:
+        raise HTTPException(status_code=400, detail="Aucune connexion LMS")
+
+    file_url = body.get("file_url", "")
+    course_id = body.get("course_id")
+    course_name = body.get("course_name", "Cours importé")
+
+    if not file_url:
+        raise HTTPException(status_code=400, detail="URL du fichier requise")
+
+    try:
+        text = download_and_extract(conn["site_url"], conn["token"], file_url)
+        if course_id:
+            save_lms_course(
+                user_id=current_user["id"],
+                connection_id=conn["id"],
+                course_id=course_id,
+                course_name=course_name,
+                imported_content=text,
+            )
+        return {"imported": True, "content_length": len(text), "preview": text[:500]}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"/student/lms/import error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'import")
+
+
+@app.delete("/student/lms/disconnect")
+@limiter.limit("5/minute")
+def lms_disconnect(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Déconnecte l'étudiant de son LMS."""
+    from api.database import delete_lms_connection
+    delete_lms_connection(current_user["id"])
+    return {"disconnected": True}
+
+
 # ─── SEO Routes ────────────────────────────────────────────────────────────────
 from fastapi.templating import Jinja2Templates  # noqa: E402
 from api.seo import router as seo_router

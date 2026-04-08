@@ -333,6 +333,31 @@ CREATE TABLE IF NOT EXISTS student_group_members (
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(group_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS student_lms_connections (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL DEFAULT 'moodle',
+    site_url TEXT NOT NULL,
+    token TEXT NOT NULL,
+    site_name TEXT,
+    user_fullname TEXT,
+    moodle_user_id INTEGER,
+    connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, platform)
+);
+
+CREATE TABLE IF NOT EXISTS student_lms_courses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    connection_id INTEGER NOT NULL REFERENCES student_lms_connections(id) ON DELETE CASCADE,
+    course_id INTEGER NOT NULL,
+    course_name TEXT NOT NULL,
+    course_shortname TEXT,
+    imported_content TEXT,
+    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, course_id)
+);
 """
 
 _PG_INDEXES = """
@@ -580,6 +605,34 @@ CREATE TABLE IF NOT EXISTS student_group_members (
     FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(group_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_lms_connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'moodle',
+    site_url TEXT NOT NULL,
+    token TEXT NOT NULL,
+    site_name TEXT,
+    user_fullname TEXT,
+    moodle_user_id INTEGER,
+    connected_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, platform)
+);
+
+CREATE TABLE IF NOT EXISTS student_lms_courses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    connection_id INTEGER NOT NULL,
+    course_id INTEGER NOT NULL,
+    course_name TEXT NOT NULL,
+    course_shortname TEXT,
+    imported_content TEXT,
+    synced_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (connection_id) REFERENCES student_lms_connections(id) ON DELETE CASCADE,
+    UNIQUE(user_id, course_id)
 );
 """ + _PG_INDEXES
 
@@ -1637,5 +1690,95 @@ def get_group_leaderboard(group_id: int) -> list:
             LEFT JOIN student_progress sp ON sp.user_id = u.id
             WHERE gm.group_id = {PH}
             GROUP BY u.id, u.name ORDER BY total_xp DESC""", (group_id,))
+    finally:
+        conn.close()
+
+
+# ─── LMS Connections CRUD ─────────────────────────────────────────────────────
+
+def save_lms_connection(user_id: int, platform: str, site_url: str, token: str,
+                        site_name: str = '', user_fullname: str = '', moodle_user_id: int = None) -> dict:
+    """Save or update an LMS connection (UPSERT on user_id+platform)."""
+    conn = _get_conn()
+    try:
+        existing = _fetchone(conn, f"SELECT id FROM student_lms_connections WHERE user_id = {PH} AND platform = {PH}", (user_id, platform))
+        if existing:
+            _execute(conn, f"""UPDATE student_lms_connections
+                SET site_url = {PH}, token = {PH}, site_name = {PH}, user_fullname = {PH}, moodle_user_id = {PH}
+                WHERE user_id = {PH} AND platform = {PH}""",
+                (site_url, token, site_name, user_fullname, moodle_user_id, user_id, platform))
+            conn.commit()
+            return _fetchone(conn, f"SELECT * FROM student_lms_connections WHERE id = {PH}", (existing['id'],))
+        else:
+            new_id = _insert_returning_id(conn,
+                f"""INSERT INTO student_lms_connections (user_id, platform, site_url, token, site_name, user_fullname, moodle_user_id)
+                    VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH}, {PH})""",
+                (user_id, platform, site_url, token, site_name, user_fullname, moodle_user_id))
+            conn.commit()
+            return _fetchone(conn, f"SELECT * FROM student_lms_connections WHERE id = {PH}", (new_id,))
+    finally:
+        conn.close()
+
+
+def get_lms_connection(user_id: int, platform: str = 'moodle') -> Optional[dict]:
+    """Get the user's LMS connection."""
+    conn = _get_conn()
+    try:
+        return _fetchone(conn, f"SELECT * FROM student_lms_connections WHERE user_id = {PH} AND platform = {PH}", (user_id, platform))
+    finally:
+        conn.close()
+
+
+def delete_lms_connection(user_id: int, platform: str = 'moodle') -> bool:
+    """Delete an LMS connection (and all cached courses via CASCADE)."""
+    conn = _get_conn()
+    try:
+        _execute(conn, f"DELETE FROM student_lms_connections WHERE user_id = {PH} AND platform = {PH}", (user_id, platform))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def save_lms_course(user_id: int, connection_id: int, course_id: int,
+                    course_name: str, course_shortname: str = '', imported_content: str = '') -> dict:
+    """Save or update a cached LMS course."""
+    conn = _get_conn()
+    try:
+        existing = _fetchone(conn, f"SELECT id FROM student_lms_courses WHERE user_id = {PH} AND course_id = {PH}", (user_id, course_id))
+        if existing:
+            _execute(conn, f"""UPDATE student_lms_courses
+                SET course_name = {PH}, course_shortname = {PH}, imported_content = {PH}, synced_at = CURRENT_TIMESTAMP
+                WHERE id = {PH}""",
+                (course_name, course_shortname, imported_content, existing['id']))
+            conn.commit()
+            return _fetchone(conn, f"SELECT * FROM student_lms_courses WHERE id = {PH}", (existing['id'],))
+        else:
+            new_id = _insert_returning_id(conn,
+                f"""INSERT INTO student_lms_courses (user_id, connection_id, course_id, course_name, course_shortname, imported_content)
+                    VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH})""",
+                (user_id, connection_id, course_id, course_name, course_shortname, imported_content))
+            conn.commit()
+            return _fetchone(conn, f"SELECT * FROM student_lms_courses WHERE id = {PH}", (new_id,))
+    finally:
+        conn.close()
+
+
+def get_lms_courses(user_id: int) -> list:
+    """Get all cached LMS courses for the user."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"""SELECT id, course_id, course_name, course_shortname, imported_content IS NOT NULL as has_content, synced_at
+            FROM student_lms_courses WHERE user_id = {PH} ORDER BY course_name""", (user_id,))
+    finally:
+        conn.close()
+
+
+def get_lms_course_content(user_id: int, course_id: int) -> Optional[str]:
+    """Get the imported text content for a course."""
+    conn = _get_conn()
+    try:
+        row = _fetchone(conn, f"SELECT imported_content FROM student_lms_courses WHERE user_id = {PH} AND course_id = {PH}", (user_id, course_id))
+        return row['imported_content'] if row else None
     finally:
         conn.close()

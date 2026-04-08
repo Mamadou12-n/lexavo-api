@@ -647,6 +647,47 @@ export async function getStudentGroups() {
   return r.data;
 }
 
+// ─── LMS Integration (Moodle / Canvas) ────────────────────────────────────────
+
+export async function getLMSUniversities() {
+  const r = await api.get('/student/lms/universities');
+  return r.data;
+}
+
+export async function connectLMS(siteUrl, username, password, platform = 'moodle') {
+  const r = await api.post('/student/lms/connect', {
+    site_url: siteUrl, username, password, platform,
+  });
+  return r.data;
+}
+
+export async function getLMSStatus() {
+  const r = await api.get('/student/lms/status');
+  return r.data;
+}
+
+export async function getLMSCourses() {
+  const r = await api.get('/student/lms/courses');
+  return r.data;
+}
+
+export async function getLMSCourseContent(courseId) {
+  const r = await api.get(`/student/lms/course/${courseId}/content`);
+  return r.data;
+}
+
+export async function importLMSContent(fileUrl, courseId, courseName) {
+  const r = await api.post('/student/lms/import', {
+    file_url: fileUrl, course_id: courseId, course_name: courseName,
+  });
+  return r.data;
+}
+
+export async function disconnectLMS() {
+  const r = await api.delete('/student/lms/disconnect');
+  return r.data;
+}
+
 // ─── Billing (routes /billing/* — alignées sur le backend) ────────────────────
 
 export async function getSubscriptionStatus() {

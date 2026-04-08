@@ -17,6 +17,8 @@ import {
   getStudentBadges, getStudentWeakBranches, generateFreeRecall,
   evaluateFreeRecall, generateInterleavedQuiz,
   createStudentGroup, joinStudentGroup, getStudentGroups,
+  getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
+  getLMSCourseContent, importLMSContent, disconnectLMS,
 } from '../api/client';
 import Markdown from 'react-native-markdown-display';
 import PhotoPicker from '../components/PhotoPicker';
@@ -118,6 +120,22 @@ export default function StudentScreen() {
   // XP animation
   const [xpEarned, setXpEarned] = useState(null);
   const [newBadges, setNewBadges] = useState([]);
+
+  // LMS (Moodle)
+  const [lmsConnected, setLmsConnected] = useState(false);
+  const [lmsSiteName, setLmsSiteName] = useState('');
+  const [lmsFullname, setLmsFullname] = useState('');
+  const [lmsCourses, setLmsCourses] = useState([]);
+  const [lmsModal, setLmsModal] = useState(false);
+  const [lmsTab, setLmsTab] = useState('connect'); // connect | courses | content
+  const [lmsUrl, setLmsUrl] = useState('');
+  const [lmsUser, setLmsUser] = useState('');
+  const [lmsPass, setLmsPass] = useState('');
+  const [lmsUniversities, setLmsUniversities] = useState([]);
+  const [lmsLoading, setLmsLoading] = useState(false);
+  const [lmsError, setLmsError] = useState('');
+  const [lmsCourseContent, setLmsCourseContent] = useState(null);
+  const [lmsActiveCourse, setLmsActiveCourse] = useState(null);
 
   // Groupes
   const [groups, setGroups] = useState([]);
@@ -375,6 +393,76 @@ export default function StudentScreen() {
     try { await Share.share({ message: `🎓 Lexavo Campus — ${label}\n\nTélécharge l\'app Lexavo pour étudier le droit belge !` }); }
     catch (_) {}
   };
+
+  // ─── LMS (Moodle) ─────────────────────────────────────────────────────────
+  const loadLMSStatus = async () => {
+    try {
+      const s = await getLMSStatus();
+      setLmsConnected(s.connected);
+      if (s.connected) { setLmsSiteName(s.site_name || ''); setLmsFullname(s.user_fullname || ''); }
+    } catch (_) {}
+  };
+
+  const loadLMSCourses = async () => {
+    setLmsLoading(true); setLmsError('');
+    try {
+      const d = await getLMSCourses();
+      setLmsCourses(d?.courses || []);
+      setLmsTab('courses');
+    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
+    finally { setLmsLoading(false); }
+  };
+
+  const handleLMSConnect = async () => {
+    if (!lmsUrl.trim() || !lmsUser.trim() || !lmsPass) { setLmsError('Remplis tous les champs'); return; }
+    setLmsLoading(true); setLmsError('');
+    try {
+      const r = await connectLMS(lmsUrl.trim(), lmsUser.trim(), lmsPass);
+      setLmsConnected(true);
+      setLmsSiteName(r.site_name || '');
+      setLmsFullname(r.user_fullname || '');
+      setLmsPass(''); // Ne pas garder le mot de passe
+      Alert.alert('Connecté !', `${r.site_name}\n${r.user_fullname}`);
+      loadLMSCourses();
+    } catch (e) { setLmsError(e.response?.data?.detail || e.message || 'Échec de connexion'); }
+    finally { setLmsLoading(false); }
+  };
+
+  const handleLMSDisconnect = async () => {
+    Alert.alert('Déconnexion', 'Tu perdras l\'accès à tes cours importés.', [
+      { text: 'Annuler' },
+      { text: 'Déconnecter', style: 'destructive', onPress: async () => {
+        try {
+          await disconnectLMS();
+          setLmsConnected(false); setLmsCourses([]); setLmsSiteName(''); setLmsFullname('');
+          setLmsTab('connect');
+        } catch (_) {}
+      }},
+    ]);
+  };
+
+  const openCourseContent = async (course) => {
+    setLmsActiveCourse(course);
+    setLmsLoading(true); setLmsError('');
+    try {
+      const d = await getLMSCourseContent(course.id);
+      setLmsCourseContent(d?.sections || []);
+      setLmsTab('content');
+    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
+    finally { setLmsLoading(false); }
+  };
+
+  const handleImportFile = async (fileUrl, courseName, courseId) => {
+    setLmsLoading(true); setLmsError('');
+    try {
+      const r = await importLMSContent(fileUrl, courseId, courseName);
+      Alert.alert('Importé !', `${r.content_length} caractères extraits.\nCe contenu sera utilisé pour tes quiz et flashcards.`);
+    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
+    finally { setLmsLoading(false); }
+  };
+
+  // Charger le statut LMS au montage
+  useEffect(() => { loadLMSStatus(); }, []);
 
   // ─── XP notification overlay ────────────────────────────────────────────────
   const XPNotif = () => {
@@ -910,6 +998,46 @@ export default function StudentScreen() {
           </View>
         )}
 
+        {/* ── Mes cours (LMS) ────────────────────────────────────────────── */}
+        <View style={s.section}>
+          <View style={s.rowBetween}>
+            <Text style={s.secLabel}>MES COURS</Text>
+            {lmsConnected && (
+              <TouchableOpacity onPress={() => { setLmsModal(true); loadLMSCourses(); }}>
+                <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Voir tout →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {!lmsConnected ? (
+            <TouchableOpacity style={s.lmsConnectCard} onPress={() => { setLmsModal(true); setLmsTab('connect'); getLMSUniversities().then(d => setLmsUniversities(d?.universities || [])).catch(() => {}); }}>
+              <LinearGradient colors={['#1A2440', '#0F1629']} style={s.lmsConnectInner}>
+                <Text style={{ fontSize: 32 }}>🎓</Text>
+                <Text style={{ color: T.white, fontSize: 15, fontWeight: '800', marginTop: 8 }}>Connecter mon école</Text>
+                <Text style={[s.muted, { textAlign: 'center', marginTop: 4 }]}>Importe tes cours Moodle pour générer{'\n'}des quiz et flashcards personnalisés</Text>
+                <View style={[s.branchChip, { marginTop: 12, borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}>
+                  <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Connecter →</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <View style={s.lmsStatusRow}>
+                <Text style={{ color: T.neon1, fontSize: 14 }}>✓</Text>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{lmsSiteName || 'Moodle'}</Text>
+                  <Text style={s.muted}>{lmsFullname} • {lmsCourses.length} cours</Text>
+                </View>
+              </View>
+              {lmsCourses.slice(0, 3).map(c => (
+                <TouchableOpacity key={c.id} style={s.lmsCourseChip} onPress={() => { setTopic(c.name); setBranch(c.name); setActiveMode(MODES[0]); setView('topic_input'); }}>
+                  <Text style={{ color: T.white, fontSize: 13, fontWeight: '600', flex: 1 }}>{c.shortname || c.name}</Text>
+                  <Text style={{ color: T.neon1, fontSize: 12 }}>Réviser →</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+        </View>
+
         {/* ── Groupes ───────────────────────────────────────────────────────── */}
         <View style={s.section}>
           <View style={s.rowBetween}>
@@ -1007,6 +1135,145 @@ export default function StudentScreen() {
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal LMS ──────────────────────────────────────────────────────── */}
+      <Modal visible={lmsModal} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalBox, { maxHeight: '85%' }]}>
+            <View style={s.rowBetween}>
+              <Text style={s.secTitle}>🎓 Mon école</Text>
+              <TouchableOpacity onPress={() => setLmsModal(false)}><Text style={{ color: T.muted, fontSize: 20 }}>✕</Text></TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
+
+              {/* Connexion */}
+              {lmsTab === 'connect' && !lmsConnected && (
+                <>
+                  <Text style={[s.muted, { marginVertical: 8 }]}>Connecte-toi à ton Moodle universitaire</Text>
+
+                  {/* Suggestions universités */}
+                  {lmsUniversities.length > 0 && (
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={s.secLabel}>UNIVERSITÉS BELGES</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {lmsUniversities.map(u => (
+                          <TouchableOpacity key={u.url} style={[s.branchChip, lmsUrl === u.url && s.branchActive, { marginRight: 8 }]}
+                            onPress={() => setLmsUrl(u.url)}>
+                            <Text style={[s.branchText, lmsUrl === u.url && s.branchTextActive]}>{u.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  <Text style={s.inputLabel}>URL Moodle</Text>
+                  <TextInput style={s.input} placeholder="https://moodle.tonuniversite.be" placeholderTextColor={T.dimmed}
+                    value={lmsUrl} onChangeText={setLmsUrl} autoCapitalize="none" keyboardType="url" />
+
+                  <Text style={s.inputLabel}>Identifiant</Text>
+                  <TextInput style={s.input} placeholder="Ton identifiant universitaire" placeholderTextColor={T.dimmed}
+                    value={lmsUser} onChangeText={setLmsUser} autoCapitalize="none" />
+
+                  <Text style={s.inputLabel}>Mot de passe</Text>
+                  <TextInput style={s.input} placeholder="••••••••" placeholderTextColor={T.dimmed}
+                    value={lmsPass} onChangeText={setLmsPass} secureTextEntry />
+
+                  <Text style={[s.muted, { fontSize: 10, marginTop: 4 }]}>Ton mot de passe n'est jamais stocké. Seul un token de session est conservé.</Text>
+
+                  {lmsError ? <View style={s.errorBox}><Text style={s.errorText}>⚠️ {lmsError}</Text></View> : null}
+
+                  <TouchableOpacity style={s.genWrap} onPress={handleLMSConnect} disabled={lmsLoading}>
+                    <LinearGradient colors={[T.neon1, T.neon2]} style={s.genBtn}>
+                      {lmsLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>Se connecter</Text>}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Liste des cours */}
+              {lmsTab === 'courses' && lmsConnected && (
+                <>
+                  <View style={[s.lmsStatusRow, { marginBottom: 12 }]}>
+                    <Text style={{ color: T.neon1, fontSize: 14 }}>✓</Text>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{lmsSiteName}</Text>
+                      <Text style={s.muted}>{lmsFullname}</Text>
+                    </View>
+                    <TouchableOpacity onPress={handleLMSDisconnect}>
+                      <Text style={{ color: T.neon3, fontSize: 11, fontWeight: '700' }}>Déconnecter</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {lmsLoading && <ActivityIndicator color={T.neon1} style={{ margin: 16 }} />}
+
+                  {lmsCourses.map(c => (
+                    <TouchableOpacity key={c.id} style={s.lmsCourseChip} onPress={() => openCourseContent(c)}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{c.name}</Text>
+                        {c.shortname ? <Text style={s.muted}>{c.shortname}</Text> : null}
+                      </View>
+                      <Text style={{ color: T.neon1, fontSize: 16 }}>→</Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  {!lmsLoading && lmsCourses.length === 0 && (
+                    <Text style={[s.muted, { textAlign: 'center', margin: 16 }]}>Aucun cours trouvé</Text>
+                  )}
+                </>
+              )}
+
+              {/* Contenu d'un cours */}
+              {lmsTab === 'content' && lmsActiveCourse && (
+                <>
+                  <TouchableOpacity onPress={() => setLmsTab('courses')}>
+                    <Text style={{ color: T.neon1, fontSize: 13, fontWeight: '700', marginBottom: 12 }}>← Retour aux cours</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: T.white, fontSize: 15, fontWeight: '800', marginBottom: 12 }}>{lmsActiveCourse.name}</Text>
+
+                  {lmsLoading && <ActivityIndicator color={T.neon1} style={{ margin: 16 }} />}
+
+                  {lmsCourseContent?.map((sec, si) => (
+                    <View key={sec.id || si} style={{ marginBottom: 16 }}>
+                      {sec.name ? <Text style={[s.secLabel, { color: T.neon4 }]}>{sec.name}</Text> : null}
+                      {sec.modules?.map((mod, mi) => (
+                        <View key={mod.id || mi} style={s.lmsModuleRow}>
+                          <Text style={{ color: T.white, fontSize: 13, fontWeight: '600', flex: 1 }}>
+                            {mod.type === 'resource' ? '📄' : mod.type === 'page' ? '📝' : mod.type === 'url' ? '🔗' : '📁'} {mod.name}
+                          </Text>
+                          {mod.contents?.map((file, fi) => (
+                            <TouchableOpacity key={fi} style={s.lmsImportBtn}
+                              onPress={() => handleImportFile(file.fileurl, lmsActiveCourse.name, lmsActiveCourse.id)}>
+                              <Text style={{ color: T.neon1, fontSize: 11, fontWeight: '700' }}>Importer</Text>
+                            </TouchableOpacity>
+                          ))}
+                          {!mod.contents?.length && mod.description ? (
+                            <TouchableOpacity style={s.lmsImportBtn}
+                              onPress={() => { setTopic(mod.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}>
+                              <Text style={{ color: T.neon1, fontSize: 11, fontWeight: '700' }}>Réviser</Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+
+                  {!lmsLoading && (!lmsCourseContent || lmsCourseContent.length === 0) && (
+                    <Text style={[s.muted, { textAlign: 'center', margin: 16 }]}>Aucun contenu disponible</Text>
+                  )}
+
+                  {/* CTA : réviser ce cours */}
+                  <TouchableOpacity style={s.genWrap} onPress={() => { setTopic(lmsActiveCourse.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}>
+                    <LinearGradient colors={[T.neon1, T.neon2]} style={s.genBtn}>
+                      <Text style={s.genBtnText}>⚡ Réviser ce cours</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1174,6 +1441,14 @@ const s = StyleSheet.create({
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalBox: { backgroundColor: T.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40, borderWidth: 1, borderColor: T.borderLit },
+
+  // LMS
+  lmsConnectCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.borderLit, borderStyle: 'dashed' },
+  lmsConnectInner: { padding: 24, alignItems: 'center' },
+  lmsStatusRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: T.neon1 + '30', marginBottom: 8 },
+  lmsCourseChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: T.border },
+  lmsModuleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: T.border },
+  lmsImportBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, backgroundColor: T.neon1 + '15', borderWidth: 1, borderColor: T.neon1 + '40', marginLeft: 8 },
 });
 
 const mdStyle = {
