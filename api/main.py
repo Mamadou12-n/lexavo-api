@@ -2434,6 +2434,99 @@ def lms_disconnect(
     return {"disconnected": True}
 
 
+# ─── Student Shared Notes (bibliothèque communautaire) ─────────────────────
+
+VALID_SUBJECTS = [
+    "droit_penal", "droit_civil", "droit_constitutionnel", "droit_administratif",
+    "droit_commercial", "droit_travail", "droit_fiscal", "droit_social",
+    "droit_familial", "droit_immobilier", "droit_europeen", "droit_international",
+    "droit_environnement", "droit_ip", "procedure_civile", "procedure_penale",
+    "philosophie_droit", "introduction_droit", "autre",
+]
+
+
+@app.post("/student/notes/share")
+@limiter.limit("5/minute")
+def share_note(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Partager une note/synthèse avec la communauté étudiante."""
+    from api.database import create_shared_note
+    title = body.get("title", "").strip()
+    subject = body.get("subject", "").strip()
+    content = body.get("content_text", "").strip()
+    if not title or not subject:
+        raise HTTPException(400, "Titre et matière requis")
+    if not content and not body.get("file_url"):
+        raise HTTPException(400, "Contenu texte ou fichier requis")
+    is_anon = body.get("is_anonymous", True)
+    author = "Anonyme" if is_anon else (body.get("author_name") or current_user.get("email", "").split("@")[0])
+    note = create_shared_note(
+        user_id=current_user["id"],
+        author_name=author,
+        is_anonymous=is_anon,
+        title=title,
+        subject=subject,
+        university=body.get("university"),
+        study_year=body.get("study_year"),
+        file_type=body.get("file_type", "text"),
+        content_text=content or None,
+        file_url=body.get("file_url"),
+    )
+    return note
+
+
+@app.get("/student/notes")
+@limiter.limit("30/minute")
+def list_notes(
+    request: Request,
+    subject: Optional[str] = Query(default=None),
+    university: Optional[str] = Query(default=None),
+    limit: int = Query(default=50, le=100),
+    offset: int = Query(default=0),
+):
+    """Lister les notes partagées (filtrable par matière/université)."""
+    from api.database import list_shared_notes
+    return list_shared_notes(subject=subject, university=university, limit=limit, offset=offset)
+
+
+@app.get("/student/notes/{note_id}")
+@limiter.limit("30/minute")
+def get_note(request: Request, note_id: int):
+    """Récupérer une note partagée en entier (contenu complet)."""
+    from api.database import get_shared_note, increment_note_downloads
+    note = get_shared_note(note_id)
+    if not note:
+        raise HTTPException(404, "Note introuvable")
+    increment_note_downloads(note_id)
+    return note
+
+
+@app.post("/student/notes/{note_id}/like")
+@limiter.limit("10/minute")
+def like_note(request: Request, note_id: int, current_user: dict = Depends(_get_current_user)):
+    """Liker une note partagée."""
+    from api.database import get_shared_note, increment_note_likes
+    note = get_shared_note(note_id)
+    if not note:
+        raise HTTPException(404, "Note introuvable")
+    increment_note_likes(note_id)
+    return {"liked": True}
+
+
+@app.delete("/student/notes/{note_id}")
+@limiter.limit("5/minute")
+def remove_note(request: Request, note_id: int, current_user: dict = Depends(_get_current_user)):
+    """Supprimer sa propre note."""
+    from api.database import delete_shared_note
+    deleted = delete_shared_note(note_id, current_user["id"])
+    if not deleted:
+        raise HTTPException(403, "Vous ne pouvez supprimer que vos propres notes")
+    return {"deleted": True}
+
+
 # ─── SEO Routes ────────────────────────────────────────────────────────────────
 from fastapi.templating import Jinja2Templates  # noqa: E402
 from api.seo import router as seo_router

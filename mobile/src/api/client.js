@@ -710,6 +710,39 @@ export async function disconnectLMS() {
   return r.data;
 }
 
+// ─── Notes partagées (bibliothèque communautaire) ─────────────────────────────
+
+export async function shareNote({ title, subject, contentText, university, studyYear, isAnonymous, authorName, fileType }) {
+  const r = await api.post('/student/notes/share', {
+    title, subject, content_text: contentText, university, study_year: studyYear,
+    is_anonymous: isAnonymous, author_name: authorName, file_type: fileType || 'text',
+  });
+  return r.data;
+}
+
+export async function listSharedNotes(subject = null, university = null, limit = 50, offset = 0) {
+  const params = { limit, offset };
+  if (subject) params.subject = subject;
+  if (university) params.university = university;
+  const r = await api.get('/student/notes', { params });
+  return r.data;
+}
+
+export async function getSharedNote(noteId) {
+  const r = await api.get(`/student/notes/${noteId}`);
+  return r.data;
+}
+
+export async function likeSharedNote(noteId) {
+  const r = await api.post(`/student/notes/${noteId}/like`);
+  return r.data;
+}
+
+export async function deleteSharedNote(noteId) {
+  const r = await api.delete(`/student/notes/${noteId}`);
+  return r.data;
+}
+
 // ─── Billing (routes /billing/* — alignées sur le backend) ────────────────────
 
 export async function getSubscriptionStatus() {

@@ -358,6 +358,23 @@ CREATE TABLE IF NOT EXISTS student_lms_courses (
     synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, course_id)
 );
+
+CREATE TABLE IF NOT EXISTS student_shared_notes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    author_name TEXT DEFAULT 'Anonyme',
+    is_anonymous BOOLEAN DEFAULT TRUE,
+    title TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    university TEXT,
+    study_year TEXT,
+    file_type TEXT DEFAULT 'text',
+    content_text TEXT,
+    file_url TEXT,
+    downloads INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 _PG_INDEXES = """
@@ -633,6 +650,24 @@ CREATE TABLE IF NOT EXISTS student_lms_courses (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (connection_id) REFERENCES student_lms_connections(id) ON DELETE CASCADE,
     UNIQUE(user_id, course_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_shared_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    author_name TEXT DEFAULT 'Anonyme',
+    is_anonymous INTEGER DEFAULT 1,
+    title TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    university TEXT,
+    study_year TEXT,
+    file_type TEXT DEFAULT 'text',
+    content_text TEXT,
+    file_url TEXT,
+    downloads INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 """ + _PG_INDEXES
 
@@ -1780,5 +1815,87 @@ def get_lms_course_content(user_id: int, course_id: int) -> Optional[str]:
     try:
         row = _fetchone(conn, f"SELECT imported_content FROM student_lms_courses WHERE user_id = {PH} AND course_id = {PH}", (user_id, course_id))
         return row['imported_content'] if row else None
+    finally:
+        conn.close()
+
+
+# ─── Notes partagées (bibliothèque communautaire) ───────────────────────────
+
+def create_shared_note(user_id: int, author_name: str, is_anonymous: bool,
+                       title: str, subject: str, university: str = None,
+                       study_year: str = None, file_type: str = 'text',
+                       content_text: str = None, file_url: str = None) -> dict:
+    conn = _get_conn()
+    try:
+        new_id = _execute(conn,
+            f"""INSERT INTO student_shared_notes
+                (user_id, author_name, is_anonymous, title, subject, university, study_year, file_type, content_text, file_url)
+                VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})""",
+            (user_id, author_name if not is_anonymous else 'Anonyme',
+             is_anonymous, title, subject, university, study_year,
+             file_type, content_text, file_url))
+        conn.commit()
+        return _fetchone(conn, f"SELECT * FROM student_shared_notes WHERE id = {PH}", (new_id,))
+    finally:
+        conn.close()
+
+
+def list_shared_notes(subject: str = None, university: str = None, limit: int = 50, offset: int = 0) -> list:
+    conn = _get_conn()
+    try:
+        clauses, params = [], []
+        if subject:
+            clauses.append(f"subject = {PH}")
+            params.append(subject)
+        if university:
+            clauses.append(f"university = {PH}")
+            params.append(university)
+        where = "WHERE " + " AND ".join(clauses) if clauses else ""
+        params.extend([limit, offset])
+        return _fetchall(conn,
+            f"""SELECT id, author_name, is_anonymous, title, subject, university, study_year,
+                       file_type, downloads, likes, created_at
+                FROM student_shared_notes {where}
+                ORDER BY created_at DESC LIMIT {PH} OFFSET {PH}""", tuple(params))
+    finally:
+        conn.close()
+
+
+def get_shared_note(note_id: int) -> Optional[dict]:
+    conn = _get_conn()
+    try:
+        return _fetchone(conn, f"SELECT * FROM student_shared_notes WHERE id = {PH}", (note_id,))
+    finally:
+        conn.close()
+
+
+def increment_note_downloads(note_id: int):
+    conn = _get_conn()
+    try:
+        _execute(conn, f"UPDATE student_shared_notes SET downloads = downloads + 1 WHERE id = {PH}", (note_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def increment_note_likes(note_id: int):
+    conn = _get_conn()
+    try:
+        _execute(conn, f"UPDATE student_shared_notes SET likes = likes + 1 WHERE id = {PH}", (note_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_shared_note(note_id: int, user_id: int) -> bool:
+    """Supprime une note — seulement si c'est l'auteur."""
+    conn = _get_conn()
+    try:
+        row = _fetchone(conn, f"SELECT user_id FROM student_shared_notes WHERE id = {PH}", (note_id,))
+        if not row or row['user_id'] != user_id:
+            return False
+        _execute(conn, f"DELETE FROM student_shared_notes WHERE id = {PH}", (note_id,))
+        conn.commit()
+        return True
     finally:
         conn.close()
