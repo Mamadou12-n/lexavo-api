@@ -19,6 +19,7 @@ import {
   createStudentGroup, joinStudentGroup, getStudentGroups,
   getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
   getLMSCourseContent, importLMSContent, disconnectLMS,
+  shareNote, listSharedNotes, getSharedNote, likeSharedNote,
 } from '../api/client';
 import Markdown from 'react-native-markdown-display';
 import PhotoPicker from '../components/PhotoPicker';
@@ -78,11 +79,21 @@ export default function StudentScreen() {
   const [selectedAnswers, setSelected] = useState({});
   const [showCorrections, setShowCorr] = useState(false);
 
-  // Chat
+  // Chat (conversationnel — conversation_id persistant)
   const [messages, setMessages] = useState([{ role: 'assistant', content: 'Salut ! Je suis ton tuteur IA en droit belge.\n\nPose-moi n\'importe quelle question, ou photographie tes notes.' }]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const chatScrollRef = useRef(null);
+  const [conversationId, setConversationId] = useState(null);
+
+  // Notes partagées
+  const [notesModal, setNotesModal] = useState(false);
+  const [notesTab, setNotesTab] = useState('browse'); // browse | share | view
+  const [notesList, setNotesList] = useState([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesSubjectFilter, setNotesSubjectFilter] = useState(null);
+  const [activeNote, setActiveNote] = useState(null);
+  const [shareForm, setShareForm] = useState({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
 
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
@@ -250,7 +261,14 @@ export default function StudentScreen() {
     setMessages(prev => [...prev, { role: 'user', content: text || '[Photo envoyée]' }]);
     setChatInput(''); setChatLoading(true);
     try {
-      const data = await askQuestion(text || 'Analyse ces notes', { photos, top_k: 4 });
+      const data = await askQuestion(text || 'Analyse ces notes', {
+        photos, top_k: 4,
+        conversation_id: conversationId, // multi-tour
+      });
+      // Sauvegarder le conversation_id pour les échanges suivants
+      if (data.conversation_id && !conversationId) {
+        setConversationId(data.conversation_id);
+      }
       setMessages(prev => [...prev, { role: 'assistant', content: data.answer }]);
       setPhotos([]);
     } catch (e) {
@@ -258,6 +276,45 @@ export default function StudentScreen() {
     } finally {
       setChatLoading(false);
       setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 200);
+    }
+  };
+
+  // ─── Notes partagées ──────────────────────────────────────────────────────
+  const loadNotes = async (subject = null) => {
+    setNotesLoading(true);
+    try {
+      const data = await listSharedNotes(subject);
+      setNotesList(data);
+    } catch (_) {}
+    finally { setNotesLoading(false); }
+  };
+
+  const openNote = async (noteId) => {
+    try {
+      const note = await getSharedNote(noteId);
+      setActiveNote(note);
+      setNotesTab('view');
+    } catch (_) { Alert.alert('Erreur', 'Impossible de charger cette note'); }
+  };
+
+  const handleShareNote = async () => {
+    const { title, subject, content, university, year, anonymous, authorName } = shareForm;
+    if (!title.trim() || !content.trim()) {
+      Alert.alert('Champs requis', 'Titre et contenu sont obligatoires');
+      return;
+    }
+    try {
+      await shareNote({
+        title: title.trim(), subject, contentText: content.trim(),
+        university: university.trim() || null, studyYear: year.trim() || null,
+        isAnonymous: anonymous, authorName: authorName.trim() || null,
+      });
+      Alert.alert('Partagé !', 'Ta note est maintenant disponible pour tous les étudiants.');
+      setShareForm({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
+      setNotesTab('browse');
+      loadNotes();
+    } catch (e) {
+      Alert.alert('Erreur', e.response?.data?.detail || 'Impossible de partager');
     }
   };
 
@@ -1043,6 +1100,40 @@ export default function StudentScreen() {
           ))}
         </View>
 
+        {/* ── Notes partagées ────────────────────────────────────────────── */}
+        <View style={s.section}>
+          <View style={s.rowBetween}>
+            <Text style={s.secLabel}>NOTES PARTAGÉES</Text>
+            <TouchableOpacity onPress={() => { setNotesModal(true); setNotesTab('browse'); loadNotes(); }}>
+              <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Voir tout →</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[s.lmsConnectCard]}
+            onPress={() => { setNotesModal(true); setNotesTab('share'); }}
+          >
+            <LinearGradient colors={['#1A2440', '#0F1629']} style={s.lmsConnectInner}>
+              <Text style={{ fontSize: 32 }}>📚</Text>
+              <Text style={{ color: T.white, fontSize: 15, fontWeight: '800', marginTop: 8 }}>Partager une note</Text>
+              <Text style={[s.muted, { textAlign: 'center', marginTop: 4 }]}>
+                Partage tes synthèses avec la communauté.{'\n'}Tu peux rester anonyme ou mettre ton nom.
+              </Text>
+              <View style={[s.branchChip, { marginTop: 12, borderColor: T.neon4, backgroundColor: T.neon4 + '15' }]}>
+                <Text style={{ color: T.neon4, fontSize: 12, fontWeight: '700' }}>Partager →</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+          {notesList.slice(0, 3).map(n => (
+            <TouchableOpacity key={n.id} style={s.lmsCourseChip} onPress={() => { setNotesModal(true); openNote(n.id); }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: T.white, fontSize: 13, fontWeight: '600' }}>{n.title}</Text>
+                <Text style={[s.muted, { fontSize: 10 }]}>{n.author_name} • {n.subject?.replace('droit_', '').replace('_', ' ')} • ❤️ {n.likes}</Text>
+              </View>
+              <Text style={{ color: T.neon4, fontSize: 12 }}>Lire →</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* ── Leaderboard ───────────────────────────────────────────────────── */}
         <View style={s.section}>
           <Text style={s.secLabel}>CLASSEMENT</Text>
@@ -1067,6 +1158,158 @@ export default function StudentScreen() {
         </View>
 
       </ScrollView>
+
+      {/* ── Modal Notes Partagées ─────────────────────────────────────────── */}
+      <Modal visible={notesModal} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <View style={s.rowBetween}>
+              <Text style={s.secTitle}>📚 Notes partagées</Text>
+              <TouchableOpacity onPress={() => { setNotesModal(false); setNotesTab('browse'); setActiveNote(null); }}>
+                <Text style={{ color: T.muted, fontSize: 20 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tabs */}
+            <View style={[s.lbToggle, { marginVertical: 10 }]}>
+              {[{ id: 'browse', label: 'Explorer' }, { id: 'share', label: 'Partager' }].map(tab => (
+                <TouchableOpacity key={tab.id} style={[s.lbTab, notesTab === tab.id && s.lbTabActive]} onPress={() => setNotesTab(tab.id)}>
+                  <Text style={[s.lbTabText, notesTab === tab.id && { color: T.neon1 }]}>{tab.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Disclaimer */}
+            <View style={{ backgroundColor: T.neon4 + '15', borderRadius: 8, padding: 8, marginBottom: 10 }}>
+              <Text style={{ color: T.neon4, fontSize: 10, textAlign: 'center', fontStyle: 'italic' }}>
+                ⚠️ Notes d'étudiants — vérifiez toujours avec vos sources officielles
+              </Text>
+            </View>
+
+            <ScrollView style={{ maxHeight: 500 }}>
+              {/* ── TAB: EXPLORER ── */}
+              {notesTab === 'browse' && (
+                <>
+                  {/* Filtres matière */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                    <TouchableOpacity style={[s.branchChip, !notesSubjectFilter && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]} onPress={() => { setNotesSubjectFilter(null); loadNotes(); }}>
+                      <Text style={{ color: !notesSubjectFilter ? T.neon1 : T.muted, fontSize: 11, fontWeight: '700' }}>Tout</Text>
+                    </TouchableOpacity>
+                    {['droit_penal', 'droit_civil', 'droit_constitutionnel', 'droit_commercial', 'droit_travail', 'droit_fiscal'].map(subj => (
+                      <TouchableOpacity key={subj} style={[s.branchChip, notesSubjectFilter === subj && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}
+                        onPress={() => { setNotesSubjectFilter(subj); loadNotes(subj); }}>
+                        <Text style={{ color: notesSubjectFilter === subj ? T.neon1 : T.muted, fontSize: 11, fontWeight: '700' }}>{subj.replace('droit_', '').replace('_', ' ')}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  {notesLoading && <ActivityIndicator color={T.neon1} style={{ margin: 20 }} />}
+
+                  {!notesLoading && notesList.length === 0 && (
+                    <Text style={[s.muted, { textAlign: 'center', marginTop: 20 }]}>Aucune note partagée pour le moment. Sois le premier !</Text>
+                  )}
+
+                  {notesList.map(n => (
+                    <TouchableOpacity key={n.id} style={[s.lmsCourseChip, { marginBottom: 8 }]} onPress={() => openNote(n.id)}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{n.title}</Text>
+                        <Text style={[s.muted, { fontSize: 10, marginTop: 2 }]}>
+                          {n.author_name} {n.university ? `• ${n.university}` : ''} {n.study_year ? `• ${n.study_year}` : ''}
+                        </Text>
+                        <Text style={[s.muted, { fontSize: 10 }]}>
+                          {n.subject?.replace('droit_', '').replace('_', ' ')} • ❤️ {n.likes} • 📥 {n.downloads}
+                        </Text>
+                      </View>
+                      <Text style={{ color: T.neon4, fontSize: 12 }}>Lire →</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+
+              {/* ── TAB: VUE NOTE ── */}
+              {notesTab === 'view' && activeNote && (
+                <>
+                  <TouchableOpacity onPress={() => { setNotesTab('browse'); setActiveNote(null); }} style={{ marginBottom: 10 }}>
+                    <Text style={{ color: T.neon1, fontWeight: '700' }}>← Retour</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: T.white, fontSize: 17, fontWeight: '900', marginBottom: 4 }}>{activeNote.title}</Text>
+                  <Text style={[s.muted, { marginBottom: 12, fontSize: 11 }]}>
+                    {activeNote.author_name} {activeNote.university ? `• ${activeNote.university}` : ''} {activeNote.study_year ? `• ${activeNote.study_year}` : ''}
+                    {'\n'}{activeNote.subject?.replace('droit_', '').replace('_', ' ')} • ❤️ {activeNote.likes} • 📥 {activeNote.downloads}
+                  </Text>
+                  <View style={{ backgroundColor: T.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: T.border }}>
+                    <Text style={{ color: T.white, fontSize: 13, lineHeight: 20 }}>{activeNote.content_text}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: T.neon3 + '20', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 12 }}
+                    onPress={() => { likeSharedNote(activeNote.id); setActiveNote(prev => ({ ...prev, likes: (prev.likes || 0) + 1 })); }}
+                  >
+                    <Text style={{ color: T.neon3, fontWeight: '700' }}>❤️ J'aime cette note</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* ── TAB: PARTAGER ── */}
+              {notesTab === 'share' && (
+                <>
+                  <Text style={{ color: T.white, fontSize: 14, fontWeight: '700', marginBottom: 10 }}>Partager une synthèse</Text>
+
+                  {/* Anonyme ou nommé */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <TouchableOpacity
+                      style={[s.branchChip, shareForm.anonymous && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}
+                      onPress={() => setShareForm(p => ({ ...p, anonymous: true }))}
+                    >
+                      <Text style={{ color: shareForm.anonymous ? T.neon1 : T.muted, fontSize: 12, fontWeight: '700' }}>🙈 Anonyme</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.branchChip, !shareForm.anonymous && { borderColor: T.neon4, backgroundColor: T.neon4 + '15' }]}
+                      onPress={() => setShareForm(p => ({ ...p, anonymous: false }))}
+                    >
+                      <Text style={{ color: !shareForm.anonymous ? T.neon4 : T.muted, fontSize: 12, fontWeight: '700' }}>✍️ Mon nom</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {!shareForm.anonymous && (
+                    <TextInput style={s.noteInput} placeholder="Ton nom / pseudo" placeholderTextColor={T.muted}
+                      value={shareForm.authorName} onChangeText={v => setShareForm(p => ({ ...p, authorName: v }))} />
+                  )}
+
+                  <TextInput style={s.noteInput} placeholder="Titre (ex: Synthèse Droit Pénal - Chapitre 3)" placeholderTextColor={T.muted}
+                    value={shareForm.title} onChangeText={v => setShareForm(p => ({ ...p, title: v }))} />
+
+                  {/* Sélecteur matière */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                    {['droit_civil', 'droit_penal', 'droit_constitutionnel', 'droit_commercial', 'droit_travail', 'droit_fiscal', 'droit_familial', 'procedure_civile', 'introduction_droit', 'autre'].map(subj => (
+                      <TouchableOpacity key={subj}
+                        style={[s.branchChip, shareForm.subject === subj && { borderColor: T.neon2, backgroundColor: T.neon2 + '15' }]}
+                        onPress={() => setShareForm(p => ({ ...p, subject: subj }))}>
+                        <Text style={{ color: shareForm.subject === subj ? T.neon2 : T.muted, fontSize: 11, fontWeight: '600' }}>
+                          {subj.replace('droit_', '').replace('_', ' ')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <TextInput style={s.noteInput} placeholder="Université (optionnel)" placeholderTextColor={T.muted}
+                    value={shareForm.university} onChangeText={v => setShareForm(p => ({ ...p, university: v }))} />
+
+                  <TextInput style={s.noteInput} placeholder="Année (ex: BAC2, MA1)" placeholderTextColor={T.muted}
+                    value={shareForm.year} onChangeText={v => setShareForm(p => ({ ...p, year: v }))} />
+
+                  <TextInput style={[s.noteInput, { minHeight: 150, textAlignVertical: 'top' }]} multiline
+                    placeholder="Colle ta synthèse / tes notes ici..." placeholderTextColor={T.muted}
+                    value={shareForm.content} onChangeText={v => setShareForm(p => ({ ...p, content: v }))} />
+
+                  <TouchableOpacity style={{ backgroundColor: T.neon1, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10 }} onPress={handleShareNote}>
+                    <Text style={{ color: '#000', fontWeight: '800', fontSize: 15 }}>📤 Partager avec la communauté</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Modal Groupes ──────────────────────────────────────────────────── */}
       <Modal visible={groupModal} animationType="slide" transparent>
@@ -1428,6 +1671,7 @@ const s = StyleSheet.create({
   // LMS
   lmsConnectCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.borderLit, borderStyle: 'dashed' },
   lmsConnectInner: { padding: 24, alignItems: 'center' },
+  noteInput: { backgroundColor: T.surface, borderRadius: 10, padding: 12, color: T.white, fontSize: 13, borderWidth: 1, borderColor: T.border, marginBottom: 10 },
   lmsStatusRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: T.neon1 + '30', marginBottom: 8 },
   lmsCourseChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: T.border },
   lmsModuleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: T.border },
