@@ -32,26 +32,15 @@ import HomeScreen     from './src/screens/HomeScreen';
 import AskScreen      from './src/screens/AskScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-// Lexavo hub + 15 feature screens
-import LexavoHomeScreen    from './src/screens/LexavoHomeScreen';
+// 7 outils particuliers + Campus
 import ShieldScreen        from './src/screens/ShieldScreen';
 import CalculateursScreen  from './src/screens/CalculateursScreen';
-import ContratsScreen      from './src/screens/ContratsScreen';
-import ReponsesScreen      from './src/screens/ReponsesScreen';
 import DiagnosticScreen    from './src/screens/DiagnosticScreen';
-import ScoreScreen         from './src/screens/ScoreScreen';
-import ComplianceScreen    from './src/screens/ComplianceScreen';
-import AlertesScreen       from './src/screens/AlertesScreen';
-// DecodeScreen supprime — fusionne dans ShieldScreen (DocumentScreen)
-import LitigesScreen       from './src/screens/LitigesScreen';
 import MatchScreen         from './src/screens/MatchScreen';
 import EmergencyScreen     from './src/screens/EmergencyScreen';
-import ProofScreen         from './src/screens/ProofScreen';
-import HeritageScreen      from './src/screens/HeritageScreen';
 import FiscalScreen        from './src/screens/FiscalScreen';
 import DefendScreen        from './src/screens/DefendScreen';
 import StudentScreen       from './src/screens/StudentScreen';
-// AuditScreen supprime — fusionne dans ComplianceScreen (Audit Entreprise)
 
 // Legal + Subscription + Notifications + History + Lawyers screens
 import SubscriptionScreen    from './src/screens/SubscriptionScreen';

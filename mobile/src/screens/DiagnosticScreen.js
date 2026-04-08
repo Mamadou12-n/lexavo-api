@@ -120,10 +120,7 @@ export default function DiagnosticScreen() {
     if (!estateValue) { setHError('Entre la valeur de la succession.'); return; }
     setHLoading(true); setHResult(null); setHError(null);
     try {
-      const heirs = Array.from({ length: parseInt(numHeirs) || 1 }, (_, i) => ({
-        id: i + 1, type: heirType, name: `Héritier ${i + 1}`,
-      }));
-      const data = await getHeritageGuide(hRegion, parseFloat(estateValue), heirs);
+      const data = await getHeritageGuide(hRegion, parseFloat(estateValue), heirType);
       setHResult(data);
     } catch (e) {
       setHError(e.response?.data?.detail || e.message || 'Erreur réseau');
