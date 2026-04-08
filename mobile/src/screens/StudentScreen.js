@@ -36,11 +36,10 @@ const T = {
   glow1: 'rgba(0, 212, 170, 0.12)', glow2: 'rgba(139, 92, 246, 0.12)', glow3: 'rgba(255, 107, 107, 0.12)',
 };
 
-const BRANCHES = [
-  'Droit du travail', 'Droit familial', 'Droit fiscal', 'Droit pénal',
-  'Droit civil', 'Droit administratif', 'Droit commercial', 'Droit immobilier',
-  'Propriété intellectuelle', 'Sécurité sociale', 'Droit des étrangers',
-  'Droit européen', 'Marchés publics', 'Environnement', 'Droits fondamentaux',
+// Suggestions rapides (chips) — pas de grille exhaustive
+const QUICK_TOPICS = [
+  'Droit du travail', 'Droit pénal', 'Droit civil', 'Droit fiscal',
+  'Droit familial', 'Droit commercial', 'Droit immobilier', 'Droit administratif',
 ];
 
 const MODES = [
@@ -58,7 +57,7 @@ const MODES = [
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function StudentScreen() {
   // Navigation interne
-  const [view, setView] = useState('dashboard'); // 'dashboard' | mode.id | 'branch_select'
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'topic_input' | mode.id
   const [activeMode, setActiveMode] = useState(null);
   const [branch, setBranch] = useState(null);
 
@@ -172,11 +171,14 @@ export default function StudentScreen() {
     setActiveMode(m);
     setResult(null); setError(null); setBranch(null); setTopic(''); setPhotos([]);
     setSelected({}); setShowCorr(false); setFlipped({});
-    if (m.id === 'interleaved') { setView('interleaved'); return; }
-    if (m.id === 'case_study') { setCaseStep('config'); setView('case_study'); return; }
-    if (m.id === 'mock_exam') { setExamStep('config'); setExamBranches([]); setView('mock_exam'); return; }
-    if (m.id === 'free_recall') { setRecallStep('config'); setView('free_recall'); return; }
-    setView('branch_select');
+    // Tuteur IA → chat direct
+    if (m.id === 'chat') { setView('chat'); return; }
+    // Tous les autres modes → écran conversationnel unifié
+    if (m.id === 'case_study') { setCaseStep('config'); }
+    if (m.id === 'mock_exam') { setExamStep('config'); setExamBranches([]); }
+    if (m.id === 'free_recall') { setRecallStep('config'); }
+    if (m.id === 'interleaved') { setMixBranches([]); }
+    setView('topic_input');
   };
 
   const backToDash = () => {
@@ -206,14 +208,17 @@ export default function StudentScreen() {
 
   // ─── Génération quiz/flashcards/résumé ─────────────────────────────────────
   const generate = async () => {
-    if (!branch) { setError('Sélectionne une branche du droit.'); return; }
+    const subject = topic.trim() || branch;
+    if (!subject && photos.length === 0) { setError('Dis-moi ce que tu veux étudier ou envoie une photo.'); return; }
+    const branchName = subject || 'Analyse de document';
+    setBranch(branchName);
     setLoading(true); setResult(null); setError(null);
     setSelected({}); setShowCorr(false); setFlipped({});
     try {
       let data;
-      if (activeMode.id === 'quiz') data = await generateQuiz(branch, 'moyen', 10);
-      else if (activeMode.id === 'flashcards') data = await generateFlashcards(branch, topic, 12);
-      else data = await generateSummary(branch, topic || branch);
+      if (activeMode.id === 'quiz') data = await generateQuiz(branchName, 'moyen', 10);
+      else if (activeMode.id === 'flashcards') data = await generateFlashcards(branchName, topic, 12);
+      else data = await generateSummary(branchName, topic || branchName);
       setResult(data);
       setView(activeMode.id);
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur réseau'); }
@@ -245,10 +250,12 @@ export default function StudentScreen() {
 
   // ─── Cas pratique ──────────────────────────────────────────────────────────
   const startCaseStudy = async () => {
-    if (!branch) { setError('Sélectionne une branche.'); return; }
+    const subject = topic.trim() || branch;
+    if (!subject) { setError('Dis-moi ce que tu veux étudier.'); return; }
+    setBranch(subject);
     setLoading(true); setCaseData(null); setError(null);
     try {
-      const d = await generateCaseStudy(branch, caseDifficulty);
+      const d = await generateCaseStudy(subject, caseDifficulty);
       setCaseData(d); setCaseStep('writing'); setCaseAnswer('');
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
@@ -268,10 +275,13 @@ export default function StudentScreen() {
 
   // ─── Examen blanc ──────────────────────────────────────────────────────────
   const startMockExam = async () => {
-    if (examBranches.length === 0) { setError('Sélectionne au moins une branche.'); return; }
+    const subject = topic.trim() || branch;
+    if (!subject) { setError('Dis-moi sur quoi tu veux être examiné.'); return; }
+    setBranch(subject);
+    const branches = subject.split(/[,;+]/).map(s => s.trim()).filter(Boolean);
     setLoading(true); setExamData(null); setError(null); setExamAnswers({});
     try {
-      const d = await generateMockExam(examBranches, 20);
+      const d = await generateMockExam(branches, 20);
       setExamData(d); setExamStep('exam'); setExamTimer(20 * 60);
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
@@ -292,10 +302,12 @@ export default function StudentScreen() {
 
   // ─── Rappel libre ──────────────────────────────────────────────────────────
   const startFreeRecall = async () => {
-    if (!branch) { setError('Sélectionne une branche.'); return; }
+    const subject = topic.trim() || branch;
+    if (!subject) { setError('Dis-moi ce que tu veux étudier.'); return; }
+    setBranch(subject);
     setLoading(true); setRecallQuestion(null); setError(null);
     try {
-      const d = await generateFreeRecall(branch);
+      const d = await generateFreeRecall(subject);
       setRecallQuestion(d); setRecallStep('writing'); setRecallAnswer('');
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
@@ -314,10 +326,14 @@ export default function StudentScreen() {
 
   // ─── Révision mixte ────────────────────────────────────────────────────────
   const startInterleaved = async () => {
-    if (mixBranches.length < 2) { setError('Sélectionne au moins 2 branches.'); return; }
+    const subject = topic.trim() || branch;
+    if (!subject) { setError('Dis-moi quelles branches mélanger (ex: droit pénal, droit civil).'); return; }
+    setBranch(subject);
+    const branches = subject.split(/[,;+]/).map(s => s.trim()).filter(Boolean);
+    if (branches.length < 2) { setError('Sépare les branches par des virgules (ex: droit pénal, droit civil).'); return; }
     setLoading(true); setMixResult(null); setMixAnswers({}); setMixCorrections(false); setError(null);
     try {
-      const d = await generateInterleavedQuiz(mixBranches);
+      const d = await generateInterleavedQuiz(branches);
       setMixResult(d);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
@@ -331,13 +347,7 @@ export default function StudentScreen() {
     await awardXP('quiz_pass', correct, mixResult.questions.length);
   };
 
-  const toggleMixBranch = (b) => {
-    setMixBranches(prev => prev.includes(b) ? prev.filter(x => x !== b) : prev.length < 5 ? [...prev, b] : prev);
-  };
-
-  const toggleExamBranch = (b) => {
-    setExamBranches(prev => prev.includes(b) ? prev.filter(x => x !== b) : prev.length < 3 ? [...prev, b] : prev);
-  };
+  // toggleMixBranch / toggleExamBranch supprimés — tout passe par topic_input
 
   // ─── Groupes ───────────────────────────────────────────────────────────────
   const loadGroups = async () => {
@@ -384,44 +394,88 @@ export default function StudentScreen() {
   //  RENDER
   // ════════════════════════════════════════════════════════════════════════════
 
-  // ─── Sélection branche ─────────────────────────────────────────────────────
-  if (view === 'branch_select') {
+  // ─── Écran conversationnel unifié (remplace la grille de branches) ─────────
+  if (view === 'topic_input') {
+    // Déterminer le bouton CTA selon le mode
+    const ctaLabels = {
+      quiz: '⚡ Lancer le quiz', flashcards: '🃏 Générer les cartes', summary: '🚀 Synthétiser',
+      case_study: '🧠 Générer un cas', mock_exam: '📝 Lancer l\'examen', free_recall: '✍️ Générer la question',
+      interleaved: '🔀 Mélanger et réviser',
+    };
+    const ctaAction = {
+      quiz: generate, flashcards: generate, summary: generate,
+      case_study: startCaseStudy, mock_exam: startMockExam, free_recall: startFreeRecall,
+      interleaved: startInterleaved,
+    };
+    const placeholder = activeMode?.id === 'interleaved'
+      ? 'Ex: droit pénal, droit civil, droit du travail'
+      : activeMode?.id === 'mock_exam'
+      ? 'Ex: droit pénal, droit fiscal (sépare par des virgules)'
+      : 'Ex: droit du travail, licenciement, contrat de bail...';
+
     return (
       <View style={s.root}>
-        <ScrollView contentContainerStyle={s.scroll}>
+        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <BackBtn onPress={backToDash} />
+
+          {/* Mode badge */}
           <View style={s.branchHeader}>
             <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={s.branchBadge}>
               <Text style={{ fontSize: 16 }}>{activeMode?.icon}</Text>
               <Text style={s.branchBadgeText}>{activeMode?.label}</Text>
             </LinearGradient>
-            <Text style={s.secTitle}>Choisis ta branche</Text>
           </View>
-          <View style={s.branchGrid}>
-            {BRANCHES.map(b => (
-              <TouchableOpacity key={b} activeOpacity={0.75} style={[s.branchChip, branch === b && s.branchActive]} onPress={() => setBranch(b)}>
-                <Text style={[s.branchText, branch === b && s.branchTextActive]}>{b}</Text>
-              </TouchableOpacity>
-            ))}
+
+          {/* Input conversationnel */}
+          <View style={s.inputWrap}>
+            <Text style={s.inputLabel}>Qu'est-ce que tu veux étudier ?</Text>
+            <TextInput
+              style={[s.input, { fontSize: 15, paddingVertical: 14 }]}
+              placeholder={placeholder}
+              placeholderTextColor={T.dimmed}
+              value={topic}
+              onChangeText={(t) => { setTopic(t); setBranch(t); }}
+              autoFocus
+            />
           </View>
-          {(activeMode?.id === 'flashcards' || activeMode?.id === 'summary') && (
-            <View style={s.inputWrap}>
-              <Text style={s.inputLabel}>Sujet précis (optionnel)</Text>
-              <TextInput style={s.input} placeholder="Ex: licenciement pour motif grave" placeholderTextColor={T.dimmed} value={topic} onChangeText={setTopic} />
+
+          {/* Suggestions rapides */}
+          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+            <Text style={[s.muted, { marginBottom: 8 }]}>Suggestions rapides</Text>
+            <View style={s.branchGrid}>
+              {QUICK_TOPICS.map(b => (
+                <TouchableOpacity key={b} activeOpacity={0.75} style={[s.branchChip, topic === b && s.branchActive]} onPress={() => { setTopic(b); setBranch(b); }}>
+                  <Text style={[s.branchText, topic === b && s.branchTextActive]}>{b}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Photo */}
+          <View style={{ marginHorizontal: 16 }}>
+            <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="📷 Photographier tes notes" />
+          </View>
+
+          {/* Difficulté pour cas pratique */}
+          {activeMode?.id === 'case_study' && (
+            <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+              <Text style={s.secLabel}>DIFFICULTÉ</Text>
+              <View style={s.rowCentered}>
+                {['facile', 'moyen', 'difficile'].map(d => (
+                  <TouchableOpacity key={d} style={[s.diffChip, caseDifficulty === d && s.diffActive]} onPress={() => setCaseDifficulty(d)}>
+                    <Text style={[s.diffText, caseDifficulty === d && { color: T.neon1 }]}>{d}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
-          {activeMode?.id !== 'chat' && (
-            <View style={{ marginHorizontal: 16 }}>
-              <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="📷 Photographier tes notes" />
-            </View>
-          )}
+
           {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-          <TouchableOpacity activeOpacity={0.85} style={s.genWrap} onPress={generate} disabled={loading || !branch}>
-            <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={[s.genBtn, !branch && { opacity: 0.5 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+
+          <TouchableOpacity activeOpacity={0.85} style={s.genWrap} onPress={ctaAction[activeMode?.id] || generate} disabled={loading}>
+            <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={[s.genBtn, (!topic.trim() && photos.length === 0) && { opacity: 0.5 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               {loading ? <ActivityIndicator color="#FFF" /> : (
-                <Text style={s.genBtnText}>
-                  {activeMode?.id === 'quiz' ? '⚡ Lancer le quiz' : activeMode?.id === 'flashcards' ? '🃏 Générer les cartes' : '🚀 Synthétiser'}
-                </Text>
+                <Text style={s.genBtnText}>{ctaLabels[activeMode?.id] || 'Générer'}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -553,40 +607,13 @@ export default function StudentScreen() {
     );
   }
 
-  // ─── Cas pratique ──────────────────────────────────────────────────────────
+  // ─── Cas pratique (config passe par topic_input, ici on gère writing+result) ─
   if (view === 'case_study') {
     return (
       <View style={s.root}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <BackBtn onPress={backToDash} />
-          <Text style={s.modeTitle}>🧠 Cas Pratique</Text>
-
-          {caseStep === 'config' && (
-            <>
-              <Text style={s.secLabel}>BRANCHE DU DROIT</Text>
-              <View style={s.branchGrid}>
-                {BRANCHES.map(b => (
-                  <TouchableOpacity key={b} style={[s.branchChip, branch === b && s.branchActive]} onPress={() => setBranch(b)}>
-                    <Text style={[s.branchText, branch === b && s.branchTextActive]}>{b}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={s.secLabel}>DIFFICULTÉ</Text>
-              <View style={s.rowCentered}>
-                {['facile', 'moyen', 'difficile'].map(d => (
-                  <TouchableOpacity key={d} style={[s.diffChip, caseDifficulty === d && s.diffActive]} onPress={() => setCaseDifficulty(d)}>
-                    <Text style={[s.diffText, caseDifficulty === d && { color: T.neon1 }]}>{d}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={startCaseStudy} disabled={loading || !branch}>
-                <LinearGradient colors={['#1A4731', '#2DD4BF']} style={[s.genBtn, (!branch || loading) && { opacity: 0.5 }]}>
-                  {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>🧠 Générer un cas</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
+          <Text style={s.modeTitle}>🧠 Cas Pratique — {branch}</Text>
 
           {caseStep === 'writing' && caseData && (
             <>
@@ -633,32 +660,13 @@ export default function StudentScreen() {
     );
   }
 
-  // ─── Examen blanc ──────────────────────────────────────────────────────────
+  // ─── Examen blanc (config passe par topic_input, ici exam+result) ─────────
   if (view === 'mock_exam') {
     return (
       <View style={s.root}>
         <ScrollView contentContainerStyle={s.scroll}>
           {examStep !== 'exam' && <BackBtn onPress={backToDash} />}
-          <Text style={s.modeTitle}>📝 Examen Blanc</Text>
-
-          {examStep === 'config' && (
-            <>
-              <Text style={s.secLabel}>BRANCHES (max 3)</Text>
-              <View style={s.branchGrid}>
-                {BRANCHES.map(b => (
-                  <TouchableOpacity key={b} style={[s.branchChip, examBranches.includes(b) && s.branchActive]} onPress={() => toggleExamBranch(b)}>
-                    <Text style={[s.branchText, examBranches.includes(b) && s.branchTextActive]}>{b}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={startMockExam} disabled={loading || examBranches.length === 0}>
-                <LinearGradient colors={['#4A1A1A', '#E53E3E']} style={[s.genBtn, (loading || !examBranches.length) && { opacity: 0.5 }]}>
-                  {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>📝 Lancer l'examen (20 min)</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
+          <Text style={s.modeTitle}>📝 Examen Blanc — {branch}</Text>
 
           {examStep === 'exam' && examData && (
             <>
@@ -703,33 +711,13 @@ export default function StudentScreen() {
     );
   }
 
-  // ─── Révision mixte ────────────────────────────────────────────────────────
+  // ─── Révision mixte (config passe par topic_input, ici quiz+corrections) ──
   if (view === 'interleaved') {
     return (
       <View style={s.root}>
         <ScrollView contentContainerStyle={s.scroll}>
           <BackBtn onPress={backToDash} />
-          <Text style={s.modeTitle}>🔀 Révision Mixte</Text>
-
-          {!mixResult && (
-            <>
-              <Text style={s.secLabel}>SÉLECTIONNE 2-5 BRANCHES</Text>
-              <Text style={[s.muted, { marginHorizontal: 16, marginBottom: 8 }]}>L'interleaving mélange les branches pour +50% de rétention</Text>
-              <View style={s.branchGrid}>
-                {BRANCHES.map(b => (
-                  <TouchableOpacity key={b} style={[s.branchChip, mixBranches.includes(b) && s.branchActive]} onPress={() => toggleMixBranch(b)}>
-                    <Text style={[s.branchText, mixBranches.includes(b) && s.branchTextActive]}>{b}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={startInterleaved} disabled={loading || mixBranches.length < 2}>
-                <LinearGradient colors={['#1A1A4A', '#6366F1']} style={[s.genBtn, (loading || mixBranches.length < 2) && { opacity: 0.5 }]}>
-                  {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>🔀 Mélanger et réviser</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
+          <Text style={s.modeTitle}>🔀 Révision Mixte — {branch}</Text>
 
           {mixResult && !mixCorrections && (
             <>
@@ -775,33 +763,14 @@ export default function StudentScreen() {
     );
   }
 
-  // ─── Rappel libre ──────────────────────────────────────────────────────────
+  // ─── Rappel libre (config passe par topic_input, ici writing+result) ──────
   if (view === 'free_recall') {
     return (
       <View style={s.root}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <BackBtn onPress={backToDash} />
-          <Text style={s.modeTitle}>✍️ Rappel Libre</Text>
+          <Text style={s.modeTitle}>✍️ Rappel Libre — {branch}</Text>
           <Text style={[s.muted, { marginHorizontal: 16, marginBottom: 16 }]}>Active recall : ×2 rétention vs QCM. Tu réponds sans choix multiples.</Text>
-
-          {recallStep === 'config' && (
-            <>
-              <Text style={s.secLabel}>BRANCHE DU DROIT</Text>
-              <View style={s.branchGrid}>
-                {BRANCHES.map(b => (
-                  <TouchableOpacity key={b} style={[s.branchChip, branch === b && s.branchActive]} onPress={() => setBranch(b)}>
-                    <Text style={[s.branchText, branch === b && s.branchTextActive]}>{b}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={startFreeRecall} disabled={loading || !branch}>
-                <LinearGradient colors={['#2D1A4A', '#A855F7']} style={[s.genBtn, (!branch || loading) && { opacity: 0.5 }]}>
-                  {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>✍️ Générer la question</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
 
           {recallStep === 'writing' && recallQuestion && (
             <>
@@ -886,7 +855,7 @@ export default function StudentScreen() {
           <View style={s.section}>
             <Text style={s.secLabel}>RÉVISION DU JOUR</Text>
             {weakBranches.slice(0, 2).map(wb => (
-              <TouchableOpacity key={wb.branch} style={s.weakCard} onPress={() => { setBranch(wb.branch); setActiveMode(MODES[0]); setView('branch_select'); }}>
+              <TouchableOpacity key={wb.branch} style={s.weakCard} onPress={() => { setBranch(wb.branch); setTopic(wb.branch); setActiveMode(MODES[0]); setView('topic_input'); }}>
                 <View>
                   <Text style={s.weakTitle}>Tu as du retard en {wb.branch}</Text>
                   <Text style={s.weakSub}>Meilleur score : {wb.best_score || 0}% — Révise maintenant</Text>
