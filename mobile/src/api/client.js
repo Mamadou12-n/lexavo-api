@@ -644,6 +644,16 @@ export async function generateFreeRecall(branch, documentContent = '') {
   return r.data;
 }
 
+export async function generatePodcast(branch, topic = '', documentContent = '') {
+  const r = await api.post('/student/podcast', { branch, topic: topic || branch, ...(documentContent ? { document_content: documentContent } : {}) });
+  return r.data;
+}
+
+export async function createNotebookLM(title, contentText, branch = '') {
+  const r = await api.post('/student/notebooklm/create', { title, content_text: contentText, branch });
+  return r.data; // { notebook_id, url, title }
+}
+
 export async function evaluateFreeRecall(questionData, answer) {
   const r = await api.post('/student/free-recall/evaluate', { question_data: questionData, answer });
   return r.data;

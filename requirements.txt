@@ -37,6 +37,9 @@ tenacity>=8.3.0                       # Retry logic for API calls
 pypdf2>=3.0.0                        # Extraction texte depuis PDF (notes étudiants)
 python-docx>=1.1.0                   # Extraction texte depuis DOCX (notes étudiants)
 
+# ─── NotebookLM Integration ─────────────────────────────────────────────────
+notebooklm-py>=0.3.4                 # API non-officielle Google NotebookLM (auth via NOTEBOOKLM_AUTH_JSON)
+
 # ─── Data Processing ────────────────────────────────────────────────────────
 # (used by processors/ and scrapers/)
 lxml>=5.2.0

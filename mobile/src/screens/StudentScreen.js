@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  Modal, Share, Alert, Image,
+  Modal, Share, Alert, Image, Linking, Clipboard,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,7 +16,7 @@ import {
   getStudentDashboard, postStudentActivity, getStudentLeaderboard,
   generateCaseStudy, evaluateCaseStudy, generateMockExam, submitMockExam,
   getStudentBadges, getStudentWeakBranches, generateFreeRecall,
-  evaluateFreeRecall, generateInterleavedQuiz,
+  evaluateFreeRecall, generateInterleavedQuiz, generatePodcast, createNotebookLM,
   createStudentGroup, joinStudentGroup, getStudentGroups,
   getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
   getLMSCourseContent, importLMSContent, disconnectLMS,
@@ -48,7 +48,7 @@ const MODES = [
   { id: 'flashcards', label: 'Flashcards SRS', sub: 'Algorithme Leitner. Mémorise moins, retiens plus.', gradient: ['#004D8F', '#4DA6FF'], glowColor: 'rgba(77, 166, 255, 0.25)', icon: '🃏', badge: '+20 XP', xpMode: 'flashcards' },
   { id: 'summary', label: 'Résumé Turbo', sub: 'Des heures de cours en 30 secondes.', gradient: ['#991B1B', '#FF6B6B'], glowColor: 'rgba(255, 107, 107, 0.25)', icon: '🚀', badge: '+10 XP', xpMode: 'summary' },
   { id: 'chat', label: 'Tuteur IA', sub: 'Ton prof 24/7. Pose n\'importe quelle question.', gradient: ['#004D40', '#00D4AA'], glowColor: 'rgba(0, 212, 170, 0.25)', icon: '🤖', badge: 'ILLIMITÉ', xpMode: null },
-  { id: 'podcast', label: 'Podcast IA', sub: 'Révise dans le métro. Bientôt disponible.', gradient: ['#7C4D00', '#FFB84D'], glowColor: 'rgba(255, 184, 77, 0.25)', icon: '🎙️', badge: 'BIENTÔT', xpMode: null, disabled: true },
+  { id: 'podcast', label: 'Podcast IA', sub: 'Script dialogue 2 hosts + export NotebookLM.', gradient: ['#7C4D00', '#FFB84D'], glowColor: 'rgba(255, 184, 77, 0.25)', icon: '🎙️', badge: '+10 XP', xpMode: 'summary' },
   { id: 'case_study', label: 'Cas Pratique', sub: 'Résoudre un cas réel. Correction IA enrichie.', gradient: ['#1A4731', '#2DD4BF'], glowColor: 'rgba(45, 212, 191, 0.25)', icon: '🧠', badge: '+75 XP', xpMode: 'case_study' },
   { id: 'mock_exam', label: 'Examen Blanc', sub: '20 questions chrono. Solo ou groupe.', gradient: ['#4A1A1A', '#E53E3E'], glowColor: 'rgba(229, 62, 62, 0.25)', icon: '📝', badge: '+150 XP', xpMode: 'mock_exam' },
   { id: 'interleaved', label: 'Révision Mixte', sub: 'Mélange de branches. +50% de rétention prouvé.', gradient: ['#1A1A4A', '#6366F1'], glowColor: 'rgba(99, 102, 241, 0.25)', icon: '🔀', badge: '+50 XP', xpMode: 'quiz_pass' },
@@ -99,6 +99,8 @@ export default function StudentScreen() {
   const [shareForm, setShareForm] = useState({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadedDoc, setUploadedDoc] = useState({ text: '', filename: '' }); // document importé pour génération
+  const [podcastResult, setPodcastResult] = useState(null);
+  const [nlmLoading, setNlmLoading] = useState(false);
 
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
@@ -218,6 +220,7 @@ export default function StudentScreen() {
     setExamData(null); setCaseData(null); setRecallQuestion(null);
     setMixBranches([]); setMixResult(null);
     setUploadedDoc({ text: '', filename: '' });
+    setPodcastResult(null);
     clearInterval(timerRef.current);
   };
 
@@ -327,6 +330,39 @@ export default function StudentScreen() {
       Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
     } finally {
       setUploadLoading(false);
+    }
+  };
+
+  const startPodcast = async () => {
+    const subject = topic.trim() || branch;
+    if (!subject && !uploadedDoc.text) { setError('Dis-moi ce que tu veux étudier ou importe un document.'); return; }
+    const branchName = subject || 'Droit belge';
+    setBranch(branchName);
+    setLoading(true); setPodcastResult(null); setError(null);
+    try {
+      const d = await generatePodcast(branchName, topic, uploadedDoc.text || '');
+      setPodcastResult(d);
+      setView('podcast');
+    } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur réseau'); }
+    finally { setLoading(false); }
+  };
+
+  const handleOpenNotebookLM = async (contentText, title) => {
+    const text = contentText || uploadedDoc.text || result?.summary || '';
+    if (!text || text.length < 100) {
+      Alert.alert('Contenu insuffisant', 'Importe un document ou génère du contenu d\'abord.');
+      return;
+    }
+    setNlmLoading(true);
+    try {
+      const data = await createNotebookLM(title || branch || 'Notes Lexavo', text, branch || '');
+      Linking.openURL(data.url);
+    } catch (e) {
+      // Fallback : ouvrir NLM directement
+      Linking.openURL('https://notebooklm.google.com');
+      Alert.alert('NotebookLM', 'Ton document n\'a pas pu être importé automatiquement. NotebookLM est ouvert — colle ton contenu manuellement.');
+    } finally {
+      setNlmLoading(false);
     }
   };
 
@@ -612,11 +648,13 @@ export default function StudentScreen() {
     // Déterminer le bouton CTA selon le mode
     const ctaLabels = {
       quiz: '⚡ Lancer le quiz', flashcards: '🃏 Générer les cartes', summary: '🚀 Synthétiser',
+      podcast: '🎙️ Générer le podcast',
       case_study: '🧠 Générer un cas', mock_exam: '📝 Lancer l\'examen', free_recall: '✍️ Générer la question',
       interleaved: '🔀 Mélanger et réviser',
     };
     const ctaAction = {
       quiz: generate, flashcards: generate, summary: generate,
+      podcast: startPodcast,
       case_study: startCaseStudy, mock_exam: startMockExam, free_recall: startFreeRecall,
       interleaved: startInterleaved,
     };
@@ -706,6 +744,18 @@ export default function StudentScreen() {
                     {photos.length > 0 ? `${photos.length} photo${photos.length > 1 ? 's' : ''}` : 'Photo'}
                   </Text>
                 </TouchableOpacity>
+
+                {/* Bouton NotebookLM */}
+                {uploadedDoc.text ? (
+                  <TouchableOpacity
+                    onPress={() => handleOpenNotebookLM(uploadedDoc.text, topic || branch || 'Notes')}
+                    disabled={nlmLoading}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#1A2A1A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto' }}
+                  >
+                    {nlmLoading ? <ActivityIndicator color="#4CAF50" size="small" style={{ width: 14, height: 14 }} /> : <Text style={{ fontSize: 14 }}>📓</Text>}
+                    <Text style={{ color: '#4CAF50', fontSize: 12, fontWeight: '600' }}>NotebookLM</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
           </View>
@@ -782,7 +832,7 @@ export default function StudentScreen() {
                 );
               })}
               {xpEarned && <Text style={s.xpInline}>+{xpEarned} XP gagnés !</Text>}
-              <ActionRow onShare={() => shareResult(`Quiz ${branch} : ${correct}/${total}`)} onBack={backToDash} />
+              <ActionRow onShare={() => shareResult(`Quiz ${branch} : ${correct}/${total}`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text, `Quiz ${branch}`)} nlmLoading={nlmLoading} />
             </>
           )}
         </ScrollView>
@@ -808,7 +858,7 @@ export default function StudentScreen() {
               </LinearGradient>
             </TouchableOpacity>
           ))}
-          <ActionRow onShare={() => shareResult(`${result.cards?.length} flashcards ${branch}`)} onBack={backToDash} />
+          <ActionRow onShare={() => shareResult(`${result.cards?.length} flashcards ${branch}`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text, `Flashcards ${branch}`)} nlmLoading={nlmLoading} />
         </ScrollView>
         <XPNotif />
       </View>
@@ -825,7 +875,61 @@ export default function StudentScreen() {
           <View style={s.summaryCard}>
             <Markdown style={mdStyle}>{result.summary || result.content || JSON.stringify(result)}</Markdown>
           </View>
-          <ActionRow onShare={() => shareResult(`Résumé ${branch}`)} onBack={backToDash} />
+          <ActionRow onShare={() => shareResult(`Résumé ${branch}`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(result?.summary || uploadedDoc.text, `Résumé ${branch}`)} nlmLoading={nlmLoading} />
+        </ScrollView>
+        <XPNotif />
+      </View>
+    );
+  }
+
+  // ─── Podcast ───────────────────────────────────────────────────────────────
+  if (view === 'podcast' && podcastResult) {
+    const script = podcastResult.script || [];
+    const keyPoints = podcastResult.key_points || [];
+    return (
+      <View style={s.root}>
+        <ScrollView contentContainerStyle={s.scroll}>
+          <BackBtn onPress={backToDash} />
+          <Text style={s.modeTitle}>🎙️ {podcastResult.title || `Podcast — ${branch}`}</Text>
+          <Text style={{ color: T.muted, fontSize: 12, textAlign: 'center', marginBottom: 16 }}>
+            ⏱ ~{podcastResult.duration_minutes || 9} min · Script dialogue
+          </Text>
+
+          {/* Points clés */}
+          {keyPoints.length > 0 && (
+            <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: T.surface, borderRadius: 12, padding: 14, borderLeftWidth: 3, borderLeftColor: T.neon4 }}>
+              <Text style={{ color: T.neon4, fontWeight: '700', fontSize: 12, marginBottom: 8 }}>POINTS CLÉS</Text>
+              {keyPoints.map((pt, i) => (
+                <Text key={i} style={{ color: T.white, fontSize: 13, marginBottom: 4 }}>• {pt}</Text>
+              ))}
+            </View>
+          )}
+
+          {/* Script dialogue */}
+          {script.map((line, i) => {
+            const isAlex = line.speaker === 'Alex';
+            return (
+              <View key={i} style={{ marginHorizontal: 16, marginBottom: 12, flexDirection: isAlex ? 'row' : 'row-reverse', alignItems: 'flex-start', gap: 8 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isAlex ? T.neon2 + '30' : T.neon4 + '30', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Text style={{ fontSize: 14 }}>{isAlex ? '👨‍🏫' : '👩‍🎓'}</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: isAlex ? T.surface : T.elevated, borderRadius: 12, padding: 12, borderTopLeftRadius: isAlex ? 4 : 12, borderTopRightRadius: isAlex ? 12 : 4 }}>
+                  <Text style={{ color: isAlex ? T.neon2 : T.neon4, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>{line.speaker}</Text>
+                  <Text style={{ color: T.white, fontSize: 14, lineHeight: 20 }}>{line.text}</Text>
+                </View>
+              </View>
+            );
+          })}
+
+          <ActionRow
+            onShare={() => shareResult(`Podcast IA — ${podcastResult.title || branch}`)}
+            onBack={backToDash}
+            onNotebookLM={() => handleOpenNotebookLM(
+              uploadedDoc.text || script.map(l => `${l.speaker}: ${l.text}`).join('\n\n'),
+              podcastResult.title || `Podcast ${branch}`
+            )}
+            nlmLoading={nlmLoading}
+          />
         </ScrollView>
         <XPNotif />
       </View>
@@ -905,7 +1009,7 @@ export default function StudentScreen() {
                 )}
               </View>
               {xpEarned && <Text style={s.xpInline}>+{xpEarned} XP gagnés !</Text>}
-              <ActionRow onShare={() => shareResult(`Cas pratique ${branch} : ${caseData.evaluation.score}/10`)} onBack={backToDash} />
+              <ActionRow onShare={() => shareResult(`Cas pratique ${branch} : ${caseData.evaluation.score}/10`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text || caseData?.case_text, `Cas pratique ${branch}`)} nlmLoading={nlmLoading} />
             </>
           )}
         </ScrollView>
@@ -956,7 +1060,7 @@ export default function StudentScreen() {
                 <Text style={s.caseText}>{examResult.feedback || `${examResult.correct} bonnes réponses sur ${examResult.total}.`}</Text>
               </View>
               {xpEarned && <Text style={s.xpInline}>+{xpEarned} XP gagnés !</Text>}
-              <ActionRow onShare={() => shareResult(`Examen blanc : ${examResult.score}/20`)} onBack={backToDash} />
+              <ActionRow onShare={() => shareResult(`Examen blanc : ${examResult.score}/20`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text, `Examen blanc ${branch}`)} nlmLoading={nlmLoading} />
             </>
           )}
         </ScrollView>
@@ -1008,7 +1112,7 @@ export default function StudentScreen() {
                 );
               })}
               {xpEarned && <Text style={s.xpInline}>+{xpEarned} XP gagnés !</Text>}
-              <ActionRow onShare={() => shareResult('Révision mixte terminée')} onBack={backToDash} />
+              <ActionRow onShare={() => shareResult('Révision mixte terminée')} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text, `Révision mixte ${branch}`)} nlmLoading={nlmLoading} />
             </>
           )}
         </ScrollView>
@@ -1062,7 +1166,7 @@ export default function StudentScreen() {
                 )}
               </View>
               {xpEarned && <Text style={s.xpInline}>+{xpEarned} XP gagnés !</Text>}
-              <ActionRow onShare={() => shareResult(`Rappel libre ${branch} : ${recallResult.score}/10`)} onBack={backToDash} />
+              <ActionRow onShare={() => shareResult(`Rappel libre ${branch} : ${recallResult.score}/10`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(uploadedDoc.text, `Rappel libre ${branch}`)} nlmLoading={nlmLoading} />
             </>
           )}
         </ScrollView>
@@ -1140,6 +1244,38 @@ export default function StudentScreen() {
               </View>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* ── NotebookLM ────────────────────────────────────────────────────── */}
+        <View style={s.section}>
+          <Text style={s.secLabel}>GOOGLE NOTEBOOKLM</Text>
+          <Text style={s.secTitle}>Podcast · Mind Map · Slides · Quiz</Text>
+          <TouchableOpacity
+            onPress={() => handleOpenNotebookLM(uploadedDoc.text, 'Notes Lexavo')}
+            disabled={nlmLoading}
+            activeOpacity={0.85}
+          >
+            <View style={{ backgroundColor: '#0A1F0A', borderRadius: 16, padding: 18, borderWidth: 1.5, borderColor: '#2D7A2D', marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                <Text style={{ fontSize: 28 }}>📓</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#4CAF50', fontWeight: '800', fontSize: 15 }}>Ouvrir dans NotebookLM</Text>
+                  <Text style={{ color: '#2E7D32', fontSize: 12, marginTop: 2 }}>by Google</Text>
+                </View>
+                {nlmLoading && <ActivityIndicator color="#4CAF50" />}
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {['🎙️ Podcast audio', '🗺️ Mind map', '📊 Slides', '📝 Quiz', '🃏 Flashcards', '📄 Rapport'].map(f => (
+                  <View key={f} style={{ backgroundColor: '#1A3A1A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Text style={{ color: '#81C784', fontSize: 11, fontWeight: '600' }}>{f}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={{ color: '#388E3C', fontSize: 11, marginTop: 10 }}>
+                {uploadedDoc.text ? `📄 ${uploadedDoc.filename} prêt à importer` : 'Importe un fichier pour un notebook personnalisé — ou ouvre NotebookLM directement'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Badges ────────────────────────────────────────────────────────── */}
@@ -1656,18 +1792,33 @@ const BackBtn = ({ onPress }) => (
   </TouchableOpacity>
 );
 
-const ActionRow = ({ onShare, onBack }) => (
-  <View style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 16, marginBottom: 24 }}>
-    <TouchableOpacity style={{ flex: 1 }} onPress={onShare}>
-      <LinearGradient colors={[T.neon2, T.neon1]} style={[s.genBtn, { marginHorizontal: 0 }]}>
-        <Text style={s.genBtnText}>Partager</Text>
-      </LinearGradient>
-    </TouchableOpacity>
-    <TouchableOpacity style={{ flex: 1 }} onPress={onBack}>
-      <View style={[s.genBtn, { marginHorizontal: 0, backgroundColor: T.elevated, borderColor: T.borderLit, borderWidth: 1 }]}>
-        <Text style={[s.genBtnText, { color: T.white }]}>Dashboard</Text>
-      </View>
-    </TouchableOpacity>
+const ActionRow = ({ onShare, onBack, onNotebookLM, nlmLoading }) => (
+  <View style={{ marginHorizontal: 16, marginTop: 16, marginBottom: 24, gap: 10 }}>
+    {/* Bouton NotebookLM — toujours présent dans les résultats */}
+    {onNotebookLM && (
+      <TouchableOpacity
+        onPress={onNotebookLM}
+        disabled={nlmLoading}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1A2A1A', borderRadius: 12, padding: 13, borderWidth: 1, borderColor: '#2D7A2D' }}
+      >
+        {nlmLoading
+          ? <ActivityIndicator color="#4CAF50" size="small" />
+          : <Text style={{ color: '#4CAF50', fontWeight: '700', fontSize: 14 }}>📓 Ouvrir dans NotebookLM — podcast · quiz · mind map</Text>
+        }
+      </TouchableOpacity>
+    )}
+    <View style={{ flexDirection: 'row', gap: 12 }}>
+      <TouchableOpacity style={{ flex: 1 }} onPress={onShare}>
+        <LinearGradient colors={[T.neon2, T.neon1]} style={[s.genBtn, { marginHorizontal: 0 }]}>
+          <Text style={s.genBtnText}>Partager</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+      <TouchableOpacity style={{ flex: 1 }} onPress={onBack}>
+        <View style={[s.genBtn, { marginHorizontal: 0, backgroundColor: T.elevated, borderColor: T.borderLit, borderWidth: 1 }]}>
+          <Text style={[s.genBtnText, { color: T.white }]}>Dashboard</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   </View>
 );
 

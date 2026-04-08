@@ -2188,6 +2188,83 @@ def student_mock_exam_submit(
     return evaluate_mock_exam(exam_data, answers)
 
 
+@app.post("/student/podcast")
+@limiter.limit("5/minute")
+def student_podcast(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Génère un script podcast dialogue 2 hosts sur un sujet de droit belge."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    import anthropic, json as _json
+
+    branch = body.get("branch", "Droit civil")
+    topic = body.get("topic", branch)
+    document_content = (body.get("document_content") or "").strip()
+    check_quota(current_user["id"])
+
+    client = anthropic.Anthropic()
+
+    if document_content:
+        doc_excerpt = document_content[:5000]
+        source = f"""Les hosts se basent sur ces notes de cours de l'étudiant :
+
+---
+{doc_excerpt}
+---"""
+    else:
+        source = f"Les hosts discutent du sujet : **{topic}** (branche : {branch})."
+
+    prompt = f"""Tu es un producteur de podcast éducatif en droit belge. {source}
+
+Génère un épisode de podcast de niveau universitaire, animé par deux hosts :
+- **Alex** : le host principal, pédagogue, explique les concepts
+- **Léa** : la co-host, pose des questions, donne des exemples concrets, challenge Alex
+
+Le podcast doit :
+- Durer environ 8-10 minutes à l'oral (≈ 1200-1500 mots de script)
+- Couvrir 3-4 points clés du sujet
+- Citer des articles de loi belges réels
+- Être engageant et mémorisable pour un étudiant en droit
+- Commencer par une accroche (cas concret ou fait surprenant)
+- Terminer par un résumé des points clés à retenir
+
+Réponds UNIQUEMENT en JSON valide :
+{{
+  "title": "Titre de l'épisode",
+  "branch": "{branch}",
+  "duration_minutes": 9,
+  "key_points": ["point 1", "point 2", "point 3"],
+  "script": [
+    {{"speaker": "Alex", "text": "..."}},
+    {{"speaker": "Léa", "text": "..."}}
+  ]
+}}"""
+
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=5000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Erreur génération podcast : {e}")
+
+    text = msg.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    try:
+        result = _json.loads(text)
+    except _json.JSONDecodeError:
+        result = {"branch": branch, "title": topic, "raw_response": text, "script": []}
+
+    increment_question_count(current_user["id"])
+    return result
+
+
 @app.post("/student/free-recall")
 @limiter.limit("5/minute")
 def student_free_recall(
@@ -2631,6 +2708,52 @@ def remove_note(request: Request, note_id: int, current_user: dict = Depends(_ge
     if not deleted:
         raise HTTPException(403, "Vous ne pouvez supprimer que vos propres notes")
     return {"deleted": True}
+
+
+# ─── NotebookLM Integration ────────────────────────────────────────────────────
+
+@app.post("/student/notebooklm/create")
+@limiter.limit("3/minute")
+async def create_notebooklm_notebook(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Crée un notebook NotebookLM depuis le contenu de l'étudiant et retourne l'URL partage."""
+    import asyncio as _asyncio
+    try:
+        from notebooklm import NotebookLMClient
+    except ImportError:
+        raise HTTPException(503, "notebooklm-py non installé sur ce serveur")
+
+    title = body.get("title", "Notes Lexavo").strip() or "Notes Lexavo"
+    content = (body.get("content_text") or "").strip()
+    branch = (body.get("branch") or "").strip()
+
+    if not content:
+        raise HTTPException(400, "Contenu texte requis (document_content vide)")
+    if len(content) < 100:
+        raise HTTPException(400, "Contenu trop court pour créer un notebook")
+
+    nb_title = f"[Lexavo] {title}" if branch not in title else f"[Lexavo] {title} — {branch}"
+
+    async def _create():
+        async with await NotebookLMClient.from_storage() as client:
+            nb = await client.notebooks.create(nb_title)
+            source_title = title if len(title) < 60 else title[:57] + "..."
+            await client.sources.add_text(nb.id, source_title, content[:50000])
+            await client.notebooks.share(nb.id, public=True)
+            url = await client.notebooks.get_share_url(nb.id)
+            return {"notebook_id": nb.id, "url": url, "title": nb_title}
+
+    try:
+        result = await _asyncio.wait_for(_create(), timeout=30)
+        return result
+    except _asyncio.TimeoutError:
+        raise HTTPException(504, "NotebookLM a mis trop de temps à répondre")
+    except Exception as e:
+        log.error(f"NotebookLM create error: {e}")
+        raise HTTPException(502, f"Erreur NotebookLM : {str(e)[:200]}")
 
 
 # ─── SEO Routes ────────────────────────────────────────────────────────────────
