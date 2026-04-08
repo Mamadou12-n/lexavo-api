@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
-import { getSubscriptionStatus, setLanguage as setClientLang, initLanguage, LANG_KEY } from '../api/client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSubscriptionStatus, setLanguage as setClientLang } from '../api/client';
+import { useLanguage } from '../context/LanguageContext';
 import { colors } from '../theme/colors';
 
 const LANGUAGES = [
@@ -24,29 +24,23 @@ const LEXAVO_ORANGE = '#C45A2D';
 const LEXAVO_NAVY   = '#1C2B3A';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TOOLS = [
-  { emoji: '⚡', title: 'Contester', sub: 'Contester une décision', color: '#C45A2D', screen: 'Defend' },
-  { emoji: '📄', title: 'Document', sub: 'Analyser un contrat', color: '#C0392B', screen: 'Shield' },
-  { emoji: '🔬', title: 'Diagnostic', sub: 'Comprendre ma situation', color: '#8E44AD', screen: 'Diagnostic' },
-  { emoji: '🧮', title: 'Calculateurs', sub: 'Préavis · Pension · Succession', color: '#1A6B8A', screen: 'Calculateurs' },
-  { emoji: '💰', title: 'Fiscal', sub: 'Questions fiscales', color: '#34495E', screen: 'Fiscal' },
+const TOOL_DEFS = [
+  { emoji: '⚡', titleKey: 'tool_contester', subKey: 'tool_contester_sub', color: '#C45A2D', screen: 'Defend' },
+  { emoji: '📄', titleKey: 'tool_document',  subKey: 'tool_document_sub',  color: '#C0392B', screen: 'Shield' },
+  { emoji: '🔬', titleKey: 'tool_diagnostic',subKey: 'tool_diagnostic_sub',color: '#8E44AD', screen: 'Diagnostic' },
+  { emoji: '🧮', titleKey: 'tool_calculateurs', subKey: 'tool_calculateurs_sub', color: '#1A6B8A', screen: 'Calculateurs' },
+  { emoji: '💰', titleKey: 'tool_fiscal',    subKey: 'tool_fiscal_sub',    color: '#34495E', screen: 'Fiscal' },
 ];
 
 
 export default function HomeScreen({ navigation }) {
+  const { lang, setLang, t }        = useLanguage();
   const [quota, setQuota]           = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [langModal, setLangModal]   = useState(false);
-  const [activeLang, setActiveLang] = useState('fr');
-
-  useEffect(() => {
-    initLanguage().then(() => {
-      AsyncStorage.getItem(LANG_KEY).then(v => { if (v) setActiveLang(v); });
-    });
-  }, []);
 
   const selectLang = async (code) => {
-    setActiveLang(code);
+    await setLang(code);
     await setClientLang(code);
     setLangModal(false);
   };
@@ -59,7 +53,7 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const goTool = (screen) => navigation.navigate('Outils', { screen });
-  const currentLang = LANGUAGES.find(l => l.code === activeLang) || LANGUAGES[0];
+  const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
 
   return (
     <ScrollView
@@ -76,11 +70,11 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.langBtnArrow}>▾</Text>
         </TouchableOpacity>
         <Text style={styles.heroMark}>LEXAVO</Text>
-        <Text style={styles.heroTagline}>ASSISTANT JURIDIQUE BELGE</Text>
-        <Text style={styles.heroSub}>Le droit pour tous</Text>
+        <Text style={styles.heroTagline}>{t('hero_tagline')}</Text>
+        <Text style={styles.heroSub}>{t('hero_sub')}</Text>
         <View style={styles.heroPill}>
           <View style={styles.pulseDot} />
-          <Text style={styles.heroPillText}>Outils juridiques · Droit belge · 8 langues</Text>
+          <Text style={styles.heroPillText}>{t('hero_pill')}</Text>
         </View>
       </View>
 
@@ -88,7 +82,7 @@ export default function HomeScreen({ navigation }) {
       <Modal visible={langModal} transparent animationType="fade" onRequestClose={() => setLangModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setLangModal(false)}>
           <View style={styles.langModal}>
-            <Text style={styles.langModalTitle}>Choisir la langue</Text>
+            <Text style={styles.langModalTitle}>{t('lang_modal_title')}</Text>
             {LANGUAGES.map(l => (
               <TouchableOpacity
                 key={l.code}
@@ -115,8 +109,8 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Ask')}
         >
           <Text style={styles.bigCardEmoji}>💬</Text>
-          <Text style={styles.bigCardTitle}>Je veux comprendre</Text>
-          <Text style={styles.bigCardSub}>Chat IA juridique</Text>
+          <Text style={styles.bigCardTitle}>{t('understand_title')}</Text>
+          <Text style={styles.bigCardSub}>{t('understand_sub')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.75}
@@ -124,8 +118,8 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Outils', { screen: 'Defend' })}
         >
           <Text style={styles.bigCardEmoji}>⚡</Text>
-          <Text style={styles.bigCardTitle}>Je veux agir</Text>
-          <Text style={styles.bigCardSub}>Contester / Recours</Text>
+          <Text style={styles.bigCardTitle}>{t('act_title')}</Text>
+          <Text style={styles.bigCardSub}>{t('act_sub')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -140,7 +134,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.campusGlow} />
           <Text style={styles.campusIcon}>{'\u{1F9EC}'}</Text>
           <Text style={styles.campusTitle}>LEXAVO CAMPUS</Text>
-          <Text style={styles.campusTagline}>Le droit belge, version next-gen</Text>
+          <Text style={styles.campusTagline}>{t('campus_tagline')}</Text>
 
           {/* 4 features en grille 2x2 avec icones neon */}
           <View style={styles.campusGrid}>
@@ -148,29 +142,29 @@ export default function HomeScreen({ navigation }) {
               <LinearGradient colors={['#6C3FA0', '#8B5CF6']} style={styles.campusFeatureIcon}>
                 <Text style={{ fontSize: 18 }}>{'\u26A1'}</Text>
               </LinearGradient>
-              <Text style={styles.campusFeatureLabel}>Quiz IA</Text>
-              <Text style={styles.campusFeatureSub}>Adaptatif</Text>
+              <Text style={styles.campusFeatureLabel}>{t('campus_quiz_label')}</Text>
+              <Text style={styles.campusFeatureSub}>{t('campus_quiz_sub')}</Text>
             </View>
             <View style={styles.campusFeature}>
               <LinearGradient colors={['#008060', '#00D4AA']} style={styles.campusFeatureIcon}>
                 <Text style={{ fontSize: 18 }}>{'\u{1F916}'}</Text>
               </LinearGradient>
-              <Text style={styles.campusFeatureLabel}>Tuteur IA</Text>
-              <Text style={styles.campusFeatureSub}>24/7</Text>
+              <Text style={styles.campusFeatureLabel}>{t('campus_tutor_label')}</Text>
+              <Text style={styles.campusFeatureSub}>{t('campus_tutor_sub')}</Text>
             </View>
             <View style={styles.campusFeature}>
               <LinearGradient colors={['#CC7A00', '#FFB84D']} style={styles.campusFeatureIcon}>
                 <Text style={{ fontSize: 18 }}>{'\u{1F399}\uFE0F'}</Text>
               </LinearGradient>
-              <Text style={styles.campusFeatureLabel}>NotebookLM</Text>
-              <Text style={styles.campusFeatureSub}>Podcast IA</Text>
+              <Text style={styles.campusFeatureLabel}>{t('campus_notebook_label')}</Text>
+              <Text style={styles.campusFeatureSub}>{t('campus_notebook_sub')}</Text>
             </View>
             <View style={styles.campusFeature}>
               <LinearGradient colors={['#0068D6', '#4DA6FF']} style={styles.campusFeatureIcon}>
                 <Text style={{ fontSize: 18 }}>{'\u{1F4F7}'}</Text>
               </LinearGradient>
-              <Text style={styles.campusFeatureLabel}>OCR Notes</Text>
-              <Text style={styles.campusFeatureSub}>Photo {'\u2192'} IA</Text>
+              <Text style={styles.campusFeatureLabel}>{t('campus_ocr_label')}</Text>
+              <Text style={styles.campusFeatureSub}>{t('campus_ocr_sub')}</Text>
             </View>
           </View>
 
@@ -184,30 +178,30 @@ export default function HomeScreen({ navigation }) {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.campusCTA}
             >
-              <Text style={styles.campusCTAText}>{'\u{1F680}'} Acc{'\u00E9'}der {'\u00E0'} Campus</Text>
+              <Text style={styles.campusCTAText}>{t('campus_cta')}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-          <Text style={styles.campusNote}>Gratuit {'\u00B7'} IA + OCR + Podcast {'\u00B7'} Droit belge</Text>
+          <Text style={styles.campusNote}>{t('campus_note')}</Text>
         </LinearGradient>
       </View>
 
       {/* ═══ OUTILS JURIDIQUES ═══ */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Outils juridiques</Text>
+        <Text style={styles.sectionTitle}>{t('tools_title')}</Text>
         <View style={styles.grid}>
-          {TOOLS.map((t) => (
+          {TOOL_DEFS.map((tool) => (
             <TouchableOpacity
               activeOpacity={0.75}
-              key={t.screen}
+              key={tool.screen}
               style={styles.toolCard}
-              onPress={() => goTool(t.screen)}
+              onPress={() => goTool(tool.screen)}
             >
-              <View style={[styles.toolIcon, { backgroundColor: t.color + '18' }]}>
-                <Text style={{ fontSize: 22 }}>{t.emoji}</Text>
+              <View style={[styles.toolIcon, { backgroundColor: tool.color + '18' }]}>
+                <Text style={{ fontSize: 22 }}>{tool.emoji}</Text>
               </View>
-              <Text style={styles.toolTitle}>{t.title}</Text>
-              <Text style={styles.toolSub}>{t.sub}</Text>
+              <Text style={styles.toolTitle}>{t(tool.titleKey)}</Text>
+              <Text style={styles.toolSub}>{t(tool.subKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -215,9 +209,7 @@ export default function HomeScreen({ navigation }) {
 
       {/* ═══ DISCLAIMER ═══ */}
       <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          ⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat.
-        </Text>
+        <Text style={styles.disclaimerText}>{t('disclaimer')}</Text>
       </View>
     </ScrollView>
   );

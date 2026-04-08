@@ -62,6 +62,7 @@ import { colors }                        from './src/theme/colors';
 import { initApiUrl, initAuthToken, setUnauthHandler, logout,
          registerPushToken }             from './src/api/client';
 import { registerForPushNotifications }  from './src/utils/notifications';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 
 const LEXAVO_ORANGE = '#C45A2D';
 const LEXAVO_NAVY   = '#1C2B3A';
@@ -112,6 +113,7 @@ function SettingsStack() {
 
 // Application principale (5 onglets — Defend accessible via grille Outils)
 function MainApp() {
+  const { t } = useLanguage();
   return (
     <NavigationContainer>
       <Tab.Navigator
@@ -145,7 +147,7 @@ function MainApp() {
           component={HomeScreen}
           options={{
             headerTitle: '⚖️  Lexavo',
-            tabBarLabel: 'Accueil',
+            tabBarLabel: t('tab_home'),
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text>,
           }}
         />
@@ -155,7 +157,7 @@ function MainApp() {
           component={StudentScreen}
           options={{
             headerTitle: '🎓 Lexavo Campus',
-            tabBarLabel: 'Campus',
+            tabBarLabel: t('tab_campus'),
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎓</Text>,
           }}
         />
@@ -165,7 +167,7 @@ function MainApp() {
           component={AskScreen}
           options={{
             headerTitle: '💬 Chat juridique IA',
-            tabBarLabel: 'Chat',
+            tabBarLabel: t('tab_chat'),
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>💬</Text>,
           }}
         />
@@ -177,7 +179,7 @@ function MainApp() {
             headerTitle: '⭐ Abonnement',
             headerStyle: { backgroundColor: LEXAVO_NAVY },
             headerTintColor: '#FFF',
-            tabBarLabel: 'Abo',
+            tabBarLabel: t('tab_abo'),
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>⭐</Text>,
           }}
         />
@@ -187,7 +189,7 @@ function MainApp() {
           component={SettingsStack}
           options={{
             headerShown: false,
-            tabBarLabel: 'Plus',
+            tabBarLabel: t('tab_more'),
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>⚙️</Text>,
           }}
         />
@@ -310,8 +312,10 @@ export default function App() {
 
   // ─── Application principale ───────────────────────────────────────────────────
   return (
-    <SafeAreaProvider>
-      <MainApp />
-    </SafeAreaProvider>
+    <LanguageProvider>
+      <SafeAreaProvider>
+        <MainApp />
+      </SafeAreaProvider>
+    </LanguageProvider>
   );
 }
