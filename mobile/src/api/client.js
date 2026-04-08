@@ -22,10 +22,24 @@ const AUTH_TOKEN_KEY    = '@lexavo_auth_token';
 const AUTH_USER_KEY     = '@lexavo_auth_user';
 const REFRESH_TOKEN_KEY = '@lexavo_refresh_token';
 export const REGION_KEY = '@lexavo_region'; // bruxelles | wallonie | flandre
+export const LANG_KEY   = 'lexavo_lang';    // fr | nl | de | en | es | it | pt | ar
 
 let _baseURL   = DEFAULT_API_URL;
 let _authToken = null;   // JWT en mémoire
 let _onUnauth  = null;   // callback appelé sur 401 → logout
+let _lang      = 'fr';   // langue de réponse courante
+
+export async function setLanguage(code) {
+  _lang = code;
+  await AsyncStorage.setItem(LANG_KEY, code);
+}
+
+export async function initLanguage() {
+  try {
+    const saved = await AsyncStorage.getItem(LANG_KEY);
+    if (saved) _lang = saved;
+  } catch (_) {}
+}
 
 // ─── Instance axios ───────────────────────────────────────────────────────────
 const api = axios.create({
@@ -268,6 +282,7 @@ export async function askQuestion(question, opts = {}) {
     ...(region      && { region }),
     ...(opts.conversation_id && { conversation_id: opts.conversation_id }),
     photos_base64: photos.map(p => p.base64).filter(Boolean),
+    language: opts.language ?? _lang ?? 'fr',
   };
   const response = await api.post('/ask', payload);
   return response.data;

@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { getSubscriptionStatus, setLanguage as setClientLang, initLanguage, LANG_KEY } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSubscriptionStatus } from '../api/client';
 import { colors } from '../theme/colors';
 
 const LANGUAGES = [
@@ -40,12 +40,14 @@ export default function HomeScreen({ navigation }) {
   const [activeLang, setActiveLang] = useState('fr');
 
   useEffect(() => {
-    AsyncStorage.getItem('lexavo_lang').then(v => { if (v) setActiveLang(v); });
+    initLanguage().then(() => {
+      AsyncStorage.getItem(LANG_KEY).then(v => { if (v) setActiveLang(v); });
+    });
   }, []);
 
   const selectLang = async (code) => {
     setActiveLang(code);
-    await AsyncStorage.setItem('lexavo_lang', code);
+    await setClientLang(code);
     setLangModal(false);
   };
 

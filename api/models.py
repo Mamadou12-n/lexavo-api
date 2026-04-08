@@ -155,6 +155,10 @@ class AskRequest(BaseModel):
         default=None,
         description="Photos jointes encodées en base64 (OCR automatique)",
     )
+    language: str = Field(
+        default="fr",
+        description="Langue de réponse : fr, nl, de, en, es, it, pt, ar",
+    )
 
 
 class SourceDoc(BaseModel):

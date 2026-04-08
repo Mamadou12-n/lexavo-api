@@ -328,6 +328,7 @@ def ask_endpoint(
             branch=body.branch,
             region=body.region,
             history=history,
+            language=body.language,
         )
     except RuntimeError as e:
         raise HTTPException(

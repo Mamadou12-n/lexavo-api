@@ -106,11 +106,28 @@ def verify_citations(answer: str, sources: List[Dict]) -> tuple:
     return answer, stats
 
 
-def _build_system_prompt(branch_key: Optional[str] = None, region: Optional[str] = None) -> str:
-    """Construit le prompt systeme avec specialisation par branche et region si detectees."""
+LANGUAGE_INSTRUCTIONS = {
+    "fr": None,  # langue par défaut, pas d'instruction supplémentaire
+    "nl": "Réponds UNIQUEMENT en néerlandais (Nederlands). Tous tes messages doivent être en néerlandais.",
+    "de": "Réponds UNIQUEMENT en allemand (Deutsch). Alle deine Antworten müssen auf Deutsch sein.",
+    "en": "Reply ONLY in English. All your messages must be in English.",
+    "es": "Responde ÚNICAMENTE en español. Todos tus mensajes deben estar en español.",
+    "it": "Rispondi SOLO in italiano. Tutti i tuoi messaggi devono essere in italiano.",
+    "pt": "Responde APENAS em português. Todas as tuas mensagens devem ser em português.",
+    "ar": "أجب فقط باللغة العربية. يجب أن تكون جميع رسائلك باللغة العربية.",
+}
+
+
+def _build_system_prompt(branch_key: Optional[str] = None, region: Optional[str] = None, language: Optional[str] = None) -> str:
+    """Construit le prompt systeme avec specialisation par branche, region et langue."""
     from rag.branches import get_branch_prompt
 
     prompt = BASE_SYSTEM_PROMPT
+
+    # Injection de la langue de réponse
+    lang_instr = LANGUAGE_INSTRUCTIONS.get(language or "fr")
+    if lang_instr:
+        prompt += f"\n\nIMPORTANT — Langue de réponse : {lang_instr}"
 
     # Injection de la region de l'utilisateur
     if region:
@@ -145,6 +162,7 @@ def ask(
     auto_detect_branch: bool = True,
     region: Optional[str] = None,
     history: Optional[List[Dict[str, str]]] = None,
+    language: Optional[str] = None,
 ) -> Dict:
     """
     Pipeline RAG complet : question → detection branche → retrieval → reponse humanisee.
@@ -240,8 +258,8 @@ def ask(
     context = format_context(chunks, max_total_chars=6000)
     log.info(f"  {len(chunks)} chunks recuperes, contexte = {len(context)} chars")
 
-    # 3. Construire le prompt avec specialisation branche + region utilisateur
-    system_prompt = _build_system_prompt(detected_branch, region)
+    # 3. Construire le prompt avec specialisation branche + region + langue utilisateur
+    system_prompt = _build_system_prompt(detected_branch, region, language)
 
     user_message = f"""Contexte juridique :
 
