@@ -265,6 +265,74 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS student_progress (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    branch TEXT NOT NULL,
+    xp INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    streak_count INTEGER NOT NULL DEFAULT 0,
+    streak_last_date TEXT,
+    total_quizzes INTEGER NOT NULL DEFAULT 0,
+    total_correct INTEGER NOT NULL DEFAULT 0,
+    best_score INTEGER NOT NULL DEFAULT 0,
+    total_flashcards INTEGER NOT NULL DEFAULT 0,
+    total_case_studies INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, branch)
+);
+
+CREATE TABLE IF NOT EXISTS student_badges (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    badge_id TEXT NOT NULL,
+    badge_name TEXT NOT NULL,
+    badge_emoji TEXT NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, badge_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_quiz_history (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    branch TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    score INTEGER,
+    total_questions INTEGER,
+    difficulty TEXT DEFAULT 'moyen',
+    xp_earned INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS student_flashcard_srs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    branch TEXT NOT NULL,
+    card_hash TEXT NOT NULL,
+    box INTEGER NOT NULL DEFAULT 1,
+    next_review_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    times_correct INTEGER NOT NULL DEFAULT 0,
+    times_wrong INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, card_hash)
+);
+
+CREATE TABLE IF NOT EXISTS student_groups (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS student_group_members (
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER NOT NULL REFERENCES student_groups(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(group_id, user_id)
+);
 """
 
 _PG_INDEXES = """
@@ -286,6 +354,15 @@ CREATE INDEX IF NOT EXISTS idx_beta_notif_user ON beta_notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_beta_notif_milestone ON beta_notifications(milestone);
 CREATE INDEX IF NOT EXISTS idx_beta_notif_status ON beta_notifications(status);
 CREATE INDEX IF NOT EXISTS idx_audit_reports_user ON audit_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_progress_user ON student_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_badges_user ON student_badges(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_quiz_history_user ON student_quiz_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_quiz_history_branch ON student_quiz_history(branch);
+CREATE INDEX IF NOT EXISTS idx_student_flashcard_srs_user ON student_flashcard_srs(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_flashcard_srs_review ON student_flashcard_srs(user_id, next_review_at);
+CREATE INDEX IF NOT EXISTS idx_student_groups_code ON student_groups(code);
+CREATE INDEX IF NOT EXISTS idx_student_group_members_group ON student_group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_student_group_members_user ON student_group_members(user_id);
 """
 
 _SQLITE_SCHEMA = """
@@ -428,6 +505,81 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     used INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS student_progress (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    xp INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    streak_count INTEGER NOT NULL DEFAULT 0,
+    streak_last_date TEXT,
+    total_quizzes INTEGER NOT NULL DEFAULT 0,
+    total_correct INTEGER NOT NULL DEFAULT 0,
+    best_score INTEGER NOT NULL DEFAULT 0,
+    total_flashcards INTEGER NOT NULL DEFAULT 0,
+    total_case_studies INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, branch)
+);
+
+CREATE TABLE IF NOT EXISTS student_badges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    badge_id TEXT NOT NULL,
+    badge_name TEXT NOT NULL,
+    badge_emoji TEXT NOT NULL,
+    earned_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, badge_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_quiz_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    score INTEGER,
+    total_questions INTEGER,
+    difficulty TEXT DEFAULT 'moyen',
+    xp_earned INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS student_flashcard_srs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    card_hash TEXT NOT NULL,
+    box INTEGER NOT NULL DEFAULT 1,
+    next_review_at TEXT NOT NULL DEFAULT (datetime('now')),
+    times_correct INTEGER NOT NULL DEFAULT 0,
+    times_wrong INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, card_hash)
+);
+
+CREATE TABLE IF NOT EXISTS student_groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS student_group_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    joined_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(group_id, user_id)
 );
 """ + _PG_INDEXES
 
@@ -1195,5 +1347,295 @@ def update_user_context(user_id: int, region: str = None, profession: str = None
         _execute(conn, f"UPDATE users SET {set_clause} WHERE id = {ph}", tuple(values))
         conn.commit()
         return get_user_context(user_id)
+    finally:
+        conn.close()
+
+
+# ─── Student Gamification CRUD ──────────────────────────────────────────────
+
+def get_student_progress(user_id: int, branch: str = None) -> list:
+    """Get student progress for all branches or a specific one."""
+    conn = _get_conn()
+    try:
+        if branch:
+            row = _fetchone(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} AND branch = {PH}", (user_id, branch))
+            return [row] if row else []
+        return _fetchall(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} ORDER BY xp DESC", (user_id,))
+    finally:
+        conn.close()
+
+
+def upsert_student_progress(user_id: int, branch: str, xp_delta: int = 0,
+                            quiz_done: int = 0, correct: int = 0, mode: str = "quiz") -> dict:
+    """Insert or update student progress for a branch."""
+    conn = _get_conn()
+    try:
+        existing = _fetchone(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} AND branch = {PH}", (user_id, branch))
+        if existing:
+            new_xp = existing["xp"] + xp_delta
+            new_level = max(1, new_xp // 500 + 1)
+            new_quizzes = existing["total_quizzes"] + quiz_done
+            new_correct = existing["total_correct"] + correct
+            new_best = max(existing["best_score"], int((correct / max(quiz_done, 1)) * 100) if quiz_done > 0 else 0)
+            fc_delta = 1 if mode == "flashcards" else 0
+            cs_delta = 1 if mode == "case_study" else 0
+            _execute(conn, f"""UPDATE student_progress
+                SET xp = {PH}, level = {PH}, total_quizzes = {PH}, total_correct = {PH},
+                    best_score = {PH}, total_flashcards = total_flashcards + {PH},
+                    total_case_studies = total_case_studies + {PH},
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = {PH} AND branch = {PH}""",
+                (new_xp, new_level, new_quizzes, new_correct, new_best, fc_delta, cs_delta, user_id, branch))
+        else:
+            score_pct = int((correct / max(quiz_done, 1)) * 100) if quiz_done > 0 else 0
+            level = max(1, xp_delta // 500 + 1)
+            fc = 1 if mode == "flashcards" else 0
+            cs = 1 if mode == "case_study" else 0
+            _execute(conn, f"""INSERT INTO student_progress
+                (user_id, branch, xp, level, total_quizzes, total_correct, best_score, total_flashcards, total_case_studies)
+                VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH}, {PH}, {PH}, {PH})""",
+                (user_id, branch, xp_delta, level, quiz_done, correct, score_pct, fc, cs))
+        conn.commit()
+        return _fetchone(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} AND branch = {PH}", (user_id, branch)) or {}
+    finally:
+        conn.close()
+
+
+def update_student_streak(user_id: int) -> dict:
+    """Update streak: if last activity was yesterday, increment. Otherwise reset to 1."""
+    conn = _get_conn()
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        yesterday = (datetime.now(timezone.utc) - __import__('datetime').timedelta(days=1)).strftime("%Y-%m-%d")
+        rows = _fetchall(conn, f"SELECT DISTINCT streak_last_date, streak_count FROM student_progress WHERE user_id = {PH} LIMIT 1", (user_id,))
+        if rows:
+            last_date = (rows[0].get("streak_last_date") or "")[:10]
+            current_streak = rows[0].get("streak_count", 0)
+            if last_date == today:
+                return {"streak_count": current_streak, "streak_last_date": today}
+            elif last_date == yesterday:
+                new_streak = current_streak + 1
+            else:
+                new_streak = 1
+        else:
+            new_streak = 1
+        _execute(conn, f"UPDATE student_progress SET streak_count = {PH}, streak_last_date = {PH} WHERE user_id = {PH}",
+                 (new_streak, today, user_id))
+        conn.commit()
+        return {"streak_count": new_streak, "streak_last_date": today}
+    finally:
+        conn.close()
+
+
+def get_student_badges(user_id: int) -> list:
+    """Get all badges earned by a user."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"SELECT badge_id, badge_name, badge_emoji, earned_at FROM student_badges WHERE user_id = {PH} ORDER BY earned_at DESC", (user_id,))
+    finally:
+        conn.close()
+
+
+def award_student_badge(user_id: int, badge_id: str, badge_name: str, badge_emoji: str) -> bool:
+    """Award a badge to a user. Returns True if newly awarded, False if already had it."""
+    conn = _get_conn()
+    try:
+        existing = _fetchone(conn, f"SELECT id FROM student_badges WHERE user_id = {PH} AND badge_id = {PH}", (user_id, badge_id))
+        if existing:
+            return False
+        _execute(conn, f"INSERT INTO student_badges (user_id, badge_id, badge_name, badge_emoji) VALUES ({PH}, {PH}, {PH}, {PH})",
+                 (user_id, badge_id, badge_name, badge_emoji))
+        conn.commit()
+        return True
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        conn.close()
+
+
+def save_quiz_history(user_id: int, branch: str, mode: str, score: int, total_questions: int,
+                      difficulty: str = "moyen", xp_earned: int = 0) -> int:
+    """Save a quiz/activity to history. Returns the new entry ID."""
+    conn = _get_conn()
+    try:
+        new_id = _insert_returning_id(conn,
+            f"INSERT INTO student_quiz_history (user_id, branch, mode, score, total_questions, difficulty, xp_earned) VALUES ({PH}, {PH}, {PH}, {PH}, {PH}, {PH}, {PH})",
+            (user_id, branch, mode, score, total_questions, difficulty, xp_earned))
+        conn.commit()
+        return new_id
+    finally:
+        conn.close()
+
+
+def get_quiz_history(user_id: int, limit: int = 20) -> list:
+    """Get recent quiz/activity history."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"SELECT * FROM student_quiz_history WHERE user_id = {PH} ORDER BY created_at DESC LIMIT {PH}", (user_id, limit))
+    finally:
+        conn.close()
+
+
+def get_leaderboard(branch: str = None, limit: int = 20) -> list:
+    """Get top users by total XP, optionally filtered by branch."""
+    conn = _get_conn()
+    try:
+        if branch:
+            return _fetchall(conn, f"""SELECT sp.user_id, u.name, sp.xp, sp.level
+                FROM student_progress sp JOIN users u ON sp.user_id = u.id
+                WHERE sp.branch = {PH} ORDER BY sp.xp DESC LIMIT {PH}""", (branch, limit))
+        return _fetchall(conn, f"""SELECT sp.user_id, u.name, SUM(sp.xp) as total_xp, MAX(sp.level) as level
+            FROM student_progress sp JOIN users u ON sp.user_id = u.id
+            GROUP BY sp.user_id, u.name ORDER BY total_xp DESC LIMIT {PH}""", (limit,))
+    finally:
+        conn.close()
+
+
+def get_weak_branches(user_id: int, limit: int = 3) -> list:
+    """Get branches with lowest best_score for targeted revision."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"SELECT branch, best_score, xp, total_quizzes FROM student_progress WHERE user_id = {PH} AND total_quizzes > 0 ORDER BY best_score ASC LIMIT {PH}", (user_id, limit))
+    finally:
+        conn.close()
+
+
+def get_student_total_xp(user_id: int) -> int:
+    """Get total XP across all branches."""
+    conn = _get_conn()
+    try:
+        row = _fetchone(conn, f"SELECT COALESCE(SUM(xp), 0) as total_xp FROM student_progress WHERE user_id = {PH}", (user_id,))
+        return row["total_xp"] if row else 0
+    finally:
+        conn.close()
+
+
+# ─── Flashcard SRS (Leitner) ───────────────────────────────────────────────
+
+LEITNER_INTERVALS = {1: 1, 2: 3, 3: 7, 4: 14, 5: 30}  # box → days
+
+def get_due_flashcards(user_id: int, branch: str = None, limit: int = 20) -> list:
+    """Get flashcards due for review (next_review_at <= now)."""
+    conn = _get_conn()
+    try:
+        if branch:
+            return _fetchall(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND branch = {PH} AND next_review_at <= CURRENT_TIMESTAMP ORDER BY box ASC, next_review_at ASC LIMIT {PH}", (user_id, branch, limit))
+        return _fetchall(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND next_review_at <= CURRENT_TIMESTAMP ORDER BY box ASC, next_review_at ASC LIMIT {PH}", (user_id, limit))
+    finally:
+        conn.close()
+
+
+def upsert_flashcard_srs(user_id: int, branch: str, card_hash: str, correct: bool) -> dict:
+    """Update Leitner box for a flashcard. Correct → box+1, Wrong → box 1."""
+    conn = _get_conn()
+    try:
+        existing = _fetchone(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND card_hash = {PH}", (user_id, card_hash))
+        if existing:
+            if correct:
+                new_box = min(existing["box"] + 1, 5)
+                tc = existing["times_correct"] + 1
+                tw = existing["times_wrong"]
+            else:
+                new_box = 1
+                tc = existing["times_correct"]
+                tw = existing["times_wrong"] + 1
+            interval_days = LEITNER_INTERVALS.get(new_box, 1)
+            if USE_PG:
+                next_review = f"CURRENT_TIMESTAMP + INTERVAL '{interval_days} days'"
+            else:
+                next_review = f"datetime('now', '+{interval_days} days')"
+            _execute(conn, f"UPDATE student_flashcard_srs SET box = {PH}, next_review_at = {next_review}, times_correct = {PH}, times_wrong = {PH} WHERE id = {PH}",
+                     (new_box, tc, tw, existing["id"]))
+        else:
+            interval_days = LEITNER_INTERVALS.get(1 if not correct else 2, 1)
+            new_box = 1 if not correct else 2
+            if USE_PG:
+                next_review_val = f"CURRENT_TIMESTAMP + INTERVAL '{interval_days} days'"
+            else:
+                next_review_val = f"datetime('now', '+{interval_days} days')"
+            _execute(conn, f"INSERT INTO student_flashcard_srs (user_id, branch, card_hash, box, next_review_at, times_correct, times_wrong) VALUES ({PH}, {PH}, {PH}, {PH}, {next_review_val}, {PH}, {PH})",
+                     (user_id, branch, card_hash, new_box, 1 if correct else 0, 0 if correct else 1))
+        conn.commit()
+        return _fetchone(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND card_hash = {PH}", (user_id, card_hash)) or {}
+    finally:
+        conn.close()
+
+
+# ─── Student Groups CRUD ───────────────────────────────────────────────────
+
+def create_student_group(name: str, user_id: int) -> dict:
+    """Create a study group with a unique 6-char code. Creator auto-joins."""
+    import random, string
+    conn = _get_conn()
+    try:
+        code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        # Ensure unique
+        while _fetchone(conn, f"SELECT id FROM student_groups WHERE code = {PH}", (code,)):
+            code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        group_id = _insert_returning_id(conn,
+            f"INSERT INTO student_groups (name, code, created_by) VALUES ({PH}, {PH}, {PH})",
+            (name, code, user_id))
+        # Auto-join creator
+        _execute(conn, f"INSERT INTO student_group_members (group_id, user_id) VALUES ({PH}, {PH})", (group_id, user_id))
+        conn.commit()
+        return {"id": group_id, "name": name, "code": code, "created_by": user_id}
+    finally:
+        conn.close()
+
+
+def join_student_group(code: str, user_id: int) -> dict:
+    """Join a group by code. Returns group info or None if not found."""
+    conn = _get_conn()
+    try:
+        group = _fetchone(conn, f"SELECT * FROM student_groups WHERE code = {PH}", (code,))
+        if not group:
+            return None
+        existing = _fetchone(conn, f"SELECT id FROM student_group_members WHERE group_id = {PH} AND user_id = {PH}", (group["id"], user_id))
+        if not existing:
+            _execute(conn, f"INSERT INTO student_group_members (group_id, user_id) VALUES ({PH}, {PH})", (group["id"], user_id))
+            conn.commit()
+        return dict(group)
+    finally:
+        conn.close()
+
+
+def leave_student_group(group_id: int, user_id: int) -> bool:
+    """Leave a group."""
+    conn = _get_conn()
+    try:
+        _execute(conn, f"DELETE FROM student_group_members WHERE group_id = {PH} AND user_id = {PH}", (group_id, user_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def get_user_groups(user_id: int) -> list:
+    """Get all groups a user belongs to, with member count."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"""SELECT g.id, g.name, g.code, g.created_by,
+            (SELECT COUNT(*) FROM student_group_members WHERE group_id = g.id) as member_count
+            FROM student_groups g
+            JOIN student_group_members gm ON g.id = gm.group_id
+            WHERE gm.user_id = {PH} ORDER BY g.name""", (user_id,))
+    finally:
+        conn.close()
+
+
+def get_group_leaderboard(group_id: int) -> list:
+    """Get leaderboard for a specific group."""
+    conn = _get_conn()
+    try:
+        return _fetchall(conn, f"""SELECT u.id as user_id, u.name, COALESCE(SUM(sp.xp), 0) as total_xp, COALESCE(MAX(sp.level), 1) as level
+            FROM student_group_members gm
+            JOIN users u ON gm.user_id = u.id
+            LEFT JOIN student_progress sp ON sp.user_id = u.id
+            WHERE gm.group_id = {PH}
+            GROUP BY u.id, u.name ORDER BY total_xp DESC""", (group_id,))
     finally:
         conn.close()

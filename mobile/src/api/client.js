@@ -552,6 +552,85 @@ export async function generateSummary(branch, topic = '') {
   return r.data;
 }
 
+// ─── Student Gamification ─────────────────────────────────────────────────────
+
+export async function getStudentDashboard() {
+  const r = await api.get('/student/dashboard');
+  return r.data;
+}
+
+export async function postStudentActivity(mode, branch, score, total) {
+  const r = await api.post('/student/activity', { mode, branch, score, total });
+  return r.data;
+}
+
+export async function getStudentLeaderboard(scope = 'global', groupId = '') {
+  const params = { scope };
+  if (groupId) params.group_id = groupId;
+  const r = await api.get('/student/leaderboard', { params });
+  return r.data;
+}
+
+export async function generateCaseStudy(branch, difficulty = 'moyen') {
+  const r = await api.post('/student/case-study', { branch, difficulty });
+  return r.data;
+}
+
+export async function evaluateCaseStudy(caseData, answer) {
+  const r = await api.post('/student/case-study/evaluate', { case_data: caseData, answer });
+  return r.data;
+}
+
+export async function generateMockExam(branches, numQuestions = 20) {
+  const r = await api.post('/student/mock-exam', { branches, num_questions: numQuestions });
+  return r.data;
+}
+
+export async function submitMockExam(examData, answers) {
+  const r = await api.post('/student/mock-exam/submit', { exam_data: examData, answers });
+  return r.data;
+}
+
+export async function getStudentBadges() {
+  const r = await api.get('/student/badges');
+  return r.data;
+}
+
+export async function getStudentWeakBranches() {
+  const r = await api.get('/student/weak-branches');
+  return r.data;
+}
+
+export async function generateFreeRecall(branch) {
+  const r = await api.post('/student/free-recall', { branch });
+  return r.data;
+}
+
+export async function evaluateFreeRecall(questionData, answer) {
+  const r = await api.post('/student/free-recall/evaluate', { question_data: questionData, answer });
+  return r.data;
+}
+
+export async function generateInterleavedQuiz(branches, numPerBranch = 3) {
+  const r = await api.post('/student/interleaved-quiz', { branches, num_per_branch: numPerBranch });
+  return r.data;
+}
+
+export async function createStudentGroup(name) {
+  const r = await api.post('/student/groups', { name });
+  return r.data;
+}
+
+export async function joinStudentGroup(code) {
+  const r = await api.post('/student/groups/join', { code });
+  return r.data;
+}
+
+export async function getStudentGroups() {
+  const r = await api.get('/student/groups');
+  return r.data;
+}
+
 // ─── Billing (routes /billing/* — alignées sur le backend) ────────────────────
 
 export async function getSubscriptionStatus() {

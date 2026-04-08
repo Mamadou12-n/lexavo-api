@@ -90,29 +90,17 @@ const STACK_SCREEN_OPTIONS = {
   cardStyle:        { backgroundColor: colors.background },
 };
 
-// Lexavo stack navigator — hub + all 15 feature screens
+// Lexavo stack navigator — 7 outils essentiels particuliers
 function LexavoStack() {
   return (
     <LexavoStackNav.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-      <LexavoStackNav.Screen name="LexavoHome"   component={LexavoHomeScreen}    options={{ headerTitle: '⚖️  Outils juridiques' }} />
-      <LexavoStackNav.Screen name="Defend"      component={DefendScreen}        options={{ headerTitle: '⚡ Defend — Contestation' }} />
-      <LexavoStackNav.Screen name="Shield"       component={ShieldScreen}        options={{ headerTitle: '📄 Analyseur de documents' }} />
-      <LexavoStackNav.Screen name="Calculateurs" component={CalculateursScreen}  options={{ headerTitle: '🧮 Calculateurs juridiques' }} />
-      <LexavoStackNav.Screen name="Contrats"     component={ContratsScreen}      options={{ headerTitle: '📝 Contrats — Génération PDF' }} />
-      <LexavoStackNav.Screen name="Reponses"     component={ReponsesScreen}      options={{ headerTitle: '✉️  Réponses juridiques' }} />
-      <LexavoStackNav.Screen name="Diagnostic"   component={DiagnosticScreen}    options={{ headerTitle: '🔬 Diagnostic juridique' }} />
-      <LexavoStackNav.Screen name="Score"        component={ScoreScreen}         options={{ headerTitle: '📊 Score — Santé juridique' }} />
-      <LexavoStackNav.Screen name="Compliance"   component={ComplianceScreen}    options={{ headerTitle: '🏢 Audit Entreprise' }} />
-      <LexavoStackNav.Screen name="Alertes"      component={AlertesScreen}       options={{ headerTitle: '🔔 Alertes législatives' }} />
-      {/* Decode supprime — fusionne dans Shield (DocumentScreen) */}
-      <LexavoStackNav.Screen name="Litiges"      component={LitigesScreen}       options={{ headerTitle: '⚖️  Litiges — Recouvrement' }} />
-      <LexavoStackNav.Screen name="Match"        component={MatchScreen}         options={{ headerTitle: '🤝 Match — Trouver un avocat' }} />
-      <LexavoStackNav.Screen name="Emergency"    component={EmergencyScreen}     options={{ headerTitle: '🚨 Emergency — Urgence 24h' }} />
-      <LexavoStackNav.Screen name="Proof"        component={ProofScreen}         options={{ headerTitle: '🗂️  Proof — Dossier de preuves' }} />
-      <LexavoStackNav.Screen name="Heritage"     component={HeritageScreen}      options={{ headerTitle: '🏛️  Héritage — Succession' }} />
-      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}        options={{ headerTitle: '💰 Fiscal — Questions fiscales' }} />
-      <LexavoStackNav.Screen name="Student"      component={StudentScreen}       options={{ headerTitle: '🎓 Étudiants — Quiz & Révision' }} />
-      {/* Audit supprime — fusionne dans Compliance (Audit Entreprise) */}
+      <LexavoStackNav.Screen name="Defend"       component={DefendScreen}       options={{ headerTitle: '⚡ Contester' }} />
+      <LexavoStackNav.Screen name="Shield"       component={ShieldScreen}       options={{ headerTitle: '📄 Analyser un document' }} />
+      <LexavoStackNav.Screen name="Diagnostic"   component={DiagnosticScreen}   options={{ headerTitle: '🔬 Diagnostic juridique' }} />
+      <LexavoStackNav.Screen name="Calculateurs" component={CalculateursScreen} options={{ headerTitle: '🧮 Calculateurs juridiques' }} />
+      <LexavoStackNav.Screen name="Match"        component={MatchScreen}        options={{ headerTitle: '🤝 Trouver un avocat' }} />
+      <LexavoStackNav.Screen name="Emergency"    component={EmergencyScreen}    options={{ headerTitle: '🚨 Urgence 24h' }} />
+      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}       options={{ headerTitle: '💰 Questions fiscales' }} />
     </LexavoStackNav.Navigator>
   );
 }
@@ -172,7 +160,17 @@ function MainApp() {
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text>,
           }}
         />
-        {/* ── 2. Chat IA ── */}
+        {/* ── 2. Campus ── */}
+        <Tab.Screen
+          name="Campus"
+          component={StudentScreen}
+          options={{
+            headerTitle: '🎓 Lexavo Campus',
+            tabBarLabel: 'Campus',
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎓</Text>,
+          }}
+        />
+        {/* ── 3. Chat IA ── */}
         <Tab.Screen
           name="Ask"
           component={AskScreen}
@@ -180,18 +178,6 @@ function MainApp() {
             headerTitle: '💬 Chat juridique IA',
             tabBarLabel: 'Chat',
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>💬</Text>,
-          }}
-        />
-        {/* ── 3. Avocats ── */}
-        <Tab.Screen
-          name="Avocats"
-          component={LawyerScreen}
-          options={{
-            headerTitle: '⚖️ Annuaire des avocats',
-            headerStyle: { backgroundColor: LEXAVO_NAVY },
-            headerTintColor: '#FFF',
-            tabBarLabel: 'Avocats',
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>⚖️</Text>,
           }}
         />
         {/* ── 4. Abonnement ── */}
@@ -206,17 +192,17 @@ function MainApp() {
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>⭐</Text>,
           }}
         />
-        {/* ── 5. Reglages ── */}
+        {/* ── 5. Réglages ── */}
         <Tab.Screen
           name="Settings"
           component={SettingsStack}
           options={{
             headerShown: false,
-            tabBarLabel: 'Settings',
+            tabBarLabel: 'Plus',
             tabBarIcon: () => <Text style={{ fontSize: 20 }}>⚙️</Text>,
           }}
         />
-        {/* ── Outils (caché, navigation interne) ── */}
+        {/* ── Outils (caché, navigation interne depuis HomeScreen) ── */}
         <Tab.Screen
           name="Outils"
           component={LexavoStack}

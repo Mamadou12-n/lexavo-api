@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, StatusBar, Dimensions, TextInput, Alert,
+  RefreshControl, StatusBar, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,36 +13,14 @@ const LEXAVO_NAVY   = '#1C2B3A';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TOOL_GROUPS = [
-  {
-    title: 'Analyse & Protection',
-    tools: [
-      { emoji: '📄', title: 'Document', sub: 'Analyser un document', color: '#C0392B', screen: 'Shield' },
-      { emoji: '⚡', title: 'Defend', sub: 'Contester une décision', color: '#C45A2D', screen: 'Defend' },
-      { emoji: '🔬', title: 'Diagnostic', sub: 'Analyse multi-branches', color: '#C45A2D', screen: 'Diagnostic' },
-      { emoji: '📊', title: 'Score', sub: 'Santé juridique /100', color: '#F39C12', screen: 'Score' },
-      { emoji: '✉️', title: 'Réponses', sub: 'Réponse juridique', color: '#8E44AD', screen: 'Reponses' },
-    ],
-  },
-  {
-    title: 'Entreprise & Finance',
-    tools: [
-      { emoji: '🏢', title: 'Audit', sub: 'Audit rapide ou approfondi', color: '#16A085', screen: 'Compliance' },
-      { emoji: '💰', title: 'Fiscal', sub: 'Questions fiscales', color: '#34495E', screen: 'Fiscal' },
-      { emoji: '🧮', title: 'Calculateurs', sub: 'Préavis · Succession · Pension', color: '#1A6B8A', screen: 'Calculateurs' },
-      { emoji: '⚖️', title: 'Litiges', sub: 'Recouvrement', color: '#B22222', screen: 'Litiges' },
-      { emoji: '🗂️', title: 'Proof', sub: 'Dossier preuves', color: '#1A6B3A', screen: 'Proof' },
-    ],
-  },
-  {
-    title: 'Services & Veille',
-    tools: [
-      { emoji: '🔔', title: 'Alertes', sub: 'Veille législative', color: '#D4A017', screen: 'Alertes' },
-      { emoji: '🤝', title: 'Match', sub: 'Trouver un avocat', color: '#0050A0', screen: 'Match' },
-      { emoji: '🚨', title: 'Urgence', sub: 'Avocat en 24h', color: '#E74C3C', screen: 'Emergency' },
-      { emoji: '🏛️', title: 'Héritage', sub: 'Guide successoral', color: '#8B4513', screen: 'Heritage' },
-    ],
-  },
+const TOOLS = [
+  { emoji: '⚡', title: 'Contester', sub: 'Contester une décision', color: '#C45A2D', screen: 'Defend' },
+  { emoji: '📄', title: 'Document', sub: 'Analyser un contrat', color: '#C0392B', screen: 'Shield' },
+  { emoji: '🔬', title: 'Diagnostic', sub: 'Comprendre ma situation', color: '#8E44AD', screen: 'Diagnostic' },
+  { emoji: '🧮', title: 'Calculateurs', sub: 'Préavis · Pension · Succession', color: '#1A6B8A', screen: 'Calculateurs' },
+  { emoji: '🤝', title: 'Avocat', sub: 'Trouver un avocat', color: '#0050A0', screen: 'Match' },
+  { emoji: '🚨', title: 'Urgence', sub: 'Avocat en 24h — 49€', color: '#E74C3C', screen: 'Emergency' },
+  { emoji: '💰', title: 'Fiscal', sub: 'Questions fiscales', color: '#34495E', screen: 'Fiscal' },
 ];
 
 const BRANCH_GROUPS = [
@@ -79,11 +57,9 @@ const BRANCH_GROUPS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const [quota, setQuota]               = useState(null);
-  const [refreshing, setRefreshing]     = useState(false);
-  const [studentSearch, setStudentSearch] = useState('');
-  const [toolPage, setToolPage]         = useState(0);
-  const [branchPage, setBranchPage]     = useState(0);
+  const [quota, setQuota]           = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [branchPage, setBranchPage] = useState(0);
 
   const load = useCallback(async () => {
     try { setQuota(await getSubscriptionStatus()); } catch (_) {}
@@ -180,20 +156,10 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Barre de recherche */}
-          <TextInput
-            style={styles.campusSearch}
-            placeholder="Rechercher une branche du droit..."
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={studentSearch}
-            onChangeText={setStudentSearch}
-            accessibilityLabel="Recherche branche du droit"
-          />
-
           {/* CTA Button gradient */}
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('Outils', { screen: 'Student', params: { branch: studentSearch || '' } })}
+            onPress={() => navigation.navigate('Campus')}
           >
             <LinearGradient
               colors={['#00D4AA', '#00B894']}
@@ -211,40 +177,20 @@ export default function HomeScreen({ navigation }) {
       {/* ═══ OUTILS JURIDIQUES ═══ */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Outils juridiques</Text>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) => setToolPage(Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32)))}
-          style={{ marginHorizontal: -16 }}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-        >
-          {TOOL_GROUPS.map((group, gi) => (
-            <View key={gi} style={{ width: SCREEN_WIDTH - 32, paddingRight: 16 }}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              <View style={styles.grid}>
-                {group.tools.map((t) => (
-                  <TouchableOpacity
-                    activeOpacity={0.75}
-                    key={t.screen}
-                    style={styles.toolCard}
-                    onPress={() => goTool(t.screen)}
-                  >
-                    <View style={[styles.toolIcon, { backgroundColor: t.color + '18' }]}>
-                      <Text style={{ fontSize: 22 }}>{t.emoji}</Text>
-                    </View>
-                    <Text style={styles.toolTitle}>{t.title}</Text>
-                    <Text style={styles.toolSub}>{t.sub}</Text>
-                  </TouchableOpacity>
-                ))}
+        <View style={styles.grid}>
+          {TOOLS.map((t) => (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              key={t.screen}
+              style={styles.toolCard}
+              onPress={() => goTool(t.screen)}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: t.color + '18' }]}>
+                <Text style={{ fontSize: 22 }}>{t.emoji}</Text>
               </View>
-            </View>
-          ))}
-        </ScrollView>
-        {/* Dots */}
-        <View style={styles.dots}>
-          {TOOL_GROUPS.map((_, i) => (
-            <View key={i} style={[styles.dot, toolPage === i && styles.dotActive]} />
+              <Text style={styles.toolTitle}>{t.title}</Text>
+              <Text style={styles.toolSub}>{t.sub}</Text>
+            </TouchableOpacity>
           ))}
         </View>
       </View>

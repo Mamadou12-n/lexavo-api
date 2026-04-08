@@ -1901,6 +1901,295 @@ Ne jamais inventer de loi, d'article ou de jurisprudence."""
     return {"branch": branch, "topic": topic, "summary": msg.content[0].text}
 
 
+# ─── Student Gamification Endpoints ─────────────────────────────────────────
+
+@app.get("/student/dashboard")
+@limiter.limit("20/minute")
+def student_dashboard(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Dashboard etudiant : XP, level, streak, badges, progression, activite recente."""
+    from api.features.student import get_dashboard_data
+    return get_dashboard_data(current_user["id"])
+
+
+@app.post("/student/activity")
+@limiter.limit("30/minute")
+def student_activity(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Enregistre une activite et calcule XP, streak, badges."""
+    from api.features.student import calculate_xp, check_and_award_badges, compute_level
+    from api.database import (
+        upsert_student_progress, update_student_streak,
+        save_quiz_history, get_student_total_xp,
+    )
+
+    mode = body.get("mode", "quiz")
+    branch = body.get("branch", "Droit civil")
+    score = int(body.get("score", 0))
+    total = int(body.get("total", 0))
+
+    streak_info = update_student_streak(current_user["id"])
+    streak_active = streak_info.get("streak_count", 0) > 1
+
+    xp_earned = calculate_xp(mode, score, total, streak_active)
+    upsert_student_progress(current_user["id"], branch, xp_earned,
+                            quiz_done=1 if mode in ("quiz", "mock_exam", "interleaved", "free_recall") else 0,
+                            correct=score, mode=mode)
+    save_quiz_history(current_user["id"], branch, mode, score, total, "moyen", xp_earned)
+    new_badges = check_and_award_badges(current_user["id"])
+    total_xp = get_student_total_xp(current_user["id"])
+    level = compute_level(total_xp)
+
+    return {
+        "xp_earned": xp_earned,
+        "total_xp": total_xp,
+        "level": level,
+        "streak": streak_info,
+        "new_badges": new_badges,
+        "streak_multiplier": streak_active,
+    }
+
+
+@app.get("/student/leaderboard")
+@limiter.limit("20/minute")
+def student_leaderboard(
+    request: Request,
+    scope: str = "global",
+    branch: str = None,
+    group_id: int = None,
+):
+    """Leaderboard global, par branche ou par groupe."""
+    from api.database import get_leaderboard, get_group_leaderboard
+    if scope == "group" and group_id:
+        return {"scope": "group", "group_id": group_id, "ranking": get_group_leaderboard(group_id)}
+    return {"scope": scope, "branch": branch, "ranking": get_leaderboard(branch=branch, limit=20)}
+
+
+@app.get("/student/badges")
+@limiter.limit("20/minute")
+def student_badges_endpoint(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Liste tous les badges disponibles + ceux gagnes."""
+    from api.database import get_student_badges
+    from api.features.student import BADGES
+    earned = get_student_badges(current_user["id"])
+    earned_ids = {b["badge_id"] for b in earned}
+    return {
+        "earned": earned,
+        "available": [dict(b, earned=b["id"] in earned_ids) for b in BADGES],
+    }
+
+
+@app.get("/student/weak-branches")
+@limiter.limit("20/minute")
+def student_weak_branches(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Branches les plus faibles pour revision ciblee."""
+    from api.database import get_weak_branches
+    return {"weak_branches": get_weak_branches(current_user["id"], limit=3)}
+
+
+@app.post("/student/case-study")
+@limiter.limit("5/minute")
+def student_case_study(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Genere un cas pratique IA sur une branche du droit belge."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    from api.features.student import generate_case_study
+
+    branch = body.get("branch", "Droit civil")
+    difficulty = body.get("difficulty", "moyen")
+
+    check_quota(current_user["id"])
+
+    # Optionnel: enrichir avec RAG
+    rag_context = ""
+    try:
+        from rag.retriever import search_legal
+        results = search_legal(f"jurisprudence {branch} Belgique", top_k=5)
+        if results:
+            rag_context = "\n".join([r.get("text", "")[:300] for r in results[:3]])
+    except Exception:
+        pass
+
+    result = generate_case_study(branch, difficulty, rag_context)
+    increment_question_count(current_user["id"])
+    return result
+
+
+@app.post("/student/case-study/evaluate")
+@limiter.limit("5/minute")
+def student_case_study_evaluate(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Evalue la reponse d'un etudiant a un cas pratique."""
+    from api.features.student import evaluate_case_study
+    case_data = body.get("case_data", {})
+    answer = body.get("answer", "")
+    if not answer or len(answer.strip()) < 50:
+        raise HTTPException(status_code=400, detail="Reponse trop courte (minimum 50 caracteres).")
+    return evaluate_case_study(case_data, answer.strip())
+
+
+@app.post("/student/mock-exam")
+@limiter.limit("5/minute")
+def student_mock_exam(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Genere un examen blanc QCM multi-branches."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    from api.features.student import generate_mock_exam
+
+    branches = body.get("branches", ["Droit civil"])
+    num_questions = min(int(body.get("num_questions", 20)), 30)
+
+    check_quota(current_user["id"])
+    result = generate_mock_exam(branches, num_questions)
+    increment_question_count(current_user["id"])
+    return result
+
+
+@app.post("/student/mock-exam/submit")
+@limiter.limit("10/minute")
+def student_mock_exam_submit(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Corrige et note un examen blanc soumis."""
+    from api.features.student import evaluate_mock_exam
+    exam_data = body.get("exam_data", {})
+    answers = body.get("answers", {})
+    return evaluate_mock_exam(exam_data, answers)
+
+
+@app.post("/student/free-recall")
+@limiter.limit("5/minute")
+def student_free_recall(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Genere une question ouverte pour rappel libre (active recall maximal)."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    from api.features.student import generate_free_recall_question
+
+    branch = body.get("branch", "Droit civil")
+    check_quota(current_user["id"])
+    result = generate_free_recall_question(branch)
+    increment_question_count(current_user["id"])
+    return result
+
+
+@app.post("/student/free-recall/evaluate")
+@limiter.limit("5/minute")
+def student_free_recall_evaluate(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Evalue une reponse de rappel libre."""
+    from api.features.student import evaluate_free_recall
+    question_data = body.get("question_data", {})
+    answer = body.get("answer", "")
+    if not answer or len(answer.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Reponse trop courte (minimum 20 caracteres).")
+    return evaluate_free_recall(question_data, answer.strip())
+
+
+@app.post("/student/interleaved-quiz")
+@limiter.limit("5/minute")
+def student_interleaved_quiz(
+    request: Request,
+    body: dict,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Genere un quiz melange multi-branches (interleaving)."""
+    from api.stripe_billing import check_quota
+    from api.database import increment_question_count
+    from api.features.student import generate_interleaved_quiz
+
+    branches = body.get("branches", ["Droit civil", "Droit penal", "Droit du travail"])
+    num_per_branch = min(int(body.get("num_per_branch", 3)), 5)
+
+    check_quota(current_user["id"])
+    result = generate_interleaved_quiz(branches, num_per_branch)
+    increment_question_count(current_user["id"])
+    return result
+
+
+# ─── Student Groups Endpoints ──────────────────────────────────────────────
+
+@app.post("/student/groups")
+@limiter.limit("10/minute")
+def create_group(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Cree un groupe d'etude. Retourne le code a partager."""
+    from api.database import create_student_group
+    name = body.get("name", "").strip()
+    if not name or len(name) < 2:
+        raise HTTPException(status_code=400, detail="Nom du groupe requis (min 2 caracteres).")
+    group = create_student_group(name, current_user["id"])
+    return group
+
+
+@app.post("/student/groups/join")
+@limiter.limit("10/minute")
+def join_group(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Rejoindre un groupe par code."""
+    from api.database import join_student_group
+    code = body.get("code", "").strip().upper()
+    if not code or len(code) != 6:
+        raise HTTPException(status_code=400, detail="Code invalide (6 caracteres).")
+    group = join_student_group(code, current_user["id"])
+    if not group:
+        raise HTTPException(status_code=404, detail="Groupe introuvable.")
+    return group
+
+
+@app.get("/student/groups")
+@limiter.limit("20/minute")
+def list_groups(
+    request: Request,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Liste les groupes de l'utilisateur."""
+    from api.database import get_user_groups
+    return {"groups": get_user_groups(current_user["id"])}
+
+
 # ─── SEO Routes ────────────────────────────────────────────────────────────────
 from fastapi.templating import Jinja2Templates  # noqa: E402
 from api.seo import router as seo_router
