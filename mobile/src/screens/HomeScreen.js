@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, StatusBar,
+  RefreshControl, StatusBar, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { colors } from '../theme/colors';
 
 const LEXAVO_ORANGE = '#C45A2D';
 const LEXAVO_NAVY   = '#1C2B3A';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TOOLS = [
   { emoji: '⚡', title: 'Contester', sub: 'Contester une décision', color: '#C45A2D', screen: 'Defend' },
