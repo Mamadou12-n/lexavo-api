@@ -7,8 +7,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  Modal, Share, Alert,
+  Modal, Share, Alert, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   generateQuiz, generateFlashcards, generateSummary, askQuestion,
@@ -350,6 +351,25 @@ export default function StudentScreen() {
     }
   };
 
+  const handlePickPhoto = async () => {
+    if (photos.length >= 3) { Alert.alert('Maximum', '3 photos maximum.'); return; }
+    Alert.alert('Ajouter une photo', '', [
+      { text: '📷 Appareil photo', onPress: async () => {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) return;
+        const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
+        if (!r.canceled && r.assets?.[0]) setPhotos(p => [...p, { uri: r.assets[0].uri, base64: r.assets[0].base64 }]);
+      }},
+      { text: '🖼️ Galerie', onPress: async () => {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) return;
+        const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
+        if (!r.canceled && r.assets?.[0]) setPhotos(p => [...p, { uri: r.assets[0].uri, base64: r.assets[0].base64 }]);
+      }},
+      { text: 'Annuler', style: 'cancel' },
+    ]);
+  };
+
   const handleShareNote = async () => {
     const { title, subject, content, university, year, anonymous, authorName } = shareForm;
     if (!title.trim() || !content.trim()) {
@@ -619,43 +639,75 @@ export default function StudentScreen() {
             </LinearGradient>
           </View>
 
-          {/* Input conversationnel */}
-          <View style={s.inputWrap}>
+          {/* Input style ChatGPT — texte + pièces jointes unifiés */}
+          <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
             <Text style={s.inputLabel}>Qu'est-ce que tu veux étudier ?</Text>
-            <TextInput
-              style={[s.input, { fontSize: 15, paddingVertical: 14 }]}
-              placeholder={placeholder}
-              placeholderTextColor={T.dimmed}
-              value={topic}
-              onChangeText={(t) => { setTopic(t); setBranch(t); }}
-              autoFocus
-            />
-          </View>
+            <View style={{ backgroundColor: T.surface, borderRadius: 16, borderWidth: 1, borderColor: T.borderLit, overflow: 'hidden' }}>
+              {/* Zone texte */}
+              <TextInput
+                style={{ color: T.white, fontSize: 15, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, minHeight: 80 }}
+                placeholder={placeholder}
+                placeholderTextColor={T.dimmed}
+                value={topic}
+                onChangeText={(t) => { setTopic(t); setBranch(t); }}
+                multiline
+                autoFocus
+              />
 
-          {/* Import fichier */}
-          <View style={{ marginHorizontal: 16, marginBottom: 4 }}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: uploadedDoc.text ? T.neon1 : T.neon2, borderRadius: 12, borderStyle: 'dashed', padding: 13, marginBottom: 8 }}
-              onPress={handlePickDocForStudy}
-              disabled={uploadLoading}
-            >
-              {uploadLoading
-                ? <ActivityIndicator color={T.neon2} size="small" />
-                : uploadedDoc.filename
-                  ? <Text style={{ color: T.neon1, fontWeight: '700', fontSize: 13 }}>✅ {uploadedDoc.filename} — Tap pour changer</Text>
-                  : <Text style={{ color: T.neon2, fontWeight: '700', fontSize: 13 }}>📎 Importer mon cours (PDF, DOCX, TXT)</Text>
-              }
-            </TouchableOpacity>
-            {uploadedDoc.text ? (
-              <Text style={{ color: T.muted, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Document chargé — le contenu sera utilisé comme source</Text>
-            ) : (
-              <Text style={{ color: T.dimmed, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>ou entre le sujet manuellement ci-dessus</Text>
-            )}
-          </View>
+              {/* Aperçu pièces jointes */}
+              {(uploadedDoc.filename || photos.length > 0) && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
+                  {/* Chip fichier */}
+                  {uploadedDoc.filename && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.neon1 + '20', borderRadius: 8, borderWidth: 1, borderColor: T.neon1 + '50', paddingHorizontal: 10, paddingVertical: 5, marginRight: 8 }}>
+                      <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '600', maxWidth: 150 }} numberOfLines={1}>📄 {uploadedDoc.filename}</Text>
+                      <TouchableOpacity onPress={() => setUploadedDoc({ text: '', filename: '' })} style={{ marginLeft: 6 }}>
+                        <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {/* Thumbnails photos */}
+                  {photos.map((ph, i) => (
+                    <View key={i} style={{ position: 'relative', marginRight: 8 }}>
+                      <Image source={{ uri: ph.uri }} style={{ width: 48, height: 48, borderRadius: 8 }} />
+                      <TouchableOpacity onPress={() => setPhotos(p => p.filter((_, j) => j !== i))}
+                        style={{ position: 'absolute', top: -5, right: -5, backgroundColor: T.neon3, borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
 
-          {/* Photo */}
-          <View style={{ marginHorizontal: 16 }}>
-            <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="📷 Photographier tes notes" />
+              {/* Barre d'actions */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 10, paddingTop: 4, borderTopWidth: 1, borderTopColor: T.border, gap: 4 }}>
+                {/* Bouton fichier */}
+                <TouchableOpacity
+                  onPress={handlePickDocForStudy}
+                  disabled={uploadLoading}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: uploadedDoc.text ? T.neon1 + '20' : T.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                >
+                  {uploadLoading
+                    ? <ActivityIndicator color={T.neon2} size="small" style={{ width: 16, height: 16 }} />
+                    : <Text style={{ fontSize: 14 }}>📎</Text>
+                  }
+                  <Text style={{ color: uploadedDoc.text ? T.neon1 : T.muted, fontSize: 12, fontWeight: '600' }}>
+                    {uploadedDoc.text ? 'Fichier chargé' : 'Fichier'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Bouton photo */}
+                <TouchableOpacity
+                  onPress={handlePickPhoto}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: photos.length > 0 ? T.neon4 + '20' : T.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                >
+                  <Text style={{ fontSize: 14 }}>📷</Text>
+                  <Text style={{ color: photos.length > 0 ? T.neon4 : T.muted, fontSize: 12, fontWeight: '600' }}>
+                    {photos.length > 0 ? `${photos.length} photo${photos.length > 1 ? 's' : ''}` : 'Photo'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
           {/* Difficulté pour cas pratique */}
@@ -675,7 +727,7 @@ export default function StudentScreen() {
           {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
 
           <TouchableOpacity activeOpacity={0.85} style={s.genWrap} onPress={ctaAction[activeMode?.id] || generate} disabled={loading}>
-            <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={[s.genBtn, (!topic.trim() && photos.length === 0) && { opacity: 0.5 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={[s.genBtn, (!topic.trim() && photos.length === 0 && !uploadedDoc.text) && { opacity: 0.5 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               {loading ? <ActivityIndicator color="#FFF" /> : (
                 <Text style={s.genBtnText}>{ctaLabels[activeMode?.id] || 'Générer'}</Text>
               )}
