@@ -361,6 +361,22 @@ export async function defendAnalyze(description, category = null, region = null,
   return r.data;
 }
 
+export async function defendChecklist(category, answers, region = null, description = '', photos = []) {
+  const r = await api.post('/defend/checklist', {
+    category, answers, region, description,
+    photos: photos.map(p => p.base64).filter(Boolean),
+  });
+  return r.data;
+}
+
+export async function scanAmende(photos = [], category = 'amende') {
+  const r = await api.post('/defend/scan-amende', {
+    photos: photos.map(p => p.base64).filter(Boolean),
+    category,
+  });
+  return r.data;
+}
+
 // Pas d'endpoint /calculators/list — les calculateurs sont fixes (notice-period / alimony / succession)
 export async function listCalculators() {
   return {

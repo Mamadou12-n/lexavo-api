@@ -1290,6 +1290,48 @@ def defend_analyze(
     )
 
 
+@app.post("/defend/checklist")
+@limiter.limit("10/minute")
+def defend_checklist(request: Request, body: dict):
+    """Analyse la checklist de vices de forme et génère la lettre de contestation."""
+    from api.features.defend import analyze_checklist
+    try:
+        result = analyze_checklist(
+            category=body.get("category", "amende"),
+            answers=body.get("answers", {}),
+            region=body.get("region"),
+            extra_description=body.get("description", ""),
+            photos_base64=body.get("photos", []),
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"/defend/checklist error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'analyse")
+
+
+@app.post("/defend/scan-amende")
+@limiter.limit("5/minute")
+def defend_scan_amende(request: Request, body: dict):
+    """Extrait les données d'un PV ou lettre photographié(e) via Claude Vision."""
+    from api.features.defend import scan_amende
+    photos = body.get("photos", [])
+    if not photos:
+        raise HTTPException(status_code=400, detail="Au moins une photo est requise")
+    try:
+        result = scan_amende(
+            photos_base64=photos,
+            category=body.get("category", "amende"),
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"/defend/scan-amende error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du scan")
+
+
 # ─── Alerts Endpoints ─────────────────────────────────────────────────────
 
 @app.get("/alerts/domains")
