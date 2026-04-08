@@ -16,15 +16,16 @@ import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const CATEGORIES = [
-  { id: null,           label: 'Auto-detect', emoji: '🔍' },
-  { id: 'amende',       label: 'Amende',      emoji: '🚗' },
-  { id: 'consommation', label: 'Conso',       emoji: '🛒' },
-  { id: 'bail',         label: 'Bail',         emoji: '🏠' },
-  { id: 'travail',      label: 'Travail',      emoji: '👷' },
-  { id: 'huissier',     label: 'Huissier',     emoji: '📨' },
-  { id: 'social',       label: 'Social',       emoji: '🏥' },
-  { id: 'scolaire',     label: 'Scolaire',     emoji: '🎓' },
-  { id: 'fiscal',       label: 'Fiscal',       emoji: '💰' },
+  { id: null,              label: 'Auto-detect',  emoji: '🔍' },
+  { id: 'amende',          label: 'Amende',       emoji: '🚗' },
+  { id: 'consommation',    label: 'Conso',        emoji: '🛒' },
+  { id: 'bail',            label: 'Bail',         emoji: '🏠' },
+  { id: 'travail',         label: 'Travail',      emoji: '👷' },
+  { id: 'huissier',        label: 'Huissier',     emoji: '📨' },
+  { id: 'social',          label: 'Social',       emoji: '🏥' },
+  { id: 'scolaire',        label: 'Scolaire',     emoji: '🎓' },
+  { id: 'fiscal',          label: 'Fiscal',       emoji: '💰' },
+  { id: 'recouvrement',    label: 'Recouvrement', emoji: '💸' },
 ];
 
 const REGIONS = [
