@@ -37,6 +37,9 @@ tenacity>=8.3.0                       # Retry logic for API calls
 pypdf2>=3.0.0                        # Extraction texte depuis PDF (notes étudiants)
 python-docx>=1.1.0                   # Extraction texte depuis DOCX (notes étudiants)
 
+# ─── Text-to-Speech (Podcast IA) ────────────────────────────────────────────
+edge-tts>=6.1.0                      # TTS gratuit Microsoft Edge — voix françaises Henri/Denise
+
 # ─── NotebookLM Integration ─────────────────────────────────────────────────
 # notebooklm-py est importé en lazy dans l'endpoint — pas besoin ici (Railway ne peut pas installer playwright)
 

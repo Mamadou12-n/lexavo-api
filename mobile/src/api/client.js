@@ -649,6 +649,11 @@ export async function generatePodcast(branch, topic = '', documentContent = '') 
   return r.data;
 }
 
+export async function generatePodcastAudio(script) {
+  const r = await api.post('/student/podcast/audio', { script }, { timeout: 120000 });
+  return r.data; // { audio_base64, format, size_bytes, segments_count }
+}
+
 export async function createNotebookLM(title, contentText, branch = '') {
   const r = await api.post('/student/notebooklm/create', { title, content_text: contentText, branch });
   return r.data; // { notebook_id, url, title }

@@ -2265,6 +2265,66 @@ Réponds UNIQUEMENT en JSON valide :
     return result
 
 
+@app.post("/student/podcast/audio")
+@limiter.limit("3/minute")
+async def student_podcast_audio(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Convertit un script podcast en audio MP3 via edge-tts (voix françaises)."""
+    import asyncio as _aio, base64, io
+
+    script = body.get("script", [])
+    if not script or not isinstance(script, list):
+        raise HTTPException(400, "Script requis (liste de {speaker, text})")
+
+    try:
+        import edge_tts
+    except ImportError:
+        raise HTTPException(503, "edge-tts non disponible sur ce serveur")
+
+    VOICES = {"Alex": "fr-FR-HenriNeural", "Léa": "fr-FR-DeniseNeural"}
+    audio_chunks = io.BytesIO()
+
+    async def _tts_segment(text: str, voice: str) -> bytes:
+        comm = edge_tts.Communicate(text, voice, rate="+5%")
+        buf = io.BytesIO()
+        async for chunk in comm.stream():
+            if chunk["type"] == "audio":
+                buf.write(chunk["data"])
+        return buf.getvalue()
+
+    # Limiter à 30 segments max pour ne pas exploser le temps
+    segments = script[:30]
+    for seg in segments:
+        speaker = seg.get("speaker", "Alex")
+        text = seg.get("text", "")
+        if not text.strip():
+            continue
+        voice = VOICES.get(speaker, VOICES["Alex"])
+        try:
+            audio_data = await _aio.wait_for(_tts_segment(text, voice), timeout=15)
+            audio_chunks.write(audio_data)
+        except _aio.TimeoutError:
+            continue
+        except Exception as e:
+            log.warning(f"TTS segment error ({speaker}): {e}")
+            continue
+
+    audio_bytes = audio_chunks.getvalue()
+    if not audio_bytes:
+        raise HTTPException(500, "Aucun audio généré")
+
+    audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+    return {
+        "audio_base64": audio_b64,
+        "format": "mp3",
+        "size_bytes": len(audio_bytes),
+        "segments_count": len(segments),
+    }
+
+
 @app.post("/student/free-recall")
 @limiter.limit("5/minute")
 def student_free_recall(

@@ -10,13 +10,14 @@ import {
   Modal, Share, Alert, Image, Linking, Clipboard,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   generateQuiz, generateFlashcards, generateSummary, askQuestion,
   getStudentDashboard, postStudentActivity, getStudentLeaderboard,
   generateCaseStudy, evaluateCaseStudy, generateMockExam, submitMockExam,
   getStudentBadges, getStudentWeakBranches, generateFreeRecall,
-  evaluateFreeRecall, generateInterleavedQuiz, generatePodcast, createNotebookLM,
+  evaluateFreeRecall, generateInterleavedQuiz, generatePodcast, generatePodcastAudio, createNotebookLM,
   createStudentGroup, joinStudentGroup, getStudentGroups,
   getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
   getLMSCourseContent, importLMSContent, disconnectLMS,
@@ -101,6 +102,9 @@ export default function StudentScreen() {
   const [uploadedDoc, setUploadedDoc] = useState({ text: '', filename: '' }); // document importé pour génération
   const [podcastResult, setPodcastResult] = useState(null);
   const [nlmLoading, setNlmLoading] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const soundRef = useRef(null);
 
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
@@ -221,6 +225,7 @@ export default function StudentScreen() {
     setMixBranches([]); setMixResult(null);
     setUploadedDoc({ text: '', filename: '' });
     setPodcastResult(null);
+    stopAudio();
     clearInterval(timerRef.current);
   };
 
@@ -347,20 +352,59 @@ export default function StudentScreen() {
     finally { setLoading(false); }
   };
 
+  const stopAudio = async () => {
+    if (soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    }
+    setAudioPlaying(false);
+  };
+
+  const handlePlayPodcast = async () => {
+    if (audioPlaying) { await stopAudio(); return; }
+    if (!podcastResult?.script?.length) return;
+    setAudioLoading(true);
+    try {
+      const data = await generatePodcastAudio(podcastResult.script);
+      const uri = `data:audio/mp3;base64,${data.audio_base64}`;
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) { setAudioPlaying(false); soundRef.current = null; }
+      });
+      await sound.playAsync();
+      setAudioPlaying(true);
+    } catch (e) {
+      Alert.alert('Erreur audio', e.message || 'Impossible de générer l\'audio');
+    } finally {
+      setAudioLoading(false);
+    }
+  };
+
   const handleOpenNotebookLM = async (contentText, title) => {
-    const text = contentText || uploadedDoc.text || result?.summary || '';
-    if (!text || text.length < 100) {
-      Alert.alert('Contenu insuffisant', 'Importe un document ou génère du contenu d\'abord.');
+    // Collecter le meilleur contenu disponible
+    let text = contentText || uploadedDoc.text || '';
+    if (!text && result?.summary) text = result.summary;
+    if (!text && result?.questions) text = result.questions.map(q => `Q: ${q.question}\nR: ${q.explanation || q.correct}`).join('\n\n');
+    if (!text && result?.cards) text = result.cards.map(c => `${c.front}\n→ ${c.back}`).join('\n\n');
+    if (!text && podcastResult?.script) text = podcastResult.script.map(l => `${l.speaker}: ${l.text}`).join('\n\n');
+    if (!text && branch) text = `Notes de cours sur : ${branch}. Matière de droit belge à approfondir.`;
+
+    // Si toujours rien, ouvrir NLM directement
+    if (!text || text.length < 50) {
+      Linking.openURL('https://notebooklm.google.com');
       return;
     }
+
     setNlmLoading(true);
     try {
       const data = await createNotebookLM(title || branch || 'Notes Lexavo', text, branch || '');
       Linking.openURL(data.url);
     } catch (e) {
-      // Fallback : ouvrir NLM directement
       Linking.openURL('https://notebooklm.google.com');
-      Alert.alert('NotebookLM', 'Ton document n\'a pas pu être importé automatiquement. NotebookLM est ouvert — colle ton contenu manuellement.');
+      Alert.alert('NotebookLM', 'Ouverture directe — colle ton contenu manuellement si besoin.');
     } finally {
       setNlmLoading(false);
     }
@@ -891,9 +935,39 @@ export default function StudentScreen() {
         <ScrollView contentContainerStyle={s.scroll}>
           <BackBtn onPress={backToDash} />
           <Text style={s.modeTitle}>🎙️ {podcastResult.title || `Podcast — ${branch}`}</Text>
-          <Text style={{ color: T.muted, fontSize: 12, textAlign: 'center', marginBottom: 16 }}>
-            ⏱ ~{podcastResult.duration_minutes || 9} min · Script dialogue
+          <Text style={{ color: T.muted, fontSize: 12, textAlign: 'center', marginBottom: 12 }}>
+            ⏱ ~{podcastResult.duration_minutes || 9} min
           </Text>
+
+          {/* Lecteur audio */}
+          <TouchableOpacity
+            onPress={handlePlayPodcast}
+            disabled={audioLoading}
+            activeOpacity={0.85}
+            style={{ marginHorizontal: 16, marginBottom: 16 }}
+          >
+            <LinearGradient
+              colors={audioPlaying ? ['#C45A2D', '#FF8A50'] : ['#7C4D00', '#FFB84D']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}
+            >
+              {audioLoading
+                ? <>
+                    <ActivityIndicator color="#FFF" />
+                    <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>Génération de l'audio...</Text>
+                  </>
+                : audioPlaying
+                  ? <>
+                      <Text style={{ fontSize: 22 }}>⏸️</Text>
+                      <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>Pause</Text>
+                    </>
+                  : <>
+                      <Text style={{ fontSize: 22 }}>▶️</Text>
+                      <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>Écouter le podcast</Text>
+                    </>
+              }
+            </LinearGradient>
+          </TouchableOpacity>
 
           {/* Points clés */}
           {keyPoints.length > 0 && (
