@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  Modal, Share, Alert, Image, Linking, Clipboard,
+  Modal, Share, Alert, Image, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
@@ -104,6 +104,7 @@ export default function StudentScreen() {
   const [nlmLoading, setNlmLoading] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState({ position: 0, duration: 0 });
   const soundRef = useRef(null);
 
   // Cas pratique
@@ -182,8 +183,12 @@ export default function StudentScreen() {
   useEffect(() => { if (view === 'dashboard') loadDashboard(); }, [view]);
 
   useEffect(() => {
-    if (lbScope !== 'global') return;
-    getStudentLeaderboard('global').then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
+    if (lbScope === 'global') {
+      getStudentLeaderboard('global').then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
+    } else {
+      // lbScope = group ID
+      getStudentLeaderboard('group', lbScope).then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
+    }
   }, [lbScope]);
 
   // Timer examen blanc — submitExamRef évite le stale closure
@@ -359,6 +364,7 @@ export default function StudentScreen() {
       soundRef.current = null;
     }
     setAudioPlaying(false);
+    setAudioProgress({ position: 0, duration: 0 });
   };
 
   const handlePlayPodcast = async () => {
@@ -372,7 +378,10 @@ export default function StudentScreen() {
       const { sound } = await Audio.Sound.createAsync({ uri });
       soundRef.current = sound;
       sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) { setAudioPlaying(false); soundRef.current = null; }
+        if (status.isLoaded) {
+          setAudioProgress({ position: status.positionMillis || 0, duration: status.durationMillis || 0 });
+          if (status.didJustFinish) { setAudioPlaying(false); setAudioProgress({ position: 0, duration: 0 }); soundRef.current = null; }
+        }
       });
       await sound.playAsync();
       setAudioPlaying(true);
@@ -517,7 +526,7 @@ export default function StudentScreen() {
       const r = await submitMockExam(examData, examAnswers);
       setExamResult(r); setExamStep('result');
       await awardXP('mock_exam', r.score || 10, 20);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
   };
   // Garder la ref à jour à chaque render pour éviter le stale closure dans le timer
@@ -543,7 +552,7 @@ export default function StudentScreen() {
       const r = await evaluateFreeRecall(recallQuestion, recallAnswer);
       setRecallResult(r); setRecallStep('result');
       await awardXP('free_recall', r.score || 7, 10);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
   };
 
@@ -558,7 +567,7 @@ export default function StudentScreen() {
     try {
       const d = await generateInterleavedQuiz(branches);
       setMixResult(d);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur'); }
     finally { setLoading(false); }
   };
 
@@ -731,7 +740,7 @@ export default function StudentScreen() {
                 placeholder={placeholder}
                 placeholderTextColor={T.dimmed}
                 value={topic}
-                onChangeText={(t) => { setTopic(t); setBranch(t); }}
+                onChangeText={setTopic}
                 multiline
                 autoFocus
               />
@@ -917,7 +926,7 @@ export default function StudentScreen() {
           <BackBtn onPress={backToDash} />
           <Text style={s.modeTitle}>🚀 Résumé — {branch}</Text>
           <View style={s.summaryCard}>
-            <Markdown style={mdStyle}>{result.summary || result.content || JSON.stringify(result)}</Markdown>
+            <Markdown style={mdStyle}>{result.summary || result.content || 'Résumé indisponible — réessaie avec un sujet plus précis.'}</Markdown>
           </View>
           <ActionRow onShare={() => shareResult(`Résumé ${branch}`)} onBack={backToDash} onNotebookLM={() => handleOpenNotebookLM(result?.summary || uploadedDoc.text, `Résumé ${branch}`)} nlmLoading={nlmLoading} />
         </ScrollView>
@@ -968,6 +977,19 @@ export default function StudentScreen() {
               }
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Barre de progression audio */}
+          {audioPlaying && audioProgress.duration > 0 && (
+            <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+              <View style={{ height: 4, backgroundColor: T.border, borderRadius: 2, overflow: 'hidden' }}>
+                <View style={{ height: 4, backgroundColor: T.neon4, borderRadius: 2, width: `${Math.min((audioProgress.position / audioProgress.duration) * 100, 100)}%` }} />
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                <Text style={{ color: T.muted, fontSize: 11 }}>{fmtTime(Math.floor(audioProgress.position / 1000))}</Text>
+                <Text style={{ color: T.muted, fontSize: 11 }}>{fmtTime(Math.floor(audioProgress.duration / 1000))}</Text>
+              </View>
+            </View>
+          )}
 
           {/* Points clés */}
           {keyPoints.length > 0 && (
@@ -1473,13 +1495,16 @@ export default function StudentScreen() {
         {/* ── Leaderboard ───────────────────────────────────────────────────── */}
         <View style={s.section}>
           <Text style={s.secLabel}>CLASSEMENT</Text>
-          <View style={s.lbToggle}>
-            {['global'].map(sc => (
-              <TouchableOpacity key={sc} style={[s.lbTab, lbScope === sc && s.lbTabActive]} onPress={() => setLbScope(sc)}>
-                <Text style={[s.lbTabText, lbScope === sc && { color: T.neon1 }]}>Global</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.lbToggle}>
+            <TouchableOpacity style={[s.lbTab, lbScope === 'global' && s.lbTabActive]} onPress={() => setLbScope('global')}>
+              <Text style={[s.lbTabText, lbScope === 'global' && { color: T.neon1 }]}>🌍 Global</Text>
+            </TouchableOpacity>
+            {groups.map(g => (
+              <TouchableOpacity key={g.id} style={[s.lbTab, lbScope === String(g.id) && s.lbTabActive]} onPress={() => setLbScope(String(g.id))}>
+                <Text style={[s.lbTabText, lbScope === String(g.id) && { color: T.neon1 }]}>👥 {g.name}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
           {leaderboard.slice(0, 5).map((u, i) => (
             <View key={u.user_id || i} style={[s.lbRow, u.is_me && { borderColor: T.neon1 }]}>
               <Text style={s.lbRank}>#{i + 1}</Text>
@@ -1578,7 +1603,7 @@ export default function StudentScreen() {
                   </View>
                   <TouchableOpacity
                     style={{ backgroundColor: T.neon3 + '20', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 12 }}
-                    onPress={() => { likeSharedNote(activeNote.id); setActiveNote(prev => ({ ...prev, likes: (prev.likes || 0) + 1 })); }}
+                    onPress={async () => { try { await likeSharedNote(activeNote.id); setActiveNote(prev => ({ ...prev, likes: (prev.likes || 0) + 1 })); } catch (_) { Alert.alert('Erreur', 'Impossible de liker cette note'); } }}
                   >
                     <Text style={{ color: T.neon3, fontWeight: '700' }}>❤️ J'aime cette note</Text>
                   </TouchableOpacity>
