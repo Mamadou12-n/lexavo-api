@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, StatusBar, Dimensions,
+  RefreshControl, StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,8 +10,6 @@ import { colors } from '../theme/colors';
 
 const LEXAVO_ORANGE = '#C45A2D';
 const LEXAVO_NAVY   = '#1C2B3A';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TOOLS = [
   { emoji: '⚡', title: 'Contester', sub: 'Contester une décision', color: '#C45A2D', screen: 'Defend' },
@@ -23,43 +21,10 @@ const TOOLS = [
   { emoji: '💰', title: 'Fiscal', sub: 'Questions fiscales', color: '#34495E', screen: 'Fiscal' },
 ];
 
-const BRANCH_GROUPS = [
-  {
-    title: 'Droit privé',
-    items: [
-      { label: '👷 Travail', branch: 'droit_travail' },
-      { label: '👨‍👩‍👧 Familial', branch: 'droit_familial' },
-      { label: '📜 Civil', branch: 'droit_civil' },
-      { label: '🏠 Immobilier', branch: 'droit_immobilier' },
-      { label: '🏢 Commercial', branch: 'droit_commercial' },
-    ],
-  },
-  {
-    title: 'Droit public',
-    items: [
-      { label: '⚖️ Pénal', branch: 'droit_penal' },
-      { label: '🏛️ Administratif', branch: 'droit_administratif' },
-      { label: '💰 Fiscal', branch: 'droit_fiscal' },
-      { label: '📋 Marchés publics', branch: 'droit_marches_publics' },
-      { label: '🛡️ Fondamentaux', branch: 'droit_fondamentaux' },
-    ],
-  },
-  {
-    title: 'Spécialisé',
-    items: [
-      { label: '🌿 Environnement', branch: 'droit_environnement' },
-      { label: '💡 PI', branch: 'droit_propriete_intellectuelle' },
-      { label: '🏥 Sécu sociale', branch: 'droit_securite_sociale' },
-      { label: '🌍 Étrangers', branch: 'droit_etrangers' },
-      { label: '🇪🇺 Européen', branch: 'droit_europeen' },
-    ],
-  },
-];
 
 export default function HomeScreen({ navigation }) {
   const [quota, setQuota]           = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [branchPage, setBranchPage] = useState(0);
 
   const load = useCallback(async () => {
     try { setQuota(await getSubscriptionStatus()); } catch (_) {}
@@ -191,42 +156,6 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.toolTitle}>{t.title}</Text>
               <Text style={styles.toolSub}>{t.sub}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* ═══ BRANCHES DU DROIT BELGE ═══ */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Branches du droit belge</Text>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) => setBranchPage(Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32)))}
-          style={{ marginHorizontal: -16 }}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-        >
-          {BRANCH_GROUPS.map((group, gi) => (
-            <View key={gi} style={{ width: SCREEN_WIDTH - 32, paddingRight: 16 }}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              <View style={styles.branchWrap}>
-                {group.items.map((b) => (
-                  <TouchableOpacity
-                    activeOpacity={0.75}
-                    key={b.branch}
-                    style={styles.branchChip}
-                    onPress={() => navigation.navigate('Ask', { branch: b.branch })}
-                  >
-                    <Text style={styles.branchText}>{b.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-        <View style={styles.dots}>
-          {BRANCH_GROUPS.map((_, i) => (
-            <View key={i} style={[styles.dot, branchPage === i && styles.dotActive]} />
           ))}
         </View>
       </View>

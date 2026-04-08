@@ -38,11 +38,6 @@ const T = {
   glow1: 'rgba(0, 212, 170, 0.12)', glow2: 'rgba(139, 92, 246, 0.12)', glow3: 'rgba(255, 107, 107, 0.12)',
 };
 
-// Suggestions rapides (chips) — pas de grille exhaustive
-const QUICK_TOPICS = [
-  'Droit du travail', 'Droit pénal', 'Droit civil', 'Droit fiscal',
-  'Droit familial', 'Droit commercial', 'Droit immobilier', 'Droit administratif',
-];
 
 const MODES = [
   { id: 'quiz', label: 'Quiz IA', sub: 'L\'IA s\'adapte à ton niveau.', gradient: ['#4A1D96', '#8B5CF6'], glowColor: 'rgba(139, 92, 246, 0.25)', icon: '⚡', badge: '+50 XP', xpMode: 'quiz_pass' },
@@ -525,18 +520,6 @@ export default function StudentScreen() {
               onChangeText={(t) => { setTopic(t); setBranch(t); }}
               autoFocus
             />
-          </View>
-
-          {/* Suggestions rapides */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <Text style={[s.muted, { marginBottom: 8 }]}>Suggestions rapides</Text>
-            <View style={s.branchGrid}>
-              {QUICK_TOPICS.map(b => (
-                <TouchableOpacity key={b} activeOpacity={0.75} style={[s.branchChip, topic === b && s.branchActive]} onPress={() => { setTopic(b); setBranch(b); }}>
-                  <Text style={[s.branchText, topic === b && s.branchTextActive]}>{b}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
 
           {/* Photo */}
