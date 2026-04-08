@@ -86,15 +86,15 @@ export default function HomeScreen({ navigation }) {
             {LANGUAGES.map(l => (
               <TouchableOpacity
                 key={l.code}
-                style={[styles.langOption, activeLang === l.code && styles.langOptionActive]}
+                style={[styles.langOption, lang === l.code && styles.langOptionActive]}
                 onPress={() => selectLang(l.code)}
                 activeOpacity={0.75}
               >
                 <Text style={styles.langOptionFlag}>{l.flag}</Text>
-                <Text style={[styles.langOptionLabel, activeLang === l.code && styles.langOptionLabelActive]}>
+                <Text style={[styles.langOptionLabel, lang === l.code && styles.langOptionLabelActive]}>
                   {l.label}
                 </Text>
-                {activeLang === l.code && <Text style={styles.langCheck}>✓</Text>}
+                {lang === l.code && <Text style={styles.langCheck}>✓</Text>}
               </TouchableOpacity>
             ))}
           </View>
