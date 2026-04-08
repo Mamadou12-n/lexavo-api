@@ -1303,6 +1303,7 @@ def defend_checklist(request: Request, body: dict):
             region=body.get("region"),
             extra_description=body.get("description", ""),
             photos_base64=body.get("photos", []),
+            tone=body.get("tone", "formel"),
         )
         return result
     except ValueError as e:
@@ -1310,6 +1311,25 @@ def defend_checklist(request: Request, body: dict):
     except Exception as e:
         log.error(f"/defend/checklist error: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de l'analyse")
+
+
+@app.post("/defend/regenerate-letter")
+@limiter.limit("10/minute")
+def defend_regenerate_letter(request: Request, body: dict):
+    """Régénère uniquement la lettre avec un ton différent, sans relancer l'analyse."""
+    from api.features.defend import generate_letter, TONE_INSTRUCTIONS
+    tone = body.get("tone", "formel")
+    if tone not in TONE_INSTRUCTIONS:
+        raise HTTPException(status_code=400, detail=f"Ton invalide. Options : {list(TONE_INSTRUCTIONS.keys())}")
+    description = body.get("description", "")
+    vices_str   = body.get("vices_str", "")
+    legal_ctx   = body.get("legal_context", "")
+    try:
+        letter = generate_letter(description, vices_str, legal_ctx, tone=tone)
+        return {"letter": letter, "tone": tone}
+    except Exception as e:
+        log.error(f"/defend/regenerate-letter error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la génération")
 
 
 @app.post("/defend/scan-amende")

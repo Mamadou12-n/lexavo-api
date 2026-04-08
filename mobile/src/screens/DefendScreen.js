@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { defendAnalyze, defendChecklist, scanAmende, REGION_KEY } from '../api/client';
+import { defendAnalyze, defendChecklist, scanAmende, regenerateDefendLetter, REGION_KEY } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ChecklistStep from '../components/ChecklistStep';
@@ -58,6 +58,14 @@ const REGIONS = [
   { id: 'bruxelles', label: '🏙️ Bruxelles' },
   { id: 'wallonie',  label: '🌿 Wallonie' },
   { id: 'flandre',   label: '🦁 Flandre' },
+];
+
+const TONES = [
+  { id: 'formel',      label: '🏛️ Formel',      desc: 'Juridique et professionnel' },
+  { id: 'ferme',       label: '💪 Ferme',        desc: 'Déterminé, sans agressivité' },
+  { id: 'assertif',    label: '⚡ Assertif',      desc: 'Direct et percutant' },
+  { id: 'conciliant',  label: '🤝 Conciliant',   desc: 'Dialogue et solution amiable' },
+  { id: 'amical',      label: '😊 Amical',       desc: 'Courtois et accessible' },
 ];
 
 // Questions par catégorie (copie mobile pour calcul du score temps réel)
@@ -162,8 +170,12 @@ export default function DefendScreen() {
   const [scanResult, setScanResult]   = useState(null); // données extraites
 
   // Résultats
-  const [result, setResult]           = useState(null);
-  const [showLetter, setShowLetter]   = useState(false);
+  const [result, setResult]             = useState(null);
+  const [showLetter, setShowLetter]     = useState(false);
+  const [letterTone, setLetterTone]     = useState('formel');
+  const [letterText, setLetterText]     = useState(null); // lettre courante (peut changer)
+  const [letterLoading, setLetterLoading] = useState(false);
+  const [letterDesc, setLetterDesc]     = useState(''); // description conservée pour régénérer
 
   const cat = getCatById(categoryId);
   const { score, level } = computeScore(categoryId, answers);
@@ -217,22 +229,23 @@ export default function DefendScreen() {
 
       let res;
       if (cat?.hasChecklist && questions.length > 0) {
-        // Flow checklist
         let desc = description;
         if (scanResult?.extracted) {
           const ex = scanResult.extracted;
           desc = `Montant: ${ex.montant}€, Date: ${ex.date_infraction}, Lieu: ${ex.lieu}, Plaque: ${ex.plaque}. ${description}`;
         }
-        res = await defendChecklist(categoryId, answers, savedRegion, desc, photos);
+        setLetterDesc(desc);
+        res = await defendChecklist(categoryId, answers, savedRegion, desc, photos, letterTone);
       } else {
-        // Flow description libre
         if (description.trim().length < 20) {
           setError('Décrivez votre situation en au moins 20 caractères.');
           setLoading(false); return;
         }
+        setLetterDesc(description.trim());
         res = await defendAnalyze(description.trim(), categoryId, savedRegion, '', photos);
       }
       setResult(res);
+      setLetterText(res.letter || res.document_text || null);
       setShowLetter(false);
       setStep(3);
     } catch (e) {
@@ -240,14 +253,35 @@ export default function DefendScreen() {
     } finally { setLoading(false); }
   };
 
+  const handleGenerateLetter = async () => {
+    setShowLetter(true);
+    // Si un ton différent de 'formel' est déjà sélectionné, régénérer directement
+    if (letterTone !== 'formel' || !letterText) {
+      await handleRegenerateLetter(letterTone);
+    }
+  };
+
+  const handleRegenerateLetter = async (tone) => {
+    setLetterLoading(true);
+    try {
+      const vices = result?.vices_detected?.join(', ') || '';
+      const legal = result?.legal_context || '';
+      const data = await regenerateDefendLetter(letterDesc, vices, legal, tone);
+      setLetterText(data.letter);
+    } catch (e) {
+      Alert.alert('Erreur', 'Impossible de régénérer la lettre.');
+    } finally { setLetterLoading(false); }
+  };
+
   const reset = () => {
     setStep(1); setCategoryId(null); setAnswers({});
     setScanResult(null); setResult(null); setError(null);
     setDescription(''); setPhotos([]);
+    setLetterTone('formel'); setLetterText(null); setShowLetter(false); setLetterDesc('');
   };
 
   const shareResult = async () => {
-    const text = result?.letter || result?.document_text || result?.situation_analysis || '';
+    const text = letterText || result?.situation_analysis || '';
     if (!text) return;
     try { await Share.share({ message: text }); } catch (_) {}
   };
@@ -404,6 +438,23 @@ export default function DefendScreen() {
               ))}
             </View>
 
+            {/* Ton de la lettre */}
+            <Text style={s.sectionTitle}>Ton de votre lettre</Text>
+            <Text style={s.toneSub}>Vous pourrez changer de ton et régénérer autant de fois que vous voulez</Text>
+            <View style={s.toneGrid}>
+              {TONES.map(t => (
+                <TouchableOpacity
+                  key={t.id}
+                  activeOpacity={0.8}
+                  style={[s.toneChip, letterTone === t.id && s.toneChipActive]}
+                  onPress={() => setLetterTone(t.id)}
+                >
+                  <Text style={[s.toneLabel, letterTone === t.id && s.toneLabelActive]}>{t.label}</Text>
+                  <Text style={[s.toneDesc, letterTone === t.id && s.toneDescActive]}>{t.desc}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
 
             <TouchableOpacity
@@ -502,23 +553,62 @@ export default function DefendScreen() {
               <View style={s.letterSepLine} />
             </View>
 
-            {/* ── BLOC 2 : LETTRE DE CONTESTATION ── */}
-            {(result.letter || result.document_text) && !showLetter && (
-              <TouchableOpacity style={s.generateLetterBtn} activeOpacity={0.85} onPress={() => setShowLetter(true)}>
-                <Text style={s.generateLetterBtnText}>📄 Générer ma lettre de contestation</Text>
-              </TouchableOpacity>
-            )}
-
-            {(result.letter || result.document_text) && showLetter && (
-              <View style={s.resultCard}>
-                <Text style={s.resultTitle}>📄 Lettre de contestation</Text>
-                <View style={s.letterBox}>
-                  <Text style={s.letterText}>{result.letter || result.document_text}</Text>
+            {/* ── SÉLECTEUR DE TON (toujours visible dans step 3) ── */}
+            {(result.letter || result.document_text) && (
+              <>
+                <Text style={s.sectionTitle}>Choisissez le ton de votre lettre</Text>
+                <View style={s.toneGrid}>
+                  {TONES.map(t => (
+                    <TouchableOpacity
+                      key={t.id}
+                      activeOpacity={0.8}
+                      style={[s.toneChip, letterTone === t.id && s.toneChipActive]}
+                      onPress={() => setLetterTone(t.id)}
+                    >
+                      <Text style={[s.toneLabel, letterTone === t.id && s.toneLabelActive]}>{t.label}</Text>
+                      <Text style={[s.toneDesc, letterTone === t.id && s.toneDescActive]}>{t.desc}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <TouchableOpacity style={s.shareBtn} onPress={shareResult}>
-                  <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
-                </TouchableOpacity>
-              </View>
+
+                {/* Bouton générer / régénérer */}
+                {!showLetter ? (
+                  <TouchableOpacity style={s.generateLetterBtn} activeOpacity={0.85} onPress={handleGenerateLetter} disabled={letterLoading}>
+                    {letterLoading
+                      ? <ActivityIndicator color="#FFF" />
+                      : <Text style={s.generateLetterBtnText}>📄 Générer ma lettre de contestation</Text>
+                    }
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <View style={s.resultCard}>
+                      <Text style={s.resultTitle}>📄 Lettre de contestation — {TONES.find(t => t.id === letterTone)?.label}</Text>
+                      {letterLoading ? (
+                        <ActivityIndicator color="#C45A2D" style={{ marginVertical: 20 }} />
+                      ) : (
+                        <View style={s.letterBox}>
+                          <Text style={s.letterText}>{letterText}</Text>
+                        </View>
+                      )}
+                      <TouchableOpacity style={s.shareBtn} onPress={shareResult}>
+                        <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                      style={s.regenBtn}
+                      activeOpacity={0.85}
+                      onPress={() => handleRegenerateLetter(letterTone)}
+                      disabled={letterLoading}
+                    >
+                      {letterLoading
+                        ? <ActivityIndicator color="#FFF" />
+                        : <Text style={s.regenBtnText}>🔄 Régénérer avec ce ton</Text>
+                      }
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
             )}
 
             {/* Disclaimer */}
@@ -597,9 +687,29 @@ const s = StyleSheet.create({
   errorBox: { marginHorizontal: 16, backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#FECACA' },
   errorText: { color: '#DC2626', fontSize: 13, fontWeight: '500' },
 
+  // Sélecteur de ton
+  toneSub: { fontSize: 11, color: '#6B7280', marginHorizontal: 16, marginTop: -6, marginBottom: 10, fontStyle: 'italic' },
+  toneGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16, marginBottom: 16 },
+  toneChip: {
+    backgroundColor: '#FFF', borderRadius: 12, padding: 10, borderWidth: 1.5,
+    borderColor: '#E5E7EB', width: '47%',
+  },
+  toneChipActive: { borderColor: '#C45A2D', backgroundColor: '#FFF7F5' },
+  toneLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 2 },
+  toneLabelActive: { color: '#C45A2D' },
+  toneDesc: { fontSize: 10, color: '#9CA3AF' },
+  toneDescActive: { color: '#C45A2D' },
+
   analyzeBtn: { marginHorizontal: 16, backgroundColor: '#C45A2D', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 16 },
   analyzeBtnDisabled: { opacity: 0.6 },
   analyzeBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+
+  // Bouton régénérer
+  regenBtn: {
+    marginHorizontal: 16, marginBottom: 16,
+    backgroundColor: '#374151', borderRadius: 12, padding: 14, alignItems: 'center',
+  },
+  regenBtnText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 
   // Résultats
   recCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#BFDBFE' },

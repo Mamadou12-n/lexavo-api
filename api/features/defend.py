@@ -15,6 +15,90 @@ from datetime import datetime
 
 log = logging.getLogger("defend")
 
+# ─── Tons de lettre disponibles ──────────────────────────────────────────────
+
+TONE_INSTRUCTIONS = {
+    "formel": (
+        "Ton juridique et formel. Langage soutenu, vocabulaire juridique précis. "
+        "Phrases longues et structurées. Style d'un juriste professionnel."
+    ),
+    "ferme": (
+        "Ton ferme et déterminé, sans agressivité mais clairement affirmé. "
+        "Insiste sur les droits et les obligations légales de l'autre partie. "
+        "Formules comme 'Je me vois dans l'obligation de...', 'Je vous mets en demeure de...'."
+    ),
+    "amical": (
+        "Ton courtois et respectueux, langage accessible et non-conflictuel. "
+        "Formulé comme une demande aimable plutôt qu'une exigence. "
+        "Formules comme 'Je me permets de vous contacter...', 'Je reste disponible pour en discuter...'."
+    ),
+    "conciliant": (
+        "Ton conciliant et ouvert au dialogue. Cherche une solution à l'amiable avant tout. "
+        "Propose des alternatives et montre une volonté de résoudre à l'amiable. "
+        "Formules comme 'Je souhaite trouver une solution satisfaisante pour les deux parties...'."
+    ),
+    "assertif": (
+        "Ton assertif et direct. Phrases courtes et percutantes. Va droit au but. "
+        "Pas de fioritures. Expose clairement les faits, les arguments et la demande. "
+        "Formules comme 'Je conteste.', 'Je demande le remboursement immédiat.', 'Ma demande est ferme.'."
+    ),
+}
+
+DEFAULT_TONE = "formel"
+
+
+def generate_letter(description: str, vices_str: str, legal_context: str, tone: str = "formel") -> str:
+    """Génère une lettre de contestation avec le ton demandé."""
+    import anthropic
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return f"[Lettre non générée — clé API manquante]\n\nVices détectés :\n{vices_str}"
+
+    tone_instr = TONE_INSTRUCTIONS.get(tone, TONE_INSTRUCTIONS[DEFAULT_TONE])
+    tone_label = {
+        "formel": "Formelle", "ferme": "Ferme", "amical": "Amicale",
+        "conciliant": "Conciliante", "assertif": "Assertive",
+    }.get(tone, "Formelle")
+
+    prompt = f"""Tu es Lexavo Defend, expert juridique belge en contestation.
+
+Génère une lettre de contestation basée sur les éléments suivants.
+
+CONTEXTE :
+{description}
+
+VICES DE FORME DÉTECTÉS :
+{vices_str}
+
+CONTEXTE LÉGAL :
+{legal_context}
+
+TON DEMANDÉ — {tone_label} :
+{tone_instr}
+
+RÈGLES :
+- Respecte STRICTEMENT le ton demandé
+- Cite chaque vice de forme avec sa base légale si disponible
+- Structure : Objet, Faits, Arguments juridiques, Demande, Formule de politesse adaptée au ton
+- Date du jour : {datetime.utcnow().strftime('%d/%m/%Y')}
+- Maximum 450 mots
+- En français
+
+Réponds UNIQUEMENT avec le texte de la lettre, sans JSON ni balises."""
+
+    client_ai = anthropic.Anthropic(api_key=api_key)
+    try:
+        resp = client_ai.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text.strip()
+    except Exception as e:
+        log.error(f"Erreur génération lettre : {e}")
+        return f"Lettre de contestation\n\nJe conteste la décision en invoquant :\n{vices_str}"
+
+
 # ─── Categories de situations ────────────────────────────────────────────────
 
 DEFEND_CATEGORIES = [
@@ -435,6 +519,7 @@ def analyze_checklist(
     region: Optional[str] = None,
     extra_description: str = "",
     photos_base64: Optional[List[str]] = None,
+    tone: str = "formel",
 ) -> dict:
     """Analyse la checklist de vices de forme et génère la lettre de contestation.
 
@@ -516,48 +601,8 @@ def analyze_checklist(
             "disclaimer": "Lexavo est un assistant juridique. Il ne remplace pas un avocat.",
         }
 
-    # Générer la lettre via Claude
-    import anthropic
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        return {
-            "contestability_score": contestability_pct,
-            "contestability_level": level,
-            "vices_detected": vices_detected,
-            "recommendation": recommendation,
-            "letter": f"[Lettre à générer — vices détectés : {', '.join(vices_detected)}]",
-            "next_steps": ["Envoyez votre contestation en recommandé avec accusé de réception"],
-            "legal_context": legal_context,
-            "disclaimer": "Lexavo est un assistant juridique. Il ne remplace pas un avocat.",
-        }
-
-    client_ai = anthropic.Anthropic(api_key=api_key)
-    prompt = f"""Tu es Lexavo Defend, expert juridique belge en contestation.
-
-Génère une lettre de contestation formelle et professionnelle basée sur les vices de forme détectés.
-
-CONTEXTE :
-{description}
-
-RÈGLES :
-- Lettre formelle, ton juridique, date du jour ({datetime.utcnow().strftime('%d/%m/%Y')})
-- Cite chaque vice de forme avec sa base légale
-- Structure : Objet, Faits, Arguments juridiques, Demande, Formule de politesse
-- Maximum 400 mots
-- En français
-
-Réponds UNIQUEMENT avec le texte de la lettre, sans JSON ni balises."""
-
-    try:
-        resp = client_ai.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        letter = resp.content[0].text.strip()
-    except Exception as e:
-        log.error(f"Erreur génération lettre checklist : {e}")
-        letter = f"Lettre de contestation\n\nJe conteste la décision en invoquant les arguments suivants :\n{vices_str}"
+    # Générer la lettre via Claude avec le ton demandé
+    letter = generate_letter(description, vices_str, legal_context, tone=tone)
 
     next_steps = ["Envoyez cette lettre en recommandé avec accusé de réception"]
     if category == "amende":

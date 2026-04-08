@@ -376,10 +376,17 @@ export async function defendAnalyze(description, category = null, region = null,
   return r.data;
 }
 
-export async function defendChecklist(category, answers, region = null, description = '', photos = []) {
+export async function defendChecklist(category, answers, region = null, description = '', photos = [], tone = 'formel') {
   const r = await api.post('/defend/checklist', {
-    category, answers, region, description,
+    category, answers, region, description, tone,
     photos: photos.map(p => p.base64).filter(Boolean),
+  });
+  return r.data;
+}
+
+export async function regenerateDefendLetter(description, vicesStr, legalContext, tone) {
+  const r = await api.post('/defend/regenerate-letter', {
+    description, vices_str: vicesStr, legal_context: legalContext, tone,
   });
   return r.data;
 }
