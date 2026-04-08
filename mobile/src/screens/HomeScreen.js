@@ -1,12 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, StatusBar, Dimensions,
+  RefreshControl, StatusBar, Dimensions, Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSubscriptionStatus } from '../api/client';
 import { colors } from '../theme/colors';
+
+const LANGUAGES = [
+  { code: 'fr', label: 'Français',    flag: '🇫🇷' },
+  { code: 'nl', label: 'Nederlands',  flag: '🇳🇱' },
+  { code: 'de', label: 'Deutsch',     flag: '🇩🇪' },
+  { code: 'en', label: 'English',     flag: '🇬🇧' },
+  { code: 'es', label: 'Español',     flag: '🇪🇸' },
+  { code: 'it', label: 'Italiano',    flag: '🇮🇹' },
+  { code: 'pt', label: 'Português',   flag: '🇵🇹' },
+  { code: 'ar', label: 'العربية',     flag: '🇸🇦' },
+];
 
 const LEXAVO_ORANGE = '#C45A2D';
 const LEXAVO_NAVY   = '#1C2B3A';
@@ -17,8 +29,6 @@ const TOOLS = [
   { emoji: '📄', title: 'Document', sub: 'Analyser un contrat', color: '#C0392B', screen: 'Shield' },
   { emoji: '🔬', title: 'Diagnostic', sub: 'Comprendre ma situation', color: '#8E44AD', screen: 'Diagnostic' },
   { emoji: '🧮', title: 'Calculateurs', sub: 'Préavis · Pension · Succession', color: '#1A6B8A', screen: 'Calculateurs' },
-  { emoji: '🤝', title: 'Avocat', sub: 'Trouver un avocat', color: '#0050A0', screen: 'Match' },
-  { emoji: '🚨', title: 'Urgence', sub: 'Avocat en 24h — 49€', color: '#E74C3C', screen: 'Emergency' },
   { emoji: '💰', title: 'Fiscal', sub: 'Questions fiscales', color: '#34495E', screen: 'Fiscal' },
 ];
 
@@ -26,6 +36,18 @@ const TOOLS = [
 export default function HomeScreen({ navigation }) {
   const [quota, setQuota]           = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [langModal, setLangModal]   = useState(false);
+  const [activeLang, setActiveLang] = useState('fr');
+
+  useEffect(() => {
+    AsyncStorage.getItem('lexavo_lang').then(v => { if (v) setActiveLang(v); });
+  }, []);
+
+  const selectLang = async (code) => {
+    setActiveLang(code);
+    await AsyncStorage.setItem('lexavo_lang', code);
+    setLangModal(false);
+  };
 
   const load = useCallback(async () => {
     try { setQuota(await getSubscriptionStatus()); } catch (_) {}
@@ -35,6 +57,7 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const goTool = (screen) => navigation.navigate('Outils', { screen });
+  const currentLang = LANGUAGES.find(l => l.code === activeLang) || LANGUAGES[0];
 
   return (
     <ScrollView
@@ -46,6 +69,10 @@ export default function HomeScreen({ navigation }) {
 
       {/* ═══ HERO ═══ */}
       <View style={styles.hero}>
+        <TouchableOpacity style={styles.langBtn} activeOpacity={0.75} onPress={() => setLangModal(true)}>
+          <Text style={styles.langBtnText}>{currentLang.flag} {currentLang.label}</Text>
+          <Text style={styles.langBtnArrow}>▾</Text>
+        </TouchableOpacity>
         <Text style={styles.heroMark}>LEXAVO</Text>
         <Text style={styles.heroTagline}>ASSISTANT JURIDIQUE BELGE</Text>
         <Text style={styles.heroSub}>Le droit pour tous</Text>
@@ -54,6 +81,29 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.heroPillText}>Outils juridiques · Droit belge · 8 langues</Text>
         </View>
       </View>
+
+      {/* ═══ MODAL LANGUE ═══ */}
+      <Modal visible={langModal} transparent animationType="fade" onRequestClose={() => setLangModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setLangModal(false)}>
+          <View style={styles.langModal}>
+            <Text style={styles.langModalTitle}>Choisir la langue</Text>
+            {LANGUAGES.map(l => (
+              <TouchableOpacity
+                key={l.code}
+                style={[styles.langOption, activeLang === l.code && styles.langOptionActive]}
+                onPress={() => selectLang(l.code)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.langOptionFlag}>{l.flag}</Text>
+                <Text style={[styles.langOptionLabel, activeLang === l.code && styles.langOptionLabelActive]}>
+                  {l.label}
+                </Text>
+                {activeLang === l.code && <Text style={styles.langCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ═══ 2 GRANDES CARTES ═══ */}
       <View style={styles.dualCards}>
@@ -319,6 +369,62 @@ const styles = StyleSheet.create({
   campusCTA: { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   campusCTAText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
   campusNote: { textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 12 },
+
+  // Langue
+  langBtn: {
+    position: 'absolute',
+    top: 12,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 4,
+  },
+  langBtnText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+  langBtnArrow: { color: 'rgba(255,255,255,0.6)', fontSize: 10 },
+
+  // Modal langue
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  langModal: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  langModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F1A2E',
+    marginBottom: 14,
+    textAlign: 'center',
+  },
+  langOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    gap: 10,
+    marginBottom: 4,
+  },
+  langOptionActive: { backgroundColor: '#F0F4FF' },
+  langOptionFlag: { fontSize: 22 },
+  langOptionLabel: { flex: 1, fontSize: 14, color: '#374151', fontWeight: '500' },
+  langOptionLabelActive: { color: '#1C2B3A', fontWeight: '700' },
+  langCheck: { fontSize: 14, color: '#C45A2D', fontWeight: '800' },
 
   // Disclaimer
   disclaimer: {

@@ -68,6 +68,9 @@ const PLANS = [
       { ok: false, label: 'Support prioritaire' },
     ],
   },
+  // --- Plans cachés (pro, business, firm_s, firm_m, enterprise) ---
+  // Décommentez pour les réactiver
+  /*
   {
     id: 'pro',
     name: 'Lexavo Pro',
@@ -160,6 +163,7 @@ const PLANS = [
       { ok: true, label: 'Support 24/7' },
     ],
   },
+  */
 ];
 
 export default function SubscriptionScreen() {
