@@ -215,7 +215,7 @@ export default function HomeScreen({ navigation }) {
                     activeOpacity={0.75}
                     key={b.branch}
                     style={styles.branchChip}
-                    onPress={() => navigation.navigate('Outils', { screen: 'Ask', params: { branch: b.branch } })}
+                    onPress={() => navigation.navigate('Ask', { branch: b.branch })}
                   >
                     <Text style={styles.branchText}>{b.label}</Text>
                   </TouchableOpacity>

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  FlatList, Modal, Share, Alert,
+  Modal, Share, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -102,6 +102,7 @@ export default function StudentScreen() {
   const [examTimer, setExamTimer] = useState(20 * 60);
   const [examBranches, setExamBranches] = useState([]);
   const timerRef = useRef(null);
+  const submitExamRef = useRef(null); // ref pour éviter stale closure dans le timer
 
   // Rappel libre
   const [recallQuestion, setRecallQuestion] = useState(null);
@@ -151,12 +152,12 @@ export default function StudentScreen() {
     getStudentLeaderboard('global').then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
   }, [lbScope]);
 
-  // Timer examen blanc
+  // Timer examen blanc — submitExamRef évite le stale closure
   useEffect(() => {
     if (examStep !== 'exam') return;
     timerRef.current = setInterval(() => {
       setExamTimer(t => {
-        if (t <= 1) { clearInterval(timerRef.current); submitExam(); return 0; }
+        if (t <= 1) { clearInterval(timerRef.current); submitExamRef.current?.(); return 0; }
         return t - 1;
       });
     }, 1000);
@@ -286,6 +287,8 @@ export default function StudentScreen() {
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
+  // Garder la ref à jour à chaque render pour éviter le stale closure dans le timer
+  submitExamRef.current = submitExam;
 
   // ─── Rappel libre ──────────────────────────────────────────────────────────
   const startFreeRecall = async () => {
