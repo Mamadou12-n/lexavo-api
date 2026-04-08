@@ -23,7 +23,9 @@ RUN pip install --no-cache-dir --prefix=/install \
     pip install --no-cache-dir --prefix=/install \
         sentence-transformers && \
     pip install --no-cache-dir --prefix=/install \
-        -r requirements.txt
+        -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install \
+        edge-tts || true
 
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime — production image
