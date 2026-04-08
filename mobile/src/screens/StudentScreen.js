@@ -20,7 +20,9 @@ import {
   getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
   getLMSCourseContent, importLMSContent, disconnectLMS,
   shareNote, listSharedNotes, getSharedNote, likeSharedNote,
+  uploadNoteFile,
 } from '../api/client';
+import * as DocumentPicker from 'expo-document-picker';
 import Markdown from 'react-native-markdown-display';
 import PhotoPicker from '../components/PhotoPicker';
 import XPBar from '../components/XPBar';
@@ -94,6 +96,7 @@ export default function StudentScreen() {
   const [notesSubjectFilter, setNotesSubjectFilter] = useState(null);
   const [activeNote, setActiveNote] = useState(null);
   const [shareForm, setShareForm] = useState({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
@@ -295,6 +298,31 @@ export default function StudentScreen() {
       setActiveNote(note);
       setNotesTab('view');
     } catch (_) { Alert.alert('Erreur', 'Impossible de charger cette note'); }
+  };
+
+  const handlePickFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf',
+               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+               'text/plain'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      setUploadLoading(true);
+      const data = await uploadNoteFile(asset.uri, asset.name, asset.mimeType || 'application/octet-stream');
+      setShareForm(p => ({
+        ...p,
+        content: data.extracted_text,
+        title: p.title || asset.name.replace(/\.[^.]+$/, ''),
+      }));
+      Alert.alert('Fichier importé', `${data.char_count} caractères extraits depuis "${asset.name}". Tu peux relire et modifier avant de partager.`);
+    } catch (e) {
+      Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const handleShareNote = async () => {
@@ -1296,6 +1324,20 @@ export default function StudentScreen() {
 
                   <TextInput style={s.noteInput} placeholder="Année (ex: BAC2, MA1)" placeholderTextColor={T.muted}
                     value={shareForm.year} onChangeText={v => setShareForm(p => ({ ...p, year: v }))} />
+
+                  {/* Bouton import fichier */}
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: T.neon2, borderRadius: 12, borderStyle: 'dashed', padding: 14, marginBottom: 10 }}
+                    onPress={handlePickFile}
+                    disabled={uploadLoading}
+                  >
+                    {uploadLoading
+                      ? <ActivityIndicator color={T.neon2} size="small" />
+                      : <Text style={{ color: T.neon2, fontWeight: '700', fontSize: 14 }}>📎 Importer un fichier (PDF, DOCX, TXT)</Text>
+                    }
+                  </TouchableOpacity>
+
+                  <Text style={{ color: T.muted, fontSize: 11, textAlign: 'center', marginBottom: 10 }}>— ou colle ton texte directement —</Text>
 
                   <TextInput style={[s.noteInput, { minHeight: 150, textAlignVertical: 'top' }]} multiline
                     placeholder="Colle ta synthèse / tes notes ici..." placeholderTextColor={T.muted}

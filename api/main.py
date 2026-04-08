@@ -2445,6 +2445,70 @@ VALID_SUBJECTS = [
 ]
 
 
+@app.post("/student/notes/upload-file")
+@limiter.limit("10/minute")
+async def upload_note_file(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(_get_current_user),
+):
+    """Uploader un fichier de notes (PDF, DOCX, TXT) — extrait le texte côté serveur."""
+    import io
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+    allowed = {"application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+               "text/plain", "application/msword"}
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    raw = await file.read()
+    if len(raw) > MAX_SIZE:
+        raise HTTPException(400, "Fichier trop volumineux (max 5 MB)")
+
+    extracted = ""
+    file_type = "text"
+
+    if ext == "pdf" or "pdf" in content_type:
+        file_type = "pdf"
+        try:
+            import PyPDF2
+            reader = PyPDF2.PdfReader(io.BytesIO(raw))
+            pages = [reader.pages[i].extract_text() or "" for i in range(min(len(reader.pages), 30))]
+            extracted = "\n\n".join(p.strip() for p in pages if p.strip())
+        except Exception as e:
+            raise HTTPException(422, f"Impossible d'extraire le texte du PDF : {e}")
+
+    elif ext in ("docx",) or "wordprocessingml" in content_type:
+        file_type = "docx"
+        try:
+            import docx
+            doc = docx.Document(io.BytesIO(raw))
+            extracted = "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception as e:
+            raise HTTPException(422, f"Impossible d'extraire le texte du DOCX : {e}")
+
+    elif ext == "txt" or "text/plain" in content_type:
+        file_type = "txt"
+        try:
+            extracted = raw.decode("utf-8", errors="replace")
+        except Exception as e:
+            raise HTTPException(422, f"Impossible de lire le fichier texte : {e}")
+
+    else:
+        raise HTTPException(415, "Format non supporté. Utilisez PDF, DOCX ou TXT.")
+
+    if not extracted.strip():
+        raise HTTPException(422, "Le fichier ne contient pas de texte extractible.")
+
+    return {
+        "file_type": file_type,
+        "filename": filename,
+        "extracted_text": extracted[:20000],  # limite raisonnable pour la DB
+        "char_count": len(extracted),
+        "pages": len(extracted.split("\n\n")),
+    }
+
+
 @app.post("/student/notes/share")
 @limiter.limit("5/minute")
 def share_note(

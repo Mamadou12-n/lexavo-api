@@ -743,6 +743,26 @@ export async function deleteSharedNote(noteId) {
   return r.data;
 }
 
+export async function uploadNoteFile(fileUri, fileName, mimeType) {
+  const formData = new FormData();
+  formData.append('file', { uri: fileUri, name: fileName, type: mimeType });
+  const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  const baseURL = api.defaults.baseURL;
+  const response = await fetch(`${baseURL}/student/notes/upload-file`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'Content-Type': 'multipart/form-data',
+    },
+    body: formData,
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || `Erreur upload (${response.status})`);
+  }
+  return response.json();
+}
+
 // ─── Billing (routes /billing/* — alignées sur le backend) ────────────────────
 
 export async function getSubscriptionStatus() {
