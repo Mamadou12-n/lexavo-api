@@ -75,10 +75,14 @@ def search_juportal(
     date_to: str = "",
     lang: str = "fr",
     limit: int = 10000,
-    per_page: int = 500,
+    per_page: int = 100,
+    juridiction: str = "",
 ) -> str:
     """
     Lance une recherche sur JUPORTAL et retourne l'URL des résultats.
+
+    Args:
+        juridiction: code juridiction (ex: "cass", "rce", "cconst", "appel", "trav", "ent")
 
     Returns:
         URL de la page de résultats (avec ID encodé)
@@ -89,7 +93,7 @@ def search_juportal(
         "TOKEN": token,
         "TEXPRESSION": expression,
         "TRECHLANGFR": "on" if lang in ("fr", "all") else "",
-        "TRECHLANGNI": "on" if lang in ("nl", "all") else "",
+        "TRECHLANGNL": "on" if lang in ("nl", "all") else "",
         "TRECHLANGDE": "on" if lang in ("de", "all") else "",
         "TRECHMODE": "NATURAL",
         "TRECHOPER": "AND",
@@ -105,6 +109,10 @@ def search_juportal(
         data["TRECHDECISIONDE"] = date_from
     if date_to:
         data["TRECHDECISIONA"] = date_to
+
+    # Filtrer par juridiction si spécifié
+    if juridiction:
+        data["TRECHJURIDICTION"] = juridiction
 
     r = session.post(JUPORTAL_FORM_URL, data=data, timeout=60)
     r.raise_for_status()
@@ -123,43 +131,23 @@ def search_juportal(
     return ""
 
 
-@retry(stop=stop_after_attempt(MAX_RETRIES), wait=wait_exponential(min=2, max=10))
-def fetch_results_page(session: requests.Session, results_url: str) -> List[Dict]:
-    """
-    Récupère les données d'une page de résultats JUPORTAL.
-
-    Returns:
-        Liste de dicts avec ECLI, titre, date, juridiction, URL
-    """
-    r = session.get(results_url, timeout=60)
-    r.raise_for_status()
-
-    soup = BeautifulSoup(r.text, "lxml")
+def _parse_one_results_page(soup: BeautifulSoup) -> List[Dict]:
+    """Parse une seule page de résultats JUPORTAL et retourne les décisions."""
     decisions = []
-
-    # Chercher les liens /content/ECLI:.../FR (format réel JUPORTAL)
-    # Exemple : /content/ECLI:BE:CASS:2021:ARR.20211006.2F.2/FR
-    content_links = soup.find_all("a", href=re.compile(r"/content/ECLI:[^#]+/FR$"))
-
     seen_ecli = set()
 
     # Méthode 1 : depuis les liens /content/ECLI/FR
+    content_links = soup.find_all("a", href=re.compile(r"/content/ECLI:[^#]+/FR"))
     for link in content_links:
         href = link.get("href", "")
-        # Extraire l'ECLI depuis le href : /content/ECLI:BE:CASS:..../FR
         ecli_match = re.search(r"/content/(ECLI:[^/]+)/FR", href)
         if ecli_match:
             ecli = ecli_match.group(1)
             if ecli not in seen_ecli:
                 seen_ecli.add(ecli)
                 url = JUPORTAL_BASE + href if not href.startswith("http") else href
-                # Enlever le fragment (#text, #notice)
                 url = url.split("#")[0]
-                decisions.append({
-                    "ecli": ecli,
-                    "url": url,
-                    "source": "JUPORTAL",
-                })
+                decisions.append({"ecli": ecli, "url": url, "source": "JUPORTAL"})
 
     # Méthode 2 (fallback) : chercher les ECLI dans le texte brut
     if not decisions:
@@ -174,11 +162,94 @@ def fetch_results_page(session: requests.Session, results_url: str) -> List[Dict
                     "source": "JUPORTAL",
                 })
 
-    log.info(f"  Page résultats : {len(decisions)} décisions trouvées")
     return decisions
 
 
+def _find_next_page_url(soup: BeautifulSoup) -> Optional[str]:
+    """Trouve l'URL de la page suivante dans les résultats paginés."""
+    # Chercher un lien "suivant", "next", ">", "»" ou un lien avec PAGE=
+    for pattern in [
+        lambda a: a.get_text(strip=True).lower() in ("suivant", "next", ">", "»", ">>"),
+        lambda a: "PAGE=" in (a.get("href", "") or "").upper(),
+        lambda a: "page=" in (a.get("href", "") or ""),
+        lambda a: re.search(r"p=\d+", a.get("href", "") or "", re.I),
+    ]:
+        for a_tag in soup.find_all("a", href=True):
+            if pattern(a_tag):
+                href = a_tag["href"]
+                if not href.startswith("http"):
+                    href = JUPORTAL_BASE + href
+                return href
+
+    # Chercher dans les liens de pagination numérotés (page 2, 3, etc.)
+    page_links = soup.find_all("a", href=re.compile(r"resultats.*[?&](PAGE|page|p)=\d+", re.I))
+    if page_links:
+        # Retourner le dernier lien (page la plus haute accessible)
+        href = page_links[-1].get("href", "")
+        if not href.startswith("http"):
+            href = JUPORTAL_BASE + href
+        return href
+
+    return None
+
+
 @retry(stop=stop_after_attempt(MAX_RETRIES), wait=wait_exponential(min=2, max=10))
+def _fetch_single_page(session: requests.Session, url: str) -> tuple:
+    """Fetch une seule page de résultats. Retourne (decisions, next_url)."""
+    r = session.get(url, timeout=60)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "lxml")
+    decisions = _parse_one_results_page(soup)
+    next_url = _find_next_page_url(soup)
+    return decisions, next_url
+
+
+def fetch_results_page(session: requests.Session, results_url: str, max_pages: int = 20) -> List[Dict]:
+    """
+    Récupère les données de TOUTES les pages de résultats JUPORTAL (avec pagination).
+
+    Args:
+        max_pages: nombre max de pages à parcourir par requête
+
+    Returns:
+        Liste de dicts avec ECLI, titre, date, juridiction, URL
+    """
+    all_decisions = []
+    seen_ecli = set()
+    current_url = results_url
+
+    for page_num in range(1, max_pages + 1):
+        if not current_url:
+            break
+
+        try:
+            page_decisions, next_url = _fetch_single_page(session, current_url)
+        except Exception as e:
+            log.warning(f"  Erreur page {page_num}: {e}")
+            break
+
+        # Dédupliquer au sein de cette requête
+        new_on_page = 0
+        for d in page_decisions:
+            if d["ecli"] not in seen_ecli:
+                seen_ecli.add(d["ecli"])
+                all_decisions.append(d)
+                new_on_page += 1
+
+        log.info(f"  Page {page_num}: {len(page_decisions)} résultats, {new_on_page} nouveaux")
+
+        # Si la page n'a rien donné de nouveau ou pas de page suivante, arrêter
+        if new_on_page == 0 or not next_url or next_url == current_url:
+            break
+
+        current_url = next_url
+        time.sleep(REQUEST_DELAY_SECONDS)
+
+    log.info(f"  Total pages parcourues: {min(page_num, max_pages)}, {len(all_decisions)} décisions uniques")
+    return all_decisions
+
+
+@retry(stop=stop_after_attempt(MAX_RETRIES), wait=wait_exponential(min=5, max=60))
 def fetch_decision_text(session: requests.Session, ecli: str) -> Optional[Dict]:
     """
     Récupère le texte complet d'une décision JUPORTAL par son ECLI.
@@ -192,10 +263,20 @@ def fetch_decision_text(session: requests.Session, ecli: str) -> Optional[Dict]:
     url = f"{JUPORTAL_BASE}/content/{ecli}/FR"
 
     try:
-        r = session.get(url, timeout=REQUEST_TIMEOUT)
+        r = session.get(url, timeout=20)
         r.raise_for_status()
 
         if len(r.text) < 100 or "Error" in r.text[:50]:
+            # Fallback crawl4ai
+            try:
+                from utils.tool_fallback import extract_web_content
+                fallback = extract_web_content(url)
+                if fallback and len(fallback) > 200:
+                    log.info(f"  Fallback web reussi pour JUPORTAL {ecli}")
+                    return {"full_text": fallback, "url": url, "ecli": ecli,
+                            "source": "JUPORTAL", "doc_id": ecli.replace(":", "_")}
+            except Exception as fb_e:
+                log.warning(f"  Fallback web echoue pour JUPORTAL: {fb_e}")
             log.warning(f"Réponse invalide pour {ecli}")
             return None
 
@@ -275,15 +356,17 @@ def scrape_juportal(
     date_from: str = "2010-01-01",
     date_to: str = "",
     fetch_full_text: bool = True,
+    skip_phase1: bool = False,
 ) -> int:
     """
-    Scrape JUPORTAL pour toutes les décisions belges disponibles.
+    Scrape JUPORTAL via les SITEMAPS officiels (robots.txt).
 
-    Stratégie : JUPORTAL plafonne à 100 résultats par requête.
-    On segmente par ANNÉE (2010→2026) × LANGUE (fr, nl) pour obtenir
-    jusqu'à 17 × 2 = 34 requêtes × 100 = 3 400 décisions uniques.
+    Le moteur de recherche JuPortal est cassé (retourne toujours les mêmes
+    100 résultats quel que soit le filtre). On utilise à la place les 14 565
+    sitemaps quotidiens listés dans robots.txt, couvrant 1958-2026.
 
-    Si une tranche année/langue dépasse 100, on sous-divise par semestre.
+    Chaque sitemap index contient ~28 sous-sitemaps, chacun avec 1 ECLI.
+    Potentiel total : ~400 000 ECLI uniques.
 
     Sauvegarde dans output/juridat/
     Format : JUPORTAL_{ecli_sanitized}.json
@@ -291,167 +374,241 @@ def scrape_juportal(
     Returns:
         Nombre de documents récupérés
     """
-    from datetime import date as _date
+    # ─── Axes de diversification ──────────────────────────────────────────
 
-    # Déduire l'année de début et de fin depuis date_from / date_to
-    start_year = int(date_from[:4]) if date_from else 2010
-    end_year   = int(date_to[:4])   if date_to   else _date.today().year
+    # Axe 1 : Juridictions (code interne JUPORTAL)
+    # ── Phase 1 : Collecter tous les ECLI via sitemaps ──
 
-    # Construire les tranches : (date_from, date_to, lang)
-    # Langue principale FR d'abord, puis NL pour doubler la couverture
-    TRANCHES: List[Dict] = []
-    for year in range(start_year, end_year + 1):
-        for lang in ("fr", "nl"):
-            TRANCHES.append({
-                "date_from": f"{year}-01-01",
-                "date_to":   f"{year}-12-31",
-                "lang":      lang,
-                "label":     f"{year}/{lang}",
-            })
-
-    # Mots-clés juridiques pour diversifier les résultats (JUPORTAL plafonne à 100/requête)
-    KEYWORDS = [
-        "",                          # recherche vide (top 100 génériques)
-        "licenciement",              # droit du travail
-        "responsabilité civile",     # droit civil
-        "contrat",                   # obligations
-        "bail",                      # droit immobilier
-        "divorce",                   # droit familial
-        "pénal",                     # droit pénal
-        "fiscal impôt",              # droit fiscal
-        "urbanisme permis",          # droit administratif
-        "société commercial",        # droit commercial
-        "environnement",             # droit environnemental
-        "sécurité sociale",          # droit social
-        "marché public",            # marchés publics
-        "propriété intellectuelle",  # PI
-        "droit européen",           # droit EU
-        "constitution fondamental",  # droit constitutionnel
-        "assurance",                # droit des assurances
-        "immigration séjour",       # droit des étrangers
-        "mineur protection",        # droit de la jeunesse
-        "faillite insolvabilité",   # droit de l'insolvabilité
-    ]
-
-    total_tranches = len(TRANCHES) * len(KEYWORDS)
-    log.info(
-        f"=== Démarrage scraping JUPORTAL — max {max_docs} docs "
-        f"({len(TRANCHES)} tranches année×langue × {len(KEYWORDS)} mots-clés = {total_tranches}) ==="
-    )
+    SITEMAP_CHECKPOINT = JURIDAT_DIR / ".sitemap_checkpoint"
+    ECLI_LIST_FILE = JURIDAT_DIR / ".ecli_list.json"
 
     session = requests.Session()
     session.headers.update(HEADERS)
 
+    # Charger les ECLI déjà téléchargés
     all_seen_ecli = set()
-    # Charger les ECLI déjà téléchargés pour éviter les doublons
     for f in JURIDAT_DIR.glob("JUPORTAL_*.json"):
         all_seen_ecli.add(f.stem)
 
-    decisions = []
+    # Charger la liste ECLI déjà collectée (reprise)
+    ecli_queue = []
+    if ECLI_LIST_FILE.exists():
+        try:
+            ecli_queue = json.loads(ECLI_LIST_FILE.read_text(encoding="utf-8"))
+            log.info(f"  Reprise : {len(ecli_queue)} ECLI en queue, {len(all_seen_ecli)} déjà téléchargés")
+        except Exception:
+            ecli_queue = []
 
-    for keyword in KEYWORDS:
-        if len(decisions) >= max_docs:
-            break
+    # Charger le checkpoint sitemap (index du dernier sitemap traité)
+    sitemap_start = 0
+    if SITEMAP_CHECKPOINT.exists():
+        try:
+            sitemap_start = int(SITEMAP_CHECKPOINT.read_text(encoding="utf-8").strip())
+        except Exception:
+            sitemap_start = 0
 
-        for tranche in TRANCHES:
-            if len(decisions) >= max_docs:
-                break
+    # Si pas encore assez d'ECLI collectés, scanner les sitemaps
+    SITEMAP_CACHE_FILE = JURIDAT_DIR / ".sitemap_urls_cache.json"
 
-            label = f"{tranche['label']}/{keyword or 'all'}"
-            log.info(f"  Tranche {label}...")
-            try:
-                results_url = search_juportal(
-                    session,
-                    expression=keyword,
-                    date_from=tranche["date_from"],
-                    date_to=tranche["date_to"],
-                    lang=tranche["lang"],
-                    limit=50000,
-                    per_page=100,
+    if not skip_phase1 and len(ecli_queue) < max_docs:
+        log.info("=== Phase 1 : Collecte ECLI via sitemaps robots.txt ===")
+
+        # Récupérer la liste des sitemaps depuis robots.txt (avec cache disque)
+        sitemap_urls = []
+        try:
+            r = session.get("https://juportal.be/robots.txt", timeout=30)
+            sitemap_urls = re.findall(r"Sitemap:\s*(https?://\S+)", r.text)
+            log.info(f"  {len(sitemap_urls)} sitemaps trouvés dans robots.txt")
+            # Sauvegarder le cache pour les prochains runs
+            if sitemap_urls:
+                SITEMAP_CACHE_FILE.write_text(
+                    json.dumps(sitemap_urls, ensure_ascii=False), encoding="utf-8"
                 )
-            except Exception as e:
-                log.warning(f"  Erreur recherche {label}: {e}")
-                time.sleep(5)
-                continue
+        except Exception as e:
+            log.error(f"  Impossible de lire robots.txt : {e}")
+            # Fallback : charger depuis le cache disque
+            if SITEMAP_CACHE_FILE.exists():
+                try:
+                    sitemap_urls = json.loads(SITEMAP_CACHE_FILE.read_text(encoding="utf-8"))
+                    log.info(f"  Fallback cache : {len(sitemap_urls)} sitemaps chargés depuis disque")
+                except Exception:
+                    sitemap_urls = []
+            if not sitemap_urls:
+                log.error("  Aucun sitemap disponible — Phase 1 ignorée")
 
-            if not results_url:
-                log.warning(f"  Aucun résultat pour {label}")
-                continue
+        ecli_set = set(ecli_queue)  # pour dédup rapide
+        import threading
+        ecli_lock = threading.Lock()
 
+        # Sitemaps restants à traiter (reprendre depuis checkpoint)
+        remaining_sitemaps = [
+            (idx, url) for idx, url in enumerate(sitemap_urls)
+            if idx >= sitemap_start
+        ]
+        log.info(f"  Reprise depuis sitemap {sitemap_start} — {len(remaining_sitemaps)} restants à scanner")
+
+        PHASE1_THREADS = 20  # 20 threads parallèles pour Phase 1
+
+        # Session locale par thread pour éviter "Connection pool full"
+        import threading as _threading
+        _thread_local = _threading.local()
+
+        def _get_thread_session():
+            if not hasattr(_thread_local, "session"):
+                s = requests.Session()
+                s.headers.update(HEADERS)
+                adapter = requests.adapters.HTTPAdapter(
+                    pool_connections=5, pool_maxsize=5,
+                    max_retries=requests.adapters.Retry(total=2, backoff_factor=0.5)
+                )
+                s.mount("https://", adapter)
+                s.mount("http://", adapter)
+                _thread_local.session = s
+            return _thread_local.session
+
+        def fetch_one_sitemap(args):
+            """Fetch un sitemap index + ses sous-sitemaps, retourne liste ECLIs."""
+            idx, sm_index_url = args
+            found = []
+            ts = _get_thread_session()
             try:
-                page_decisions = fetch_results_page(session, results_url)
-            except Exception as e:
-                log.warning(f"  Erreur fetch résultats {label}: {e}")
-                continue
+                r = ts.get(sm_index_url, timeout=30)
+                if r.status_code != 200:
+                    return idx, found
+                sub_sitemaps = re.findall(r"<loc>(.*?)</loc>", r.text)
+                for sub_url in sub_sitemaps:
+                    try:
+                        r2 = ts.get(sub_url, timeout=30)
+                        ecli_urls = re.findall(r"<loc>(.*?)</loc>", r2.text)
+                        for eu in ecli_urls:
+                            m = re.search(r"(ECLI:[A-Z]{2}:[A-Z.]+:\d{4}:[A-Z0-9._-]+)", eu)
+                            if m:
+                                found.append(m.group(1))
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            return idx, found
 
-            # Dédupliquer par ECLI
-            new_found = 0
-            for d in page_decisions:
-                ecli = d["ecli"]
-                safe_ecli = re.sub(r"[^a-zA-Z0-9]", "_", ecli)
-                key = f"JUPORTAL_{safe_ecli}"
-                if key not in all_seen_ecli and not (JURIDAT_DIR / f"{key}.json").exists():
-                    all_seen_ecli.add(key)
-                    decisions.append(d)
-                    new_found += 1
+        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+        completed = 0
+        last_checkpoint_idx = sitemap_start
 
-            log.info(
-                f"  → {label}: {len(page_decisions)} résultats, "
-                f"{new_found} nouveaux (total unique: {len(decisions)})"
-            )
-            time.sleep(REQUEST_DELAY_SECONDS * 2)
+        with ThreadPoolExecutor(max_workers=PHASE1_THREADS) as executor:
+            futures = {executor.submit(fetch_one_sitemap, arg): arg for arg in remaining_sitemaps}
 
-        # Si le mot-clé n'a rien donné de nouveau sur 2+ tranches, passer au suivant
-        log.info(f"  Mot-clé '{keyword}': total unique après = {len(decisions)}")
+            for future in _as_completed(futures):
+                if len(ecli_set) >= max_docs:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    break
 
-    log.info(f"  → {len(decisions)} décisions uniques à télécharger")
+                idx, found_eclis = future.result()
+                completed += 1
 
-    if not decisions:
-        log.warning("Aucune décision trouvée")
-        return 0
+                with ecli_lock:
+                    for ecli in found_eclis:
+                        safe = re.sub(r"[^a-zA-Z0-9]", "_", ecli)
+                        key = f"JUPORTAL_{safe}"
+                        if ecli not in ecli_set and key not in all_seen_ecli:
+                            ecli_set.add(ecli)
+                            ecli_queue.append(ecli)
 
-    # Limiter au max demandé
-    decisions = decisions[:max_docs]
+                # Log toutes les 100 sitemaps traités
+                if completed % 100 == 0:
+                    log.info(f"  Sitemaps traités: {completed}/{len(remaining_sitemaps)} — {len(ecli_queue)} ECLI collectés")
+                    # Checkpoint
+                    SITEMAP_CHECKPOINT.write_text(str(sitemap_start + completed), encoding="utf-8")
+                    ECLI_LIST_FILE.write_text(json.dumps(ecli_queue, ensure_ascii=False), encoding="utf-8")
 
-    # Récupérer le texte de chaque décision
-    saved = 0
-    for i, decision in enumerate(decisions):
-        ecli = decision["ecli"]
+        # Checkpoint final Phase 1
+        SITEMAP_CHECKPOINT.write_text(str(len(sitemap_urls)), encoding="utf-8")
+
+        # Sauvegarde finale
+        SITEMAP_CHECKPOINT.write_text(str(len(sitemap_urls)), encoding="utf-8")
+        ECLI_LIST_FILE.write_text(
+            json.dumps(ecli_queue, ensure_ascii=False), encoding="utf-8"
+        )
+        log.info(f"  Phase 1 terminée : {len(ecli_queue)} ECLI uniques collectés")
+
+    # ── Phase 2 : Télécharger le texte de chaque ECLI (10 threads) ──
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
+
+    PHASE2_THREADS = 3   # juportal.be rate-limite au-delà de 3 threads concurrents
+    PHASE2_DELAY   = 2.0 # 2s entre chaque requête par thread (respectueux du serveur)
+    log.info(f"=== Phase 2 : Téléchargement texte — {len(ecli_queue)} ECLI ({PHASE2_THREADS} threads, délai {PHASE2_DELAY}s) ===")
+
+    counters = {"saved": len(all_seen_ecli), "errors": 0, "skipped": 0}
+    lock = threading.Lock()
+
+    def download_one(ecli):
         safe_ecli = re.sub(r"[^a-zA-Z0-9]", "_", ecli)
         output_file = JURIDAT_DIR / f"JUPORTAL_{safe_ecli}.json"
 
         if output_file.exists():
-            saved += 1
-            continue
+            with lock:
+                counters["skipped"] += 1
+            return
 
-        if fetch_full_text:
-            doc = fetch_decision_text(session, ecli)
-        else:
-            # Mode rapide : sauvegarder seulement les métadonnées
-            doc = {
-                "source": "JUPORTAL",
-                "ecli": ecli,
-                "url": decision["url"],
-                "full_text": "",
-                "date": "",
-                "jurisdiction": "",
-            }
+        # Chaque thread a sa propre session
+        thread_session = requests.Session()
+        thread_session.headers.update(HEADERS)
 
-        if doc:
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(doc, f, ensure_ascii=False, indent=2)
-            saved += 1
+        try:
+            if fetch_full_text:
+                doc = fetch_decision_text(thread_session, ecli)
+            else:
+                doc = {
+                    "source": "JUPORTAL", "ecli": ecli,
+                    "url": f"{JUPORTAL_BASE}/content/{ecli}/FR",
+                    "full_text": "", "date": "", "jurisdiction": "",
+                }
 
-        if saved % 50 == 0:
-            log.info(f"  → {saved}/{len(decisions)} décisions sauvegardées")
+            if doc:
+                with open(output_file, "w", encoding="utf-8") as f:
+                    json.dump(doc, f, ensure_ascii=False, indent=2)
+                with lock:
+                    counters["saved"] += 1
+            else:
+                with lock:
+                    counters["errors"] += 1
+        except Exception as e:
+            log.warning(f"  Erreur download {ecli}: {e}")
+            with lock:
+                counters["errors"] += 1
+        finally:
+            thread_session.close()
 
-        time.sleep(REQUEST_DELAY_SECONDS)
+        time.sleep(PHASE2_DELAY)
 
-    log.info(f"=== JUPORTAL terminé : {saved} documents dans {JURIDAT_DIR} ===")
-    return saved
+    # Filtrer les ECLI déjà téléchargés
+    to_download = []
+    for ecli in ecli_queue:
+        safe = re.sub(r"[^a-zA-Z0-9]", "_", ecli)
+        if not (JURIDAT_DIR / f"JUPORTAL_{safe}.json").exists():
+            to_download.append(ecli)
+        if len(to_download) + counters["saved"] >= max_docs:
+            break
+
+    log.info(f"  {len(to_download)} ECLI à télécharger, {counters['saved']} déjà existants")
+
+    with ThreadPoolExecutor(max_workers=PHASE2_THREADS) as executor:
+        futures = {executor.submit(download_one, ecli): ecli for ecli in to_download}
+        done = 0
+        for future in as_completed(futures):
+            done += 1
+            if done % 50 == 0:
+                log.info(
+                    f"  → {counters['saved']} sauvegardés, {counters['errors']} erreurs "
+                    f"({done}/{len(to_download)})"
+                )
+
+    log.info(f"=== JUPORTAL terminé : {counters['saved']} documents dans {JURIDAT_DIR} ===")
+    return counters["saved"]
 
 
-def scrape_juportal_fast(max_docs: int = 10_000) -> int:
+def scrape_juportal_fast(max_docs: int = 100_000) -> int:
     """
     Mode rapide : récupère uniquement les ECLI (pas le texte complet).
     Plus rapide — texte récupéré en phase 2.
@@ -465,8 +622,9 @@ def scrape_juportal_fast(max_docs: int = 10_000) -> int:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Scraper JUPORTAL")
-    parser.add_argument("--max-docs", type=int, default=500)
+    parser.add_argument("--max-docs", type=int, default=100000)
     parser.add_argument("--no-text", action="store_true", help="Mode rapide sans texte")
+    parser.add_argument("--skip-phase1", action="store_true", help="Sauter Phase 1, télécharger directement les ECLIs en queue")
     args = parser.parse_args()
-    count = scrape_juportal(max_docs=args.max_docs, fetch_full_text=not args.no_text)
+    count = scrape_juportal(max_docs=args.max_docs, fetch_full_text=not args.no_text, skip_phase1=args.skip_phase1)
     print(f"\nRésultat : {count} décisions JUPORTAL dans {JURIDAT_DIR}")

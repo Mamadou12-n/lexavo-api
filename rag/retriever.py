@@ -1,35 +1,56 @@
 """
-RAG Retriever — Lexavo (9 alternatives de recherche)
-=====================================================
+RAG Retriever — Lexavo (9 alternatives de recherche) — Backend Qdrant
+======================================================================
 
 Architecture 9 alternatives qui se corrigent mutuellement :
   Alt.1 : Recherche vecteurs (sémantique)
   Alt.2 : Mots-clés articles (Art. X)
-  Alt.3 : Termes juridiques ($contains multi-termes)
+  Alt.3 : Termes juridiques (MatchText multi-termes)
   Alt.4 : Chunks voisins (contexte ±1)
   Alt.5 : Vote majoritaire (fusion 1+2+3)
   Alt.6 : Détection source dans la question
   Alt.7 : Re-ranking Claude Haiku
-  Alt.8 : Index articles séparé
+  Alt.8 : Index articles séparé (collection legal_articles_be)
   Alt.9 : Reformulation automatique
 
 Garantie : si une alternative se trompe, les autres la corrigent.
 Si l'info n'est pas dans la base → dire "je ne sais pas", jamais inventer.
+
+Backend : Qdrant (collection `legal_docs_be`, 384 dims, Cosine).
 """
+
+from __future__ import annotations
 
 import logging
 import os
 import re
-from pathlib import Path
-from typing import List, Dict, Optional
-
 import sys
+import uuid
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import OUTPUT_DIR
-from rag.indexer import CHROMA_DIR, COLLECTION_NAME, EMBED_MODEL
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("retriever")
+
+
+# ─── Configuration Qdrant ────────────────────────────────────────────────────
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "legal_docs_be")
+ARTICLES_COLLECTION_NAME = os.getenv("QDRANT_ARTICLES_COLLECTION", "legal_articles_be")
+EMBED_MODEL = os.getenv(
+    "EMBED_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
+
+# UUID5 namespace — IDs Qdrant sont calculés à partir des chunk_ids texte
+NAMESPACE = uuid.NAMESPACE_OID
+
+
+def chunk_id_to_uuid(chunk_id: str) -> str:
+    """Convertit un chunk_id texte (`{doc_id}__chunk_{idx:03d}`) en UUID5."""
+    return str(uuid.uuid5(NAMESPACE, chunk_id))
 
 
 # ─── Priorités par source ────────────────────────────────────────────────────
@@ -79,41 +100,48 @@ STOPWORDS_FR = {
 
 
 # ─── Singletons ─────────────────────────────────────────────────────────────
-_collection = None
-_articles_collection = None
+_client = None
+_articles_available: Optional[bool] = None  # cache : la collection existe-t-elle ?
 _model = None
 
 
-def _get_collection():
-    import chromadb
-    if not CHROMA_DIR.exists():
-        raise RuntimeError(f"Index ChromaDB non trouvé à {CHROMA_DIR}.")
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return client.get_or_create_collection(COLLECTION_NAME)
+def _get_client():
+    """Client Qdrant unique (timeout 30s, compatible VPS et local)."""
+    from qdrant_client import QdrantClient
+    return QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
+        timeout=30,
+    )
 
 
-def _get_articles_collection():
-    """Collection séparée pour Alt.8 (index articles)."""
-    import chromadb
-    if not CHROMA_DIR.exists():
-        return None
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+def get_client():
+    global _client
+    if _client is None:
+        _client = _get_client()
+        log.info(f"Client Qdrant initialisé: {QDRANT_URL} | collection={COLLECTION_NAME}")
+    return _client
+
+
+def _articles_collection_exists() -> bool:
+    """Vérifie une seule fois si la collection articles séparée existe (Alt.8)."""
+    global _articles_available
+    if _articles_available is not None:
+        return _articles_available
     try:
-        return client.get_collection("legal_articles_be")
+        client = get_client()
+        client.get_collection(ARTICLES_COLLECTION_NAME)
+        _articles_available = True
+        log.info(f"Alt.8 disponible: collection {ARTICLES_COLLECTION_NAME} trouvée")
     except Exception:
-        return None
+        _articles_available = False
+        log.debug(f"Alt.8 indisponible: pas de collection {ARTICLES_COLLECTION_NAME}")
+    return _articles_available
 
 
 def _get_model():
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer(EMBED_MODEL)
-
-
-def get_collection():
-    global _collection
-    if _collection is None:
-        _collection = _get_collection()
-    return _collection
 
 
 def get_model():
@@ -124,22 +152,117 @@ def get_model():
     return _model
 
 
+# ─── Helpers Qdrant ─────────────────────────────────────────────────────────
+
+def _build_qdrant_filter(
+    source_filter: Optional[List[str]] = None,
+    jurisdiction_filter: Optional[str] = None,
+    extra_must: Optional[list] = None,
+):
+    """Construit un Filter Qdrant à partir des filtres de l'API."""
+    from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny
+
+    must: list = []
+    if source_filter:
+        if len(source_filter) == 1:
+            must.append(FieldCondition(key="source", match=MatchValue(value=source_filter[0])))
+        else:
+            must.append(FieldCondition(key="source", match=MatchAny(any=list(source_filter))))
+    if jurisdiction_filter:
+        must.append(FieldCondition(key="jurisdiction", match=MatchValue(value=jurisdiction_filter)))
+    if extra_must:
+        must.extend(extra_must)
+
+    if not must:
+        return None
+    return Filter(must=must)
+
+
+def _payload_to_meta(payload: dict) -> Tuple[str, dict]:
+    """Extrait (text, meta) depuis un payload Qdrant."""
+    payload = payload or {}
+    text = payload.get("text", "") or ""
+    meta = {
+        "doc_id":       payload.get("doc_id", ""),
+        "source":       payload.get("source", ""),
+        "title":        payload.get("title", ""),
+        "date":         payload.get("date", ""),
+        "url":          payload.get("url", ""),
+        "ecli":         payload.get("ecli", ""),
+        "doc_type":     payload.get("doc_type", ""),
+        "jurisdiction": payload.get("jurisdiction", ""),
+        "chunk_idx":    payload.get("chunk_idx", 0),
+    }
+    return text, meta
+
+
+def _scroll_match_text(
+    client,
+    collection_name: str,
+    text_pattern: str,
+    limit: int,
+    base_filter=None,
+) -> List[Tuple[str, dict]]:
+    """
+    Scroll avec MatchText sur le champ `text`. Dégradation gracieuse si
+    l'index full-text n'existe pas ou si la requête timeout.
+    """
+    from qdrant_client.models import (
+        Filter,
+        FieldCondition,
+        MatchText,
+    )
+
+    must = [FieldCondition(key="text", match=MatchText(text=text_pattern))]
+    if base_filter is not None and base_filter.must:
+        must = list(base_filter.must) + must
+    flt = Filter(must=must)
+
+    try:
+        points, _ = client.scroll(
+            collection_name=collection_name,
+            scroll_filter=flt,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [_payload_to_meta(p.payload) for p in points]
+    except Exception as e:
+        log.debug(f"MatchText scroll échoué ({text_pattern[:30]}): {e}")
+        return []
+
+
 # ─── Alt.4 : Chunks voisins ─────────────────────────────────────────────────
 
-def _get_neighbor_chunks(collection, doc_id: str, chunk_idx: int) -> List[tuple]:
-    """Récupère les chunks adjacents (idx-1 et idx+1) du même document."""
-    neighbors = []
+def _get_neighbor_chunks(client, doc_id: str, chunk_idx: int) -> List[Tuple[str, dict]]:
+    """Récupère les chunks adjacents (idx-1 et idx+1) du même document via UUID5."""
+    if not doc_id:
+        return []
+    neighbors: List[Tuple[str, dict]] = []
+    neighbor_ids: List[str] = []
     for offset in [-1, 1]:
         neighbor_idx = chunk_idx + offset
         if neighbor_idx < 0:
             continue
-        neighbor_id = f"{doc_id}__chunk_{neighbor_idx:03d}"
-        try:
-            result = collection.get(ids=[neighbor_id], include=["documents", "metadatas"])
-            if result["ids"]:
-                neighbors.append((result["documents"][0], result["metadatas"][0]))
-        except Exception:
-            pass
+        chunk_id_text = f"{doc_id}__chunk_{neighbor_idx:03d}"
+        neighbor_ids.append(chunk_id_to_uuid(chunk_id_text))
+
+    if not neighbor_ids:
+        return []
+
+    try:
+        points = client.retrieve(
+            collection_name=COLLECTION_NAME,
+            ids=neighbor_ids,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for p in points:
+            text, meta = _payload_to_meta(p.payload)
+            neighbors.append((text, meta))
+    except Exception as e:
+        log.debug(f"Voisins (Alt.4) échoué pour {doc_id}/{chunk_idx}: {e}")
+
     return neighbors
 
 
@@ -238,34 +361,32 @@ def retrieve(
         Liste de dicts avec chunk, métadonnées, score — triés par pertinence.
     """
     model = get_model()
-    collection = get_collection()
+    client = get_client()
+
+    base_filter = _build_qdrant_filter(
+        source_filter=source_filter,
+        jurisdiction_filter=jurisdiction_filter,
+    )
 
     # ═══ PASS 1 : Collecte par 4 méthodes parallèles ═══════════════════════
 
     # --- Alt.1 : Recherche vecteurs (sémantique) ---
     query_embedding = model.encode([query])[0].tolist()
+    n_results = top_k * 5
 
-    where = {}
-    if source_filter and len(source_filter) == 1:
-        where["source"] = {"$eq": source_filter[0]}
-    elif source_filter and len(source_filter) > 1:
-        where["source"] = {"$in": source_filter}
-    if jurisdiction_filter:
-        where["jurisdiction"] = {"$eq": jurisdiction_filter}
+    try:
+        _qr = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_embedding,
+            query_filter=base_filter,
+            limit=n_results,
+            with_payload=True,
+        )
+        vector_points = _qr.points
+    except Exception as e:
+        log.error(f"Alt.1 search Qdrant échoué: {e}")
+        vector_points = []
 
-    n_results = min(top_k * 5, collection.count())
-    query_kwargs = {
-        "query_embeddings": [query_embedding],
-        "n_results": n_results,
-        "include": ["documents", "metadatas", "distances"],
-    }
-    if where:
-        query_kwargs["where"] = where
-
-    vector_results = collection.query(**query_kwargs)
-
-    # --- Alt.2 : Mots-clés articles (Art. X) ---
-    keyword_chunks = []
     # --- Alt.6 : Détection source dans la question (AVANT les recherches par article) ---
     detected_source = None
     for pattern, source_title in SOURCE_DETECT.items():
@@ -273,45 +394,48 @@ def retrieve(
             detected_source = source_title
             break
 
+    # --- Alt.2 : Mots-clés articles (Art. X) ---
+    keyword_chunks: List[Tuple[str, dict]] = []
     art_match = re.search(r"art(?:icle)?\.?\s*(\d+[\w./:,-]*)", query, re.IGNORECASE)
     if art_match:
         art_num = art_match.group(1)
-        # Alt.8 : Index articles séparé (si disponible)
-        art_coll = _get_articles_collection()
-        if art_coll:
-            try:
-                art_results = art_coll.get(
-                    where={"article_num": {"$eq": art_num}},
-                    limit=5,
-                    include=["documents", "metadatas"],
-                )
-                for doc_text, meta in zip(art_results["documents"], art_results["metadatas"]):
-                    keyword_chunks.append((doc_text, meta))
-            except Exception:
-                pass
 
-        # Recherche $contains classique dans la collection principale
-        # Si une source est détectée dans la question, filtrer les résultats par cette source
+        # Alt.8 : Index articles séparé (si disponible dans Qdrant)
+        if _articles_collection_exists():
+            from qdrant_client.models import Filter, FieldCondition, MatchValue
+            try:
+                art_flt = Filter(
+                    must=[FieldCondition(key="article_num", match=MatchValue(value=art_num))]
+                )
+                art_points, _ = client.scroll(
+                    collection_name=ARTICLES_COLLECTION_NAME,
+                    scroll_filter=art_flt,
+                    limit=5,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                for p in art_points:
+                    text, meta = _payload_to_meta(p.payload)
+                    keyword_chunks.append((text, meta))
+            except Exception as e:
+                log.debug(f"Alt.8 article lookup échoué: {e}")
+
+        # Recherche MatchText classique dans la collection principale
+        # Si une source est détectée dans la question, prioriser les chunks de cette source
         if not keyword_chunks:
             for pattern in [f"Art. {art_num}", f"Art.{art_num}", f"article {art_num}"]:
-                try:
-                    kw_results = collection.get(
-                        where_document={"$contains": pattern},
-                        limit=10,
-                        include=["documents", "metadatas"],
-                    )
-                    for doc_text, meta in zip(kw_results["documents"], kw_results["metadatas"]):
-                        # Si source détectée, prioriser les chunks de cette source
-                        if detected_source:
-                            title = meta.get("title", "")
-                            if detected_source.lower() in title.lower():
-                                keyword_chunks.insert(0, (doc_text, meta))  # en tête
-                            else:
-                                keyword_chunks.append((doc_text, meta))
+                hits = _scroll_match_text(
+                    client, COLLECTION_NAME, pattern, limit=10, base_filter=base_filter
+                )
+                for doc_text, meta in hits:
+                    if detected_source:
+                        title = meta.get("title", "")
+                        if detected_source.lower() in title.lower():
+                            keyword_chunks.insert(0, (doc_text, meta))  # en tête
                         else:
                             keyword_chunks.append((doc_text, meta))
-                except Exception:
-                    pass
+                    else:
+                        keyword_chunks.append((doc_text, meta))
                 if keyword_chunks:
                     break
 
@@ -323,29 +447,22 @@ def retrieve(
 
     if len(legal_terms) >= 2 and not keyword_chunks:
         for term in legal_terms[:3]:
-            try:
-                kw = collection.get(
-                    where_document={"$contains": term},
-                    limit=5,
-                    include=["documents", "metadatas"],
-                )
-                for doc_text, meta in zip(kw["documents"], kw["metadatas"]):
-                    chunk_lower = doc_text.lower()
-                    matches = sum(1 for t in legal_terms if t in chunk_lower)
-                    if matches >= 2:
-                        keyword_chunks.append((doc_text, meta))
-            except Exception:
-                pass
+            hits = _scroll_match_text(
+                client, COLLECTION_NAME, term, limit=5, base_filter=base_filter
+            )
+            for doc_text, meta in hits:
+                chunk_lower = (doc_text or "").lower()
+                matches = sum(1 for t in legal_terms if t in chunk_lower)
+                if matches >= 2:
+                    keyword_chunks.append((doc_text, meta))
             if len(keyword_chunks) >= 5:
                 break
 
-    # Alt.6 déplacé plus haut (avant Alt.2) pour éviter NameError
+    # ═══ FUSION : Construire la liste unifiée (Alt.5 vote majoritaire) ══════
 
-    # ═══ FUSION : Construire la liste unifiée ═══════════════════════════════
-
-    chunks = []
+    chunks: List[Dict] = []
     seen_chunk_ids = set()
-    seen_doc_ids = {}
+    seen_doc_ids: Dict[str, int] = {}
 
     def _add_chunk(doc_text, meta, similarity, score, source_name=""):
         doc_id = meta.get("doc_id", "")
@@ -395,26 +512,21 @@ def retrieve(
     for doc_text, meta in keyword_chunks:
         _add_chunk(doc_text, meta, 0.95, 0.95, "keyword")
 
-    # Injecter vecteurs (Alt.1)
-    if vector_results["documents"] and vector_results["documents"][0]:
-        for doc_text, meta, distance in zip(
-            vector_results["documents"][0],
-            vector_results["metadatas"][0],
-            vector_results["distances"][0],
-        ):
-            similarity = 1.0 - distance
-            _add_chunk(doc_text, meta, similarity, similarity, "vector")
+    # Injecter vecteurs (Alt.1) — Qdrant.score est déjà cosine similarity (pas distance)
+    for sp in vector_points:
+        text, meta = _payload_to_meta(sp.payload)
+        similarity = float(sp.score)  # cosine similarity directe
+        _add_chunk(text, meta, similarity, similarity, "vector")
 
     # ═══ Alt.5 : Tri par score (les doublons ont été éliminés) ══════════════
     chunks.sort(key=lambda x: x["score"], reverse=True)
 
     # ═══ Alt.4 : Enrichir les top chunks avec les voisins ═══════════════════
-    enriched = []
+    enriched: List[Dict] = []
     for chunk in chunks[:5]:
         neighbors = _get_neighbor_chunks(
-            collection, chunk["doc_id"], chunk["chunk_idx"]
+            client, chunk["doc_id"], chunk["chunk_idx"]
         )
-        # Fusionner le texte des voisins dans le chunk
         prev_text = neighbors[0][0] if len(neighbors) > 0 and chunk["chunk_idx"] > 0 else ""
         next_text = neighbors[-1][0] if len(neighbors) > 0 else ""
 
@@ -440,23 +552,24 @@ def retrieve(
         reformulated = _reformulate_query(query)
         if reformulated:
             log.info(f"  Alt.9 reformulation: '{query[:40]}' → '{reformulated[:40]}'")
-            ref_embedding = model.encode([reformulated])[0].tolist()
-            ref_results = collection.query(
-                query_embeddings=[ref_embedding],
-                n_results=min(top_k * 3, collection.count()),
-                include=["documents", "metadatas", "distances"],
-            )
-            if ref_results["documents"] and ref_results["documents"][0]:
-                for doc_text, meta, distance in zip(
-                    ref_results["documents"][0],
-                    ref_results["metadatas"][0],
-                    ref_results["distances"][0],
-                ):
-                    similarity = 1.0 - distance
-                    _add_chunk(doc_text, meta, similarity, similarity + 0.05, "reformulated")
+            try:
+                ref_embedding = model.encode([reformulated])[0].tolist()
+                _ref_qr = client.query_points(
+                    collection_name=COLLECTION_NAME,
+                    query=ref_embedding,
+                    query_filter=base_filter,
+                    limit=top_k * 3,
+                    with_payload=True,
+                )
+                for sp in _ref_qr.points:
+                    text, meta = _payload_to_meta(sp.payload)
+                    similarity = float(sp.score)
+                    _add_chunk(text, meta, similarity, similarity + 0.05, "reformulated")
 
-            # Re-trier
-            chunks.sort(key=lambda x: x["score"], reverse=True)
+                # Re-trier
+                chunks.sort(key=lambda x: x["score"], reverse=True)
+            except Exception as e:
+                log.debug(f"Alt.9 search reformulé échoué: {e}")
 
     # ═══ Alt.7 : Re-ranking Haiku si score intermédiaire ════════════════════
     if chunks and 0.5 < chunks[0]["score"] < 0.8:
