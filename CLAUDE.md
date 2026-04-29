@@ -3,9 +3,9 @@
 ## Identité
 
 - **Nom** : Lexavo — assistant juridique belge (SRL en cours d'immatriculation)
-- **Auteur** : Mamadou Diallo, EPHEC Etterbeek, TFE juin 2026
+- **Auteur** : Mamadou BAH
 - **Langue** : toujours répondre en français
-- **Scope** : droit belge uniquement — 3 régions (Bruxelles, Wallonie, Flandre)
+- **Scope** : droit belge et europen  — 3 régions (Bruxelles, Wallonie, Flandre)
 
 ## Architecture
 
@@ -96,7 +96,7 @@ LEXAVO
 2. **Droit belge** — CIR 1992, Code civil, CTVA, CCT, lois fédérales/régionales uniquement
 3. **Disclaimer obligatoire** — chaque réponse juridique inclut "ne constitue pas un avis juridique"
 4. **Helpers existants** — utiliser `_get_conn()`, `USE_PG`, `_execute()`, `_fetchone()`, `_fetchall()` dans database.py
-5. **Humanizer** — intégré dans toutes les features (shield, audit, diagnostic, decode, fiscal, legal_response)
+5. **Humanizer** — intégré dans toutes l'application toutes les reponses  (shield, audit, diagnostic, decode, fiscal, legal_response)
 6. **Retriever 9 alternatives** — le RAG utilise 9 mécanismes de recherche qui se corrigent mutuellement :
    - Alt.1 Vecteurs sémantiques | Alt.2 Mots-clés articles (Art. X) | Alt.3 Termes juridiques ($contains)
    - Alt.4 Chunks voisins (contexte ±1) | Alt.5 Vote majoritaire | Alt.6 Filtre source détectée
@@ -106,6 +106,7 @@ LEXAVO
 7. **Skill add-legal-source** — toute nouvelle source juridique DOIT passer par la skill
    `claude-skills/add-legal-source/SKILL.md` (8 étapes obligatoires, zéro invention à chaque étape)
 8. **Vérifier 2 fois minimum** — chaque donnée (NUMAC, URL, contenu) est vérifiée sur la source officielle avant utilisation
+9. **Complétude obligatoire avant indexation** — JAMAIS indexer ou normaliser des docs incomplets (métadonnées seules, abstracts seuls, full_text < 500 chars pour doctrine académique) sans accord explicite de l'utilisateur. Audit obligatoire avant indexation : char_count distribution + sample 5 docs. Si majorité < seuil → STOP + demander confirmation. Vaut pour TOUTES sources (HAL, DIAL, ORBI, UGENT, ISIDORE, KULEUVEN, mais aussi tout nouveau scraper).
 
 ## Stack technique
 
