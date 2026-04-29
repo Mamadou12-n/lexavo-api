@@ -241,7 +241,7 @@ def verify_indexation(client, log) -> bool:
     log.info("=" * 60)
 
     # Check 1 : count
-    final_count = client.count(collection_name=COLLECTION_NAME, exact=True).count
+    final_count = client.get_collection(COLLECTION_NAME).points_count
     log.info(f"  Check 1 — Points dans collection : {hr(final_count)}")
     if final_count == 0:
         log.error("    ÉCHEC : 0 points dans la collection")
@@ -309,7 +309,7 @@ def main():
 
     # 2) Charger doc_ids déjà indexés
     client = QdrantClient(url=QDRANT_URL, timeout=180)
-    initial = client.count(collection_name=COLLECTION_NAME, exact=True).count
+    initial = client.get_collection(COLLECTION_NAME).points_count
     log.info(f"Points actuels Qdrant: {hr(initial)}")
 
     log.info("Chargement doc_ids existants pour skip...")
@@ -424,7 +424,7 @@ def main():
     # 7) Vérification finale (CLAUDE.md Règle 4 + §8)
     ok = verify_indexation(client, log)
 
-    final = client.count(collection_name=COLLECTION_NAME, exact=True).count
+    final = client.get_collection(COLLECTION_NAME).points_count
     log.info(
         f"\n=== BILAN ===\n"
         f"  Points avant : {hr(initial)}\n"

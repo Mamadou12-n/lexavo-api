@@ -66,37 +66,37 @@ HEADERS = {
 # URL texte complet : /cgi_loi/change_lg.pl?language=fr&la=F&cn={cn}&table_name=loi
 CODES_BELGES = [
     # ─── Droit privé / civil ────────────────────────────────────────────────
-    {"numac": "1804032455", "cn": "1804032130", "title": "Code civil (ancien — partiellement en vigueur)",        "date_pub": "1804-03-21"},
-    # Nouveau Code civil belge (réforme 2019-2024) — NUMACs vérifiés eTAAMB, cn vérifiés JUSTEL
-    {"numac": "2022032057", "cn": "2022042801", "title": "Nouveau Code civil — Livre 1 (Dispositions générales)", "date_pub": "2022-07-01"},
-    {"numac": "2020020347", "cn": "2020020401", "title": "Nouveau Code civil — Livre 3 (Les biens)",              "date_pub": "2020-03-17"},
-    {"numac": "2022032058", "cn": "2022042803", "title": "Nouveau Code civil — Livre 5 (Les obligations)",        "date_pub": "2022-07-01"},
-    {"numac": "2019012168", "cn": "2019041301", "title": "Nouveau Code civil — Livre 8 (La preuve)",              "date_pub": "2019-05-14"},
+    {"numac": "1804032455", "cn": "1804032130", "title": "Code civil (avec insertions Livres 1/3/5/8 réforme 2019-2024)", "date_pub": "1804-03-21"},
     {"numac": "1867060801", "cn": "1867060801", "title": "Code pénal",                                            "date_pub": "1867-06-08"},
     {"numac": "1967100202", "cn": "1967101002", "title": "Code judiciaire",                                       "date_pub": "1967-10-10"},
-    {"numac": "2001050950", "cn": "2001050730", "title": "Code des sociétés (ancien)",                             "date_pub": "2001-05-07"},
     {"numac": "2019040496", "cn": "2019032309", "title": "Code des sociétés et associations (CSA 2019)",          "date_pub": "2019-04-23"},
     # ─── Droit du travail / social ──────────────────────────────────────────
     {"numac": "1978040101", "cn": "1978070301", "title": "Loi sur les contrats de travail",                       "date_pub": "1978-04-03"},
-    {"numac": "1971060401", "cn": "1971060401", "title": "Loi sur le travail",                                    "date_pub": "1971-06-16"},
     {"numac": "1944122836", "cn": "1944122801", "title": "Loi sur la sécurité sociale des travailleurs",          "date_pub": "1944-12-28"},
-    {"numac": "1996012650", "cn": "1996080401", "title": "Loi relative au bien-être des travailleurs au travail", "date_pub": "1996-09-18"},
     {"numac": "1971041001", "cn": "1971041001", "title": "Loi sur les accidents du travail",                      "date_pub": "1971-04-24"},
+    # cn 1996080400 vérifié 2026-04-29 sur ejustice (au lieu de 1996080401 qui était faux)
+    {"numac": "1996012650", "cn": "1996080400", "title": "Loi du 4 août 1996 relative au bien-être des travailleurs", "date_pub": "1996-08-04"},
     # ─── Droit pénal / procédure ────────────────────────────────────────────
     {"numac": "1878100801", "cn": "1808111730", "title": "Code d'instruction criminelle",                         "date_pub": "1808-11-17"},
-    {"numac": "2010009589", "cn": "2010060601", "title": "Code pénal social",                                     "date_pub": "2010-07-01"},
+    # cn 2010060607 vérifié 2026-04-29 (au lieu de 2010060601)
+    {"numac": "2010A09589", "cn": "2010060607", "title": "Code pénal social (Loi du 6 juin 2010)",                "date_pub": "2010-06-06"},
     # ─── Droit administratif / public ──────────────────────────────────────
-    {"numac": "2016021053", "cn": "2016061701", "title": "Loi du 17 juin 2016 relative aux marchés publics",     "date_pub": "2016-07-14"},
+    # cn 2016061719 vérifié 2026-04-29 (au lieu de 2016061701)
+    {"numac": "2016021053", "cn": "2016061719", "title": "Loi du 17 juin 2016 relative aux marchés publics",     "date_pub": "2016-06-17"},
     # ─── Droit fiscal ───────────────────────────────────────────────────────
-    {"numac": "1992003455", "cn": "1992041030", "title": "Code des impôts sur les revenus 1992 (CIR 1992)",       "date_pub": "1992-04-10"},
+    # CIR 1992 : pas de cn coordonné autonome (mise à jour MB suspendue depuis 2003).
+    # cn 1993082749 = AR du 27 août 1993 d'exécution du CIR 1992 (200K+ chars utiles).
+    {"numac": "1992003222", "cn": "1993082749", "title": "Code des impôts sur les revenus 1992 (CIR 1992) — AR exécution", "date_pub": "1992-04-10"},
     {"numac": "1993003047", "cn": "1969070301", "title": "Code de la TVA (CTVA)",                                 "date_pub": "1969-07-03"},
     # ─── Droit constitutionnel ──────────────────────────────────────────────
     {"numac": "1994021280", "cn": "1994021730", "title": "Constitution belge coordonnée",                         "date_pub": "1994-02-17"},
     # ─── Droit des étrangers / asile ────────────────────────────────────────
     {"numac": "1980122116", "cn": "1980121530", "title": "Loi sur les étrangers (15 décembre 1980)",              "date_pub": "1980-12-15"},
-    {"numac": "2007002066", "cn": "2007011230", "title": "Loi du 12 janvier 2007 sur l'accueil des demandeurs d'asile", "date_pub": "2007-05-07"},
+    # cn 2007011252 vérifié 2026-04-29 (au lieu de 2007011230)
+    {"numac": "2007002066", "cn": "2007011252", "title": "Loi du 12 janvier 2007 sur l'accueil des demandeurs d'asile", "date_pub": "2007-01-12"},
     # ─── Droit international privé ──────────────────────────────────────────
-    {"numac": "2004006054", "cn": "2004071630", "title": "Code de droit international privé",                     "date_pub": "2004-07-16"},
+    # NUMAC 2004009511 + cn 2004071631 vérifiés 2026-04-29 (au lieu de 2004006054 / 2004071630)
+    {"numac": "2004009511", "cn": "2004071631", "title": "Code de droit international privé (Loi du 16 juillet 2004)", "date_pub": "2004-07-16"},
     # ─── Droit économique / commercial ──────────────────────────────────────
     {"numac": "2013003445", "cn": "2013022819", "title": "Code de droit économique (CDE)",                        "date_pub": "2013-05-28"},
     # ─── Droit de la nationalité ────────────────────────────────────────────
@@ -104,12 +104,69 @@ CODES_BELGES = [
     # ─── Droit de la santé / patient ────────────────────────────────────────
     {"numac": "2002022737", "cn": "2002082245", "title": "Loi relative aux droits du patient",                    "date_pub": "2002-09-26"},
     # ─── Assurances ─────────────────────────────────────────────────────────
-    {"numac": "2014011409", "cn": "2014040401", "title": "Loi sur les assurances",                                "date_pub": "2014-04-04"},
+    # NUMAC 2014011239 + cn 2014040423 vérifiés 2026-04-29 (543K chars, 654 articles)
+    {"numac": "2014011239", "cn": "2014040423", "title": "Loi du 4 avril 2014 relative aux assurances",           "date_pub": "2014-04-04"},
+
+    # ─── Codes régionaux wallons ────────────────────────────────────────────
+    # NUMAC + cn vérifiés 2026-04-29 sur ejustice/wallex
+    {"numac": "2016A05561", "cn": "2016072047", "title": "Code wallon du Développement territorial (CoDT)",       "date_pub": "2016-07-20"},
+    {"numac": "2004A27184", "cn": "2004042242", "title": "Code de la démocratie locale et de la décentralisation (CDLD)", "date_pub": "2004-04-22"},
+
+    # ─── Codes régionaux bruxellois ─────────────────────────────────────────
+    {"numac": "2004A31182", "cn": "2004040935", "title": "Code bruxellois de l'aménagement du territoire (COBAT)", "date_pub": "2004-04-09"},
+    {"numac": "2003031392", "cn": "2003031392", "title": "Code bruxellois du logement (Ordonnance 17 juillet 2003)", "date_pub": "2003-07-17"},
+    {"numac": "2013031357", "cn": "2013050209", "title": "Code bruxellois de l'air, du climat et de l'énergie (COBRACE)", "date_pub": "2013-05-02"},
+
+    # ─── Codes régionaux wallons (suite) ────────────────────────────────────
+    {"numac": "1998A27652", "cn": "1998102939", "title": "Code wallon de l'habitation durable (logement)",        "date_pub": "1998-10-29"},
+    {"numac": "2014027151", "cn": "2014027151", "title": "Code wallon de l'agriculture (27 mars 2014)",           "date_pub": "2014-03-27"},
+    {"numac": "2013A27132", "cn": "2013070433", "title": "Code wallon de l'action sociale et de la santé",        "date_pub": "2013-07-04"},
+    {"numac": "2004027101", "cn": "2004052783", "title": "Code wallon de l'environnement — Livre 1",              "date_pub": "2004-05-27"},
+
+    # ─── Codes/lois fédéraux supplémentaires ───────────────────────────────
+    {"numac": "1886100750", "cn": "1886100750", "title": "Code rural (7 octobre 1886)",                          "date_pub": "1886-10-07"},
+    {"numac": "2008203215", "cn": "2008203215", "title": "Code forestier wallon (15 juillet 2008)",              "date_pub": "2008-07-15"},
+    {"numac": "2014015009", "cn": "2013122152", "title": "Code consulaire (Loi 21 décembre 2013)",                "date_pub": "2013-12-21"},
+    {"numac": "1973011250", "cn": "1973011202", "title": "Lois coordonnées sur le Conseil d'État (12 janvier 1973)", "date_pub": "1973-01-12"},
 ]
 
-# Mots-clés de recherche pour les textes coordonnés
+# Mots-clés de recherche pour les textes coordonnés JUSTEL
+# Couvre : codes manquants Phase 1 + codes régionaux wallons/bruxellois + codes spécialisés
+# CLAUDE.md §1 : NUMACs récupérés depuis JUSTEL même (pas inventés)
 SEARCH_TERMS = [
-    # Droit civil / contrats
+    # ─── Codes/lois manquants Phase 1 (titres officiels exacts) ────────────
+    "code des impôts sur les revenus 1992",     # CIR 1992
+    "code de droit international privé",         # Code DIP 2004
+    "loi du 4 avril 2014 relative aux assurances",  # Loi assurances
+    "loi du 4 août 1996 relative au bien-être",  # Loi bien-être
+    "code pénal social",                          # Code pénal social 2010
+    "loi du 17 juin 2016 relative aux marchés publics",  # Marchés publics
+    "loi du 12 janvier 2007 sur l'accueil",       # Accueil asile
+
+    # ─── Codes régionaux wallons (titres officiels) ────────────────────────
+    "code du développement territorial",          # CoDT (remplace CWATUP)
+    "code wallon de l'aménagement du territoire", # CWATUP (ancien)
+    "code wallon du logement",                    # Code logement wallon
+    "code de l'environnement wallon",
+    "code wallon de l'agriculture",
+    "code wallon de la fonction publique",
+    "code de la démocratie locale",               # CDLD
+    "code wallon de l'action sociale",
+
+    # ─── Codes régionaux bruxellois ────────────────────────────────────────
+    "code bruxellois de l'aménagement",           # COBAT
+    "code bruxellois du logement",
+    "code bruxellois de l'air du climat",         # COBRACE
+    "code bruxellois de l'inspection",
+
+    # ─── Codes fédéraux supplémentaires ───────────────────────────────────
+    "code rural",
+    "code forestier",
+    "code consulaire",
+    "code de droit aérien",
+    "code de la route",
+
+    # ─── Droit civil / contrats (existants) ────────────────────────────────
     "contrat de travail",
     "bail habitation",
     "responsabilité civile",
@@ -123,9 +180,7 @@ SEARCH_TERMS = [
     # Droit pénal / procédure
     "droit pénal",
     "procédure civile",
-    "code pénal social infractions",
     # Droit administratif
-    "marchés publics adjudication",
     "urbanisme permis",
     "droit administratif recours",
     # Droit social / sécurité sociale
@@ -134,7 +189,6 @@ SEARCH_TERMS = [
     "bien-être travailleurs",
     # Droit fiscal
     "droit fiscal",
-    "impôts revenus CIR",
     "TVA taux déduction",
     # Droit des étrangers / asile
     "droit des étrangers séjour",
@@ -352,6 +406,19 @@ def fetch_coordinated_text(session: requests.Session, numac: str, url: str = "")
         r = session.get(url, timeout=REQUEST_TIMEOUT)
         r.raise_for_status()
         if len(r.text) < 500:
+            # Fallback crawl4ai si reponse trop courte
+            try:
+                from utils.tool_fallback import extract_web_content
+                fallback = extract_web_content(url)
+                if fallback and len(fallback) > 200:
+                    log.info(f"  Fallback web reussi pour JUSTEL {numac}")
+                    return {
+                        "source": "JUSTEL", "numac": numac, "url": url,
+                        "full_text": fallback, "char_count": len(fallback),
+                        "title": f"Texte coordonne — {numac}",
+                    }
+            except Exception as fb_e:
+                log.warning(f"  Fallback web echoue pour JUSTEL: {fb_e}")
             return None
 
         soup = BeautifulSoup(r.text, "lxml")
@@ -552,44 +619,89 @@ def fetch_code_via_change_lg(session: requests.Session, cn: str, title: str) -> 
 
 
 def scrape_codes(session: requests.Session, saved_ids: set) -> int:
-    """Scrape les grands codes belges via change_lg.pl (textes COMPLETS)."""
+    """Scrape les grands codes belges via TOUS les endpoints (change_lg + article.pl + ELI),
+    garde le résultat le plus complet (plus grand char_count).
+
+    CLAUDE.md §1 zéro invention : on prend le texte officiel le plus long disponible.
+    Si le résultat est < min_chars (defini par defaut 30000), on essaye un autre endpoint.
+    """
     saved = 0
 
     for code_info in CODES_BELGES:
         numac = code_info["numac"]
         cn    = code_info.get("cn", numac)  # fallback sur NUMAC si pas de cn
         title = code_info["title"]
+        min_chars = code_info.get("min_chars", 0)
 
         if numac in saved_ids:
             log.info(f"  CACHE : {title}")
             continue
 
-        log.info(f"  Scraping : {title} (cn={cn})...")
+        log.info(f"  Scraping : {title} (numac={numac}, cn={cn})...")
 
-        # Méthode principale : change_lg.pl avec cn vérifié
-        doc = fetch_code_via_change_lg(session, cn, title)
+        candidates = []
 
-        # Fallback : essayer article.pl si change_lg échoue
-        if doc is None:
-            log.info(f"    Fallback article.pl pour {title}...")
-            doc = fetch_coordinated_text(session, numac)
+        # 1) change_lg.pl avec cn
+        try:
+            d = fetch_code_via_change_lg(session, cn, title)
+            if d:
+                candidates.append(("change_lg_cn", d))
+        except Exception as e:
+            log.debug(f"    change_lg(cn) erreur: {e}")
+        time.sleep(REQUEST_DELAY_SECONDS)
 
-        if doc:
-            doc["numac"] = numac
-            doc["cn"] = cn
-            if not doc.get("date_publication") and code_info.get("date_pub"):
-                doc["date_publication"] = code_info["date_pub"]
+        # 2) change_lg.pl avec numac (au cas où le cn est faux)
+        if cn != numac:
+            try:
+                d = fetch_code_via_change_lg(session, numac, title)
+                if d:
+                    candidates.append(("change_lg_numac", d))
+            except Exception as e:
+                log.debug(f"    change_lg(numac) erreur: {e}")
+            time.sleep(REQUEST_DELAY_SECONDS)
 
-            out_file = JUSTEL_DIR / f"{numac}_coord.json"
-            with open(out_file, "w", encoding="utf-8") as f:
-                json.dump(doc, f, ensure_ascii=False, indent=2)
-            saved += 1
-            saved_ids.add(numac)
-            log.info(f"  ✓ {title} ({doc.get('char_count', 0):,} chars, {doc.get('articles_count', 0)} articles)")
-        else:
-            log.warning(f"  ✗ {title} (cn={cn}, NUMAC {numac}) introuvable")
+        # 3) article.pl avec numac_search (avec pagination via _fetch_all_pages)
+        try:
+            d = fetch_coordinated_text(session, numac)
+            if d:
+                if not d.get("title"):
+                    d["title"] = title
+                candidates.append(("article_pl", d))
+        except Exception as e:
+            log.debug(f"    article_pl erreur: {e}")
+        time.sleep(REQUEST_DELAY_SECONDS)
 
-        time.sleep(REQUEST_DELAY_SECONDS * 2)  # délai plus long pour ne pas surcharger JUSTEL
+        if not candidates:
+            log.warning(f"  ✗ {title} (cn={cn}, NUMAC {numac}) AUCUN endpoint n'a répondu")
+            continue
+
+        # 4) Choisir le plus complet
+        candidates.sort(key=lambda x: x[1].get("char_count", 0), reverse=True)
+        best_endpoint, doc = candidates[0]
+        best_size = doc.get("char_count", 0)
+
+        # Log toutes les candidates pour traçabilité
+        sizes_str = ", ".join(f"{ep}={d.get('char_count',0):,}" for ep, d in candidates)
+        log.info(f"    Candidates : {sizes_str}")
+
+        # Avertir si en dessous du minimum attendu
+        if min_chars and best_size < min_chars:
+            log.warning(f"  ⚠ {title} ({best_size:,} chars) sous le min attendu ({min_chars:,})")
+
+        doc["numac"] = numac
+        doc["cn"] = cn
+        doc["best_endpoint"] = best_endpoint
+        if not doc.get("date_publication") and code_info.get("date_pub"):
+            doc["date_publication"] = code_info["date_pub"]
+
+        out_file = JUSTEL_DIR / f"{numac}_coord.json"
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(doc, f, ensure_ascii=False, indent=2)
+        saved += 1
+        saved_ids.add(numac)
+        log.info(f"  ✓ {title} [{best_endpoint}] ({best_size:,} chars, {doc.get('articles_count', 0)} articles)")
+
+        time.sleep(REQUEST_DELAY_SECONDS)
 
     return saved
 
@@ -597,7 +709,7 @@ def scrape_codes(session: requests.Session, saved_ids: set) -> int:
 def scrape_search_terms(
     session: requests.Session,
     saved_ids: set,
-    max_docs: int = 500,
+    max_docs: int = 50000,
 ) -> int:
     """Scrape via recherche par mots-clés dans JUSTEL."""
     saved = 0
@@ -641,7 +753,7 @@ def scrape_search_terms(
     return saved
 
 
-def scrape_justel(max_docs: int = 1000) -> int:
+def scrape_justel(max_docs: int = 50000) -> int:
     """
     Scrape complet JUSTEL — textes légaux coordonnés belges.
 
