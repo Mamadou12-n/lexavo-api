@@ -134,6 +134,9 @@ CODES_BELGES = [
     # ─── Douanes et accises ─────────────────────────────────────────────────
     # NUMAC 1977071850 + cn 1977071831 vérifiés 2026-04-29 (289K chars)
     {"numac": "1977071850", "cn": "1977071831", "title": "Loi générale sur les douanes et accises (18 juillet 1977)", "date_pub": "1977-07-18"},
+    # ─── Code de la route ───────────────────────────────────────────────────
+    # NUMAC 1975120150 + cn 1975120131 vérifiés 2026-04-29 (503K chars)
+    {"numac": "1975120150", "cn": "1975120131", "title": "Code de la route (AR du 1er décembre 1975)", "date_pub": "1975-12-01"},
 ]
 
 # Mots-clés de recherche pour les textes coordonnés JUSTEL
