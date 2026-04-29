@@ -128,6 +128,9 @@ CODES_BELGES = [
     {"numac": "2008203215", "cn": "2008203215", "title": "Code forestier wallon (15 juillet 2008)",              "date_pub": "2008-07-15"},
     {"numac": "2014015009", "cn": "2013122152", "title": "Code consulaire (Loi 21 décembre 2013)",                "date_pub": "2013-12-21"},
     {"numac": "1973011250", "cn": "1973011202", "title": "Lois coordonnées sur le Conseil d'État (12 janvier 1973)", "date_pub": "1973-01-12"},
+    # ─── Fonction publique fédérale ─────────────────────────────────────────
+    # NUMAC + cn 1937100201 vérifié 2026-04-29 (157K chars, 194 articles)
+    {"numac": "1937100201", "cn": "1937100201", "title": "Statut des agents de l'État (AR Camu 2 octobre 1937)", "date_pub": "1937-10-02"},
 ]
 
 # Mots-clés de recherche pour les textes coordonnés JUSTEL
