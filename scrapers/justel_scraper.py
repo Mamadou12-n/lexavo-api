@@ -131,6 +131,9 @@ CODES_BELGES = [
     # ─── Fonction publique fédérale ─────────────────────────────────────────
     # NUMAC + cn 1937100201 vérifié 2026-04-29 (157K chars, 194 articles)
     {"numac": "1937100201", "cn": "1937100201", "title": "Statut des agents de l'État (AR Camu 2 octobre 1937)", "date_pub": "1937-10-02"},
+    # ─── Douanes et accises ─────────────────────────────────────────────────
+    # NUMAC 1977071850 + cn 1977071831 vérifiés 2026-04-29 (289K chars)
+    {"numac": "1977071850", "cn": "1977071831", "title": "Loi générale sur les douanes et accises (18 juillet 1977)", "date_pub": "1977-07-18"},
 ]
 
 # Mots-clés de recherche pour les textes coordonnés JUSTEL
