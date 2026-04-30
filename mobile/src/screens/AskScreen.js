@@ -6,11 +6,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Markdown from 'react-native-markdown-display';
-import { LinearGradient } from 'expo-linear-gradient';
 import { askQuestion, SOURCES, getSubscriptionStatus } from '../api/client';
 import { colors, sourceColor } from '../theme/colors';
+import { typography, spacing, radius, elevation } from '../theme/designSystem';
+import { Ionicons } from '@expo/vector-icons';
 import SourceBadge from '../components/SourceBadge';
 import PhotoPicker from '../components/PhotoPicker';
+import { Disclaimer } from '../components/ui/Disclaimer';
 
 const SUGGESTED_QUESTIONS = [
   'Quelles sont les conditions d\'un licenciement pour motif grave ?',
@@ -103,12 +105,18 @@ export default function AskScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Hero Header */}
-        <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>⚖️</Text>
+        {/* Hero Header — fond navy solid, /quieter : ZÉRO LinearGradient décoratif */}
+        <View style={styles.heroHeader}>
+          <Ionicons
+            name="scale-outline"
+            size={32}
+            color={colors.brand}
+            style={{ marginBottom: 8 }}
+            accessibilityElementsHidden={true}
+          />
           <Text style={styles.heroTitle}>Assistant Juridique</Text>
           <Text style={styles.heroSub}>Posez votre question en droit belge</Text>
-        </LinearGradient>
+        </View>
 
         {/* Zone de saisie */}
         <View style={styles.inputCard}>
@@ -170,7 +178,7 @@ export default function AskScreen() {
               </Text>
               {quota.questions_used >= quota.questions_limit && (
                 <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('Subscription')}>
-                  <Text style={{ fontSize: 11, color: '#C45A2D', fontWeight: '700' }}>Passer au Pro →</Text>
+                  <Text style={{ fontSize: 11, color: colors.brand, fontWeight: '700' }}>Passer au Pro →</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -184,7 +192,7 @@ export default function AskScreen() {
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.submitText}>⚖️  Analyser</Text>
+              : <Text style={styles.submitText}>Analyser ma question</Text>
             }
           </TouchableOpacity>
         </View>
@@ -238,20 +246,19 @@ export default function AskScreen() {
               </View>
             )}
 
-            {/* Disclaimer obligatoire */}
+            {/* Disclaimer — composant unique /polish, jamais dupliqué */}
             <View style={styles.answerDisclaimer}>
-              <Text style={styles.answerDisclaimerText}>
-                ⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat ni un conseiller juridique professionnel.
-              </Text>
+              <Disclaimer />
             </View>
           </Animated.View>
         )}
 
-        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#FFFBEB', borderRadius: 8, borderWidth: 1, borderColor: '#FDE68A' }}>
-          <Text style={{ fontSize: 10, color: '#92400E', textAlign: 'center', fontStyle: 'italic', lineHeight: 14 }}>
-            ⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat ni un conseiller juridique professionnel.
-          </Text>
-        </View>
+        {/* Disclaimer global — /polish : 1 seule instance (pas de doublon) */}
+        {!answer && (
+          <View style={styles.globalDisclaimer}>
+            <Disclaimer />
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -298,10 +305,29 @@ const styles = StyleSheet.create({
   scroll:    { flex: 1 },
   content:   { padding: 16, paddingBottom: 40 },
 
-  heroHeader: { borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  heroEmoji: { fontSize: 32, marginBottom: 8 },
-  heroTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4, textAlign: 'center' },
+  // Hero — fond navy solid (/quieter : ZÉRO LinearGradient)
+  heroHeader: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+    alignItems: 'center',
+    backgroundColor: colors.brandNavy,
+  },
+  heroTitle: {
+    fontFamily: typography.fontDisplay,
+    fontSize: typography.sizeH1,
+    color: colors.textOnNavy,
+    letterSpacing: 0.5,
+  },
+  heroSub: {
+    fontFamily: typography.fontBody,
+    fontSize: typography.sizeCaption,
+    // /web-design-guidelines : 0.6→0.80 (WCAG AA)
+    color: 'rgba(255,255,255,0.80)',
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  globalDisclaimer: { marginTop: spacing.md },
 
   inputCard: {
     backgroundColor: colors.surface,
@@ -314,10 +340,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: typography.fontBodyBold,
+    fontSize: typography.sizeCaption,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -333,8 +359,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  filterToggle: { marginTop: 8, alignSelf: 'flex-start' },
-  filterToggleText: { fontSize: 12, color: colors.primaryLight, fontWeight: '600' },
+  filterToggle: { marginTop: 8, alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  filterToggleText: { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeCaption, color: colors.brand },
   filtersPanel: { marginTop: 8 },
   filterLabel: { fontSize: 11, color: colors.textMuted, marginBottom: 6 },
   filterScroll: { marginBottom: 8 },
@@ -343,19 +369,20 @@ const styles = StyleSheet.create({
     borderRadius: 20, borderWidth: 1, borderColor: colors.border,
     marginRight: 8, backgroundColor: colors.surface,
   },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   filterChipText: { fontSize: 12, color: colors.textSecondary },
   filterChipTextActive: { color: '#FFF', fontWeight: '600' },
 
   submitBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
+    backgroundColor: colors.brand,
+    borderRadius: radius.md,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: spacing.md,
+    minHeight: 44,    // WCAG 2.5.8
   },
   submitBtnDisabled: { opacity: 0.5 },
-  submitText: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 },
+  submitText: { fontFamily: typography.fontBodySemiBold, color: colors.textOnBrand, fontSize: typography.sizeBody, letterSpacing: 0.3 },
 
   suggestSection: { marginBottom: 16 },
   suggestTitle:   { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
@@ -369,7 +396,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  suggestArrow: { fontSize: 16, color: colors.primary, marginRight: 8, marginTop: -1 },
+  suggestArrow: { fontSize: 16, color: colors.brand, marginRight: 8, marginTop: -1 },
   suggestText:  { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
 
   errorBox: {
@@ -393,14 +420,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
   answerHeader: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: colors.brandNavy,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  answerHeaderText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  answerHeaderText: { fontFamily: typography.fontBodyBold, color: colors.textOnNavy, fontSize: typography.sizeSmall },
   modelBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 8,
@@ -440,30 +467,20 @@ const styles = StyleSheet.create({
   citationTitle: { fontSize: 12, fontWeight: '600', color: colors.textPrimary, lineHeight: 16, marginBottom: 2 },
   citationEcli:  { fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 },
   citationDate:  { fontSize: 10, color: colors.textMuted },
-  citationUrl:   { fontSize: 10, color: colors.primaryLight, textDecorationLine: 'underline', marginTop: 4 },
+  citationUrl:   { fontSize: 10, color: colors.brand, textDecorationLine: 'underline', marginTop: 4 },
 
   answerDisclaimer: {
-    padding: 12,
-    backgroundColor: '#FFFBEB',
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#FDE68A',
-  },
-  answerDisclaimerText: {
-    fontSize: 10,
-    color: '#92400E',
-    textAlign: 'center',
-    lineHeight: 14,
-    fontStyle: 'italic',
+    padding: spacing.md,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
 });
 
 const markdownStyles = {
   body: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
-  heading1: { fontSize: 18, fontWeight: '800', color: colors.primaryDark, marginBottom: 8 },
-  heading2: { fontSize: 16, fontWeight: '700', color: colors.primary, marginBottom: 6 },
-  heading3: { fontSize: 14, fontWeight: '700', color: colors.primaryLight, marginBottom: 4 },
+  heading1: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  heading2: { fontSize: 16, fontWeight: '700', color: colors.brandNavy, marginBottom: 6 },
+  heading3: { fontSize: 14, fontWeight: '700', color: colors.textSecondary, marginBottom: 4 },
   strong:   { fontWeight: '700', color: colors.textPrimary },
   em:       { fontStyle: 'italic', color: colors.textSecondary },
   bullet_list: { marginLeft: 8 },
@@ -476,8 +493,8 @@ const markdownStyles = {
     fontSize: 12,
   },
   blockquote: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingLeft: 10,
     backgroundColor: colors.surfaceAlt,
     borderRadius: 4,

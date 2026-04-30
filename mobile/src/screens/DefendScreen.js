@@ -9,9 +9,10 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform, Share, Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { defendAnalyze, defendChecklist, scanAmende, regenerateDefendLetter, REGION_KEY } from '../api/client';
 import { colors } from '../theme/colors';
+import { typography, spacing, radius } from '../theme/designSystem';
 import PhotoPicker from '../components/PhotoPicker';
 import ChecklistStep from '../components/ChecklistStep';
 import ScoreGauge from '../components/ScoreGauge';
@@ -42,11 +43,11 @@ const CATEGORY_GROUPS = [
   {
     label: '⚡ Autres',
     items: [
-      { id: 'consommation',    label: 'Consommation',    emoji: '🛒', color: '#C45A2D', hasChecklist: false },
-      { id: 'bail',            label: 'Bail / Logement', emoji: '🏠', color: '#C45A2D', hasChecklist: false },
-      { id: 'travail',         label: 'Travail',         emoji: '👷', color: '#C45A2D', hasChecklist: false },
-      { id: 'huissier',        label: 'Huissier',        emoji: '📨', color: '#C45A2D', hasChecklist: false },
-      { id: 'scolaire',        label: 'Scolaire',        emoji: '🎓', color: '#C45A2D', hasChecklist: false },
+      { id: 'consommation',    label: 'Consommation',    emoji: '🛒', color: colors.brand, hasChecklist: false },
+      { id: 'bail',            label: 'Bail / Logement', emoji: '🏠', color: colors.brand, hasChecklist: false },
+      { id: 'travail',         label: 'Travail',         emoji: '👷', color: colors.brand, hasChecklist: false },
+      { id: 'huissier',        label: 'Huissier',        emoji: '📨', color: colors.brand, hasChecklist: false },
+      { id: 'scolaire',        label: 'Scolaire',        emoji: '🎓', color: colors.brand, hasChecklist: false },
     ],
   },
 ];
@@ -293,9 +294,9 @@ export default function DefendScreen() {
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        {/* ── Header ── */}
-        <LinearGradient colors={['#7C2D12', '#C45A2D']} style={s.hero}>
-          <Text style={s.heroEmoji}>⚡</Text>
+        {/* ── Header — fond brand solid (/quieter : ZÉRO LinearGradient) ── */}
+        <View style={s.hero}>
+          <Ionicons name="shield-checkmark-outline" size={32} color="rgba(255,255,255,0.9)" style={{ marginBottom: 6 }} accessibilityElementsHidden />
           <Text style={s.heroTitle}>Lexavo Defend</Text>
           <Text style={s.heroSub}>Contestez, réclamez, agissez — en 3 étapes</Text>
           {/* Steps indicator */}
@@ -309,7 +310,7 @@ export default function DefendScreen() {
               </React.Fragment>
             ))}
           </View>
-        </LinearGradient>
+        </View>
 
         {/* ══════════════════════════════════════════════════════════════════
             ÉTAPE 1 — CHOIX CATÉGORIE
@@ -327,7 +328,17 @@ export default function DefendScreen() {
                       activeOpacity={0.8}
                       style={[s.catCard, { borderColor: item.color + '30' }]}
                       onPress={() => selectCategory(item.id)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.label}${item.hasChecklist ? ' — parcours guidé disponible' : ''}`}
                     >
+                      <Ionicons
+                        name="chevron-forward-outline"
+                        size={14}
+                        color={item.color}
+                        style={{ position: 'absolute', top: 10, right: 10 }}
+                        accessibilityElementsHidden
+                      />
                       <Text style={s.catEmoji}>{item.emoji}</Text>
                       <Text style={s.catLabel}>{item.label}</Text>
                       {item.hasChecklist && (
@@ -356,9 +367,9 @@ export default function DefendScreen() {
             </TouchableOpacity>
 
             {/* Badge catégorie */}
-            <View style={[s.catBadge, { backgroundColor: (cat?.color || '#C45A2D') + '15', borderColor: (cat?.color || '#C45A2D') + '40' }]}>
+            <View style={[s.catBadge, { backgroundColor: (cat?.color || colors.brand) + '15', borderColor: (cat?.color || colors.brand) + '40' }]}>
               <Text style={s.catBadgeEmoji}>{cat?.emoji}</Text>
-              <Text style={[s.catBadgeLabel, { color: cat?.color || '#C45A2D' }]}>{cat?.label}</Text>
+              <Text style={[s.catBadgeLabel, { color: cat?.color || colors.brand }]}>{cat?.label}</Text>
               {cat?.hasChecklist && <Text style={s.catBadgeSub}>Analyse guidée des vices de forme</Text>}
             </View>
 
@@ -489,7 +500,7 @@ export default function DefendScreen() {
 
             {/* Probabilité de succès (flow libre) */}
             {result.success_probability && !result.contestability_score && (
-              <View style={[s.resultCard, { borderLeftWidth: 4, borderLeftColor: result.success_probability === 'elevee' ? '#10B981' : result.success_probability === 'moyenne' ? '#F59E0B' : '#EF4444' }]}>
+              <View style={[s.resultCard, { borderWidth: 1.5, borderColor: result.success_probability === 'elevee' ? '#10B981' : result.success_probability === 'moyenne' ? '#F59E0B' : '#EF4444', backgroundColor: result.success_probability === 'elevee' ? '#ECFDF5' : result.success_probability === 'moyenne' ? '#FFFBEB' : '#FEF2F2' }]}>
                 <Text style={s.resultTitle}>📊 Probabilité de succès</Text>
                 <Text style={[s.resultText, { fontWeight: '700', fontSize: 16 }]}>
                   {result.success_probability === 'elevee' ? '🟢 Élevée' : result.success_probability === 'moyenne' ? '🟠 Moyenne' : '🔴 Faible'}
@@ -629,13 +640,31 @@ export default function DefendScreen() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F7F8FC' },
+  root: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingBottom: 40 },
 
-  hero: { paddingTop: 52, paddingBottom: 24, paddingHorizontal: 20, alignItems: 'center' },
-  heroEmoji: { fontSize: 32, marginBottom: 6 },
-  heroTitle: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4, textAlign: 'center', marginBottom: 16 },
+  // Hero — fond brand solid (/quieter)
+  hero: {
+    paddingTop: 52,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    backgroundColor: colors.brand,  // terracotta solid, pas de gradient
+  },
+  heroTitle: {
+    fontFamily: typography.fontDisplay,
+    fontSize: typography.sizeH1,
+    color: colors.textOnBrand,
+    letterSpacing: 0.5,
+  },
+  heroSub: {
+    fontFamily: typography.fontBody,
+    fontSize: typography.sizeCaption,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: spacing.xs,
+    textAlign: 'center',
+    marginBottom: spacing.base,
+  },
 
   steps: { flexDirection: 'row', alignItems: 'center' },
   stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' },
@@ -651,9 +680,9 @@ const s = StyleSheet.create({
   groupLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280', letterSpacing: 1, marginBottom: 10, marginTop: 16, textTransform: 'uppercase' },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   catCard: {
-    width: '47%', backgroundColor: '#FFF', borderRadius: 14, padding: 14,
+    width: '47%', backgroundColor: colors.surface, borderRadius: radius.lg, padding: 14,
     borderWidth: 1.5, alignItems: 'flex-start',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, elevation: 2,
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, elevation: 2,
   },
   catEmoji: { fontSize: 24, marginBottom: 6 },
   catLabel: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
@@ -661,99 +690,101 @@ const s = StyleSheet.create({
   checklistBadgeText: { fontSize: 9, fontWeight: '800', color: '#065F46' },
 
   backBtn: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  backText: { color: '#C45A2D', fontSize: 14, fontWeight: '700' },
+  backText: { color: colors.brand, fontSize: 14, fontWeight: '700' },
 
   catBadge: { marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1, gap: 10, flexWrap: 'wrap' },
   catBadgeEmoji: { fontSize: 22 },
   catBadgeLabel: { fontSize: 15, fontWeight: '800' },
-  catBadgeSub: { color: '#6B7280', fontSize: 11, width: '100%' },
+  catBadgeSub: { color: colors.textMuted, fontSize: 11, width: '100%' },
 
-  scanBox: { marginHorizontal: 16, backgroundColor: '#FFF', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  scanTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
-  scanSub: { fontSize: 12, color: '#6B7280', marginBottom: 10 },
-  scanBtn: { backgroundColor: '#C45A2D', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
+  scanBox: { marginHorizontal: 16, backgroundColor: colors.surface, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  scanTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  scanSub: { fontSize: 12, color: colors.textMuted, marginBottom: 10 },
+  scanBtn: { backgroundColor: colors.brand, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   scanBtnText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 
-  inputCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 14, marginHorizontal: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 },
-  textArea: { minHeight: 100, fontSize: 14, color: '#1F2937', lineHeight: 20 },
-  charCount: { textAlign: 'right', fontSize: 11, color: '#9CA3AF', marginTop: 4 },
+  inputCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginHorizontal: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
+  textArea: { minHeight: 100, fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
+  charCount: { textAlign: 'right', fontSize: 11, color: colors.textMuted, marginTop: 4 },
 
   regionRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 16 },
-  regionChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#E5E7EB', alignItems: 'center' },
-  regionChipActive: { borderColor: '#C45A2D', backgroundColor: '#FFF7F5' },
-  regionText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
-  regionTextActive: { color: '#C45A2D', fontWeight: '800' },
+  regionChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', minHeight: 44 },
+  regionChipActive: { borderColor: colors.brand, backgroundColor: colors.surfaceAlt },
+  regionText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  regionTextActive: { color: colors.brand, fontWeight: '800' },
 
-  errorBox: { marginHorizontal: 16, backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#FECACA' },
-  errorText: { color: '#DC2626', fontSize: 13, fontWeight: '500' },
+  errorBox: { marginHorizontal: 16, backgroundColor: colors.errorLight, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#FECACA' },
+  errorText: { color: colors.error, fontSize: 13, fontWeight: '500' },
 
   // Sélecteur de ton
-  toneSub: { fontSize: 11, color: '#6B7280', marginHorizontal: 16, marginTop: -6, marginBottom: 10, fontStyle: 'italic' },
+  toneSub: { fontSize: 11, color: colors.textMuted, marginHorizontal: 16, marginTop: -6, marginBottom: 10, fontStyle: 'italic' },
   toneGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16, marginBottom: 16 },
   toneChip: {
-    backgroundColor: '#FFF', borderRadius: 12, padding: 10, borderWidth: 1.5,
-    borderColor: '#E5E7EB', width: '47%',
+    backgroundColor: colors.surface, borderRadius: 12, padding: 10, borderWidth: 1.5,
+    borderColor: colors.border, width: '47%',
   },
-  toneChipActive: { borderColor: '#C45A2D', backgroundColor: '#FFF7F5' },
-  toneLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 2 },
-  toneLabelActive: { color: '#C45A2D' },
-  toneDesc: { fontSize: 10, color: '#9CA3AF' },
-  toneDescActive: { color: '#C45A2D' },
+  toneChipActive: { borderColor: colors.brand, backgroundColor: colors.surfaceAlt },
+  toneLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  toneLabelActive: { color: colors.brand },
+  toneDesc: { fontSize: 10, color: colors.textMuted },
+  toneDescActive: { color: colors.brand },
 
-  analyzeBtn: { marginHorizontal: 16, backgroundColor: '#C45A2D', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 16 },
+  analyzeBtn: { marginHorizontal: 16, backgroundColor: colors.brand, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 16, minHeight: 44 },
   analyzeBtnDisabled: { opacity: 0.6 },
   analyzeBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
 
   // Bouton régénérer
   regenBtn: {
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#374151', borderRadius: 12, padding: 14, alignItems: 'center',
+    backgroundColor: colors.textSecondary, borderRadius: 12, padding: 14, alignItems: 'center', minHeight: 44,
   },
   regenBtnText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 
   // Résultats
-  recCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#BFDBFE' },
-  recText: { fontSize: 14, fontWeight: '700', color: '#1E40AF' },
+  recCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.infoLight, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#BFDBFE' },
+  recText: { fontSize: 14, fontWeight: '700', color: colors.info },
 
-  resultCard: { backgroundColor: '#FFF', borderRadius: 14, padding: 16, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  resultTitle: { fontSize: 14, fontWeight: '800', color: '#1F2937', marginBottom: 10 },
-  resultText: { fontSize: 13, color: '#374151', lineHeight: 20 },
+  resultCard: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  resultTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 10 },
+  resultText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
 
   viceRow: { flexDirection: 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' },
-  viceBullet: { fontSize: 14, color: '#10B981', fontWeight: '900', marginTop: 1 },
-  viceText: { flex: 1, fontSize: 13, color: '#1F2937', lineHeight: 19 },
+  viceBullet: { fontSize: 14, color: colors.success, fontWeight: '900', marginTop: 1 },
+  viceText: { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 19 },
 
-  letterBox: { backgroundColor: '#F9FAFB', borderRadius: 10, padding: 14, borderLeftWidth: 3, borderLeftColor: '#C45A2D', marginTop: 8, marginBottom: 10 },
-  letterText: { fontSize: 12, color: '#1F2937', lineHeight: 20 },
-  shareBtn: { backgroundColor: '#C45A2D', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  // /impeccable : ZÉRO borderLeftWidth. Indicateur = fond teinté + radius.
+  letterBox: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, padding: 14, marginTop: 8, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  letterText: { fontSize: 12, color: colors.textPrimary, lineHeight: 20 },
+  shareBtn: { backgroundColor: colors.brand, borderRadius: 10, paddingVertical: 12, alignItems: 'center', minHeight: 44 },
   shareBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 
-  legalBox: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#FFFBEB', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#FDE68A' },
+  legalBox: { marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.warningLight, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#FDE68A' },
   legalTitle: { fontSize: 12, fontWeight: '800', color: '#92400E', marginBottom: 6 },
   legalText: { fontSize: 12, color: '#78350F', lineHeight: 18 },
 
   stepRow: { flexDirection: 'row', gap: 10, marginBottom: 8, alignItems: 'flex-start' },
-  stepNum2: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#C45A2D', alignItems: 'center', justifyContent: 'center' },
+  stepNum2: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
   stepNumText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  stepText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 19 },
+  stepText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
 
-  disclaimer: { marginHorizontal: 16, marginBottom: 16, padding: 12, backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A' },
+  disclaimer: { marginHorizontal: 16, marginBottom: 16, padding: 12, backgroundColor: colors.warningLight, borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A' },
   disclaimerText: { fontSize: 10, color: '#92400E', textAlign: 'center', lineHeight: 15, fontStyle: 'italic' },
 
-  resetBtn: { marginHorizontal: 16, backgroundColor: '#1F2937', borderRadius: 14, padding: 16, alignItems: 'center' },
+  resetBtn: { marginHorizontal: 16, backgroundColor: colors.textPrimary, borderRadius: 14, padding: 16, alignItems: 'center', minHeight: 44 },
   resetBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
 
   // Séparateur analyse / lettre
   letterSeparator: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginVertical: 16, gap: 10 },
-  letterSepLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
-  letterSepText: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 },
+  letterSepLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  letterSepText: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 },
 
   // Bouton générer lettre
   generateLetterBtn: {
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     borderRadius: 14, padding: 16, alignItems: 'center',
-    borderWidth: 2, borderColor: '#C45A2D',
+    borderWidth: 1.5, borderColor: colors.brand,
+    minHeight: 44,
   },
   generateLetterBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
 });

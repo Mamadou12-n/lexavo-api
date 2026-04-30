@@ -16,8 +16,9 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubscriptionStatus, setLanguage as setClientLang } from '../api/client';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, typography, spacing, radius, elevation } from '../theme/designSystem';
+import { colors, typography, spacing, radius, elevation, motion } from '../theme/designSystem';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Disclaimer } from '../components/ui/Disclaimer';
 
 const LANGUAGES = [
@@ -224,22 +225,30 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('tools_title')}</Text>
         <View style={styles.grid}>
-          {TOOL_DEFS.map((tool) => (
-            <TouchableOpacity
-              activeOpacity={0.75}
+          {TOOL_DEFS.map((tool, index) => (
+            <Animated.View
               key={tool.screen}
-              style={styles.toolCard}
-              onPress={() => goTool(tool.screen)}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={`${t(tool.titleKey)} — ${t(tool.subKey)}`}
+              entering={FadeInDown
+                .delay(index * motion.stagger)
+                .duration(motion.normal)
+                .springify()}
+              style={styles.toolCardWrapper}
             >
-              <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
-                <Ionicons name={tool.icon} size={22} color={tool.color} accessibilityElementsHidden />
-              </View>
-              <Text style={styles.toolTitle}>{t(tool.titleKey)}</Text>
-              <Text style={styles.toolSub}>{t(tool.subKey)}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={styles.toolCard}
+                onPress={() => goTool(tool.screen)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`${t(tool.titleKey)} — ${t(tool.subKey)}`}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} accessibilityElementsHidden />
+                </View>
+                <Text style={styles.toolTitle}>{t(tool.titleKey)}</Text>
+                <Text style={styles.toolSub}>{t(tool.subKey)}</Text>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
       </View>
@@ -423,8 +432,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  toolCard: {
+  toolCardWrapper: {
     width: '47.5%',
+  },
+  toolCard: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,

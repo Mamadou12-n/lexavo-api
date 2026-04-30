@@ -30,17 +30,31 @@ import PhotoPicker from '../components/PhotoPicker';
 import XPBar from '../components/XPBar';
 import StreakCounter from '../components/StreakCounter';
 import BadgeGrid from '../components/BadgeGrid';
+import { colors, typography, spacing, radius } from '../theme/designSystem';
 
 const { width: SW } = Dimensions.get('window');
 const XP_PER_LEVEL = 500;
 
-// ─── Design System ───────────────────────────────────────────────────────────
+// ─── Design System — thème light (remplace neon dark) ────────────────────────
+// /stitch-design-taste : T remappé vers tokens designSystem, zéro touche au JSX fonctionnel
 const T = {
-  bg: '#080B14', surface: '#0F1629', surfaceAlt: '#141D33', elevated: '#1A2440',
-  border: '#1E2A45', borderLit: '#2A3A5C',
-  neon1: '#00D4AA', neon2: '#8B5CF6', neon3: '#FF6B6B', neon4: '#FFB84D', neon5: '#4DA6FF',
-  white: '#F0F4FF', muted: '#5A6B8A', dimmed: '#3A4A6A',
-  glow1: 'rgba(0, 212, 170, 0.12)', glow2: 'rgba(139, 92, 246, 0.12)', glow3: 'rgba(255, 107, 107, 0.12)',
+  bg: colors.background,           // '#F7F5F2' ivoire
+  surface: colors.surface,          // '#FFFFFF'
+  surfaceAlt: colors.surfaceAlt,    // '#F0EDE9'
+  elevated: colors.surfaceAlt,
+  border: colors.border,            // '#E8E4DF'
+  borderLit: colors.borderStrong,   // '#C8C4BF'
+  neon1: colors.brand,              // '#C45A2D' terracotta (accent principal)
+  neon2: '#8B5CF6',                 // purple — diversité visuelle modes
+  neon3: colors.error,              // '#E74C3C'
+  neon4: colors.warning,            // '#F39C12'
+  neon5: colors.info,               // '#2980B9'
+  white: colors.textPrimary,        // '#1C2B3A' (texte sur fond clair)
+  muted: colors.textMuted,          // '#9CA3AF'
+  dimmed: colors.textSecondary,     // '#5A6275'
+  glow1: `${colors.brand}20`,
+  glow2: 'rgba(139, 92, 246, 0.12)',
+  glow3: colors.errorLight,         // '#FEF0EF'
 };
 
 
@@ -956,7 +970,7 @@ export default function StudentScreen() {
             style={{ marginHorizontal: 16, marginBottom: 16 }}
           >
             <LinearGradient
-              colors={audioPlaying ? ['#C45A2D', '#FF8A50'] : ['#7C4D00', '#FFB84D']}
+              colors={audioPlaying ? [colors.brand, colors.brandLight] : [colors.brandDark, colors.warning]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={{ borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}
             >
@@ -993,7 +1007,7 @@ export default function StudentScreen() {
 
           {/* Points clés */}
           {keyPoints.length > 0 && (
-            <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: T.surface, borderRadius: 12, padding: 14, borderLeftWidth: 3, borderLeftColor: T.neon4 }}>
+            <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.warningLight, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border }}>
               <Text style={{ color: T.neon4, fontWeight: '700', fontSize: 12, marginBottom: 8 }}>POINTS CLÉS</Text>
               {keyPoints.map((pt, i) => (
                 <Text key={i} style={{ color: T.white, fontSize: 13, marginBottom: 4 }}>• {pt}</Text>
@@ -1285,10 +1299,7 @@ export default function StudentScreen() {
       <ScrollView contentContainerStyle={s.scroll}>
 
         {/* ── Hero Header ─────────────────────────────────────────────────── */}
-        <LinearGradient colors={['#0A1628', '#0D1A35', '#080B14']} style={s.hero}>
-          <View style={[s.orbGlow, { top: -30, right: -20, backgroundColor: T.glow2, width: 120, height: 120 }]} />
-          <View style={[s.orbGlow, { bottom: -20, left: -30, backgroundColor: T.glow1, width: 100, height: 100 }]} />
-          <Text style={s.heroIcon}>🎓</Text>
+        <View style={s.hero}>
           <Text style={s.heroTitle}>LEXAVO CAMPUS</Text>
           <View style={s.heroLine} />
 
@@ -1302,7 +1313,7 @@ export default function StudentScreen() {
           </View>
 
           <XPBar currentXP={xpInLevel} nextLevelXP={XP_PER_LEVEL} level={level} />
-        </LinearGradient>
+        </View>
 
         {/* ── Révision du jour ─────────────────────────────────────────────── */}
         {weakBranches.length > 0 && (
@@ -1926,12 +1937,10 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   scroll: { paddingBottom: 40 },
 
-  // Hero
-  hero: { paddingTop: 60, paddingBottom: 28, paddingHorizontal: 20, alignItems: 'center', overflow: 'hidden', position: 'relative' },
-  orbGlow: { position: 'absolute', borderRadius: 999 },
-  heroIcon: { fontSize: 36, marginBottom: 8 },
-  heroTitle: { fontSize: 24, fontWeight: '900', color: T.white, letterSpacing: 3 },
-  heroLine: { width: 50, height: 2, backgroundColor: T.neon1, marginVertical: 10, borderRadius: 2 },
+  // Hero — navy solid, zéro glow décoratif
+  hero: { paddingTop: 60, paddingBottom: 28, paddingHorizontal: 20, alignItems: 'center', backgroundColor: colors.brandNavy },
+  heroTitle: { fontFamily: typography.fontDisplay, fontSize: typography.sizeH1, color: colors.textOnNavy, letterSpacing: 3 },
+  heroLine: { width: 50, height: 2, backgroundColor: colors.brand, marginVertical: 10, borderRadius: 2 },
   gamRow: { flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 8, marginBottom: 12 },
   levelBadge: { color: T.neon2, fontSize: 16, fontWeight: '900', backgroundColor: T.elevated, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: T.neon2 + '50' },
 

@@ -69,7 +69,7 @@ export const ToolCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: '47%',
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.base,

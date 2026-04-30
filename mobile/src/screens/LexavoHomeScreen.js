@@ -14,7 +14,8 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, radius, elevation } from '../theme/designSystem';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { colors, typography, spacing, radius, elevation, motion } from '../theme/designSystem';
 import { ToolCard } from '../components/ui/ToolCard';
 import { Disclaimer } from '../components/ui/Disclaimer';
 
@@ -85,18 +86,26 @@ export default function LexavoHomeScreen({ navigation }) {
       </View>
 
       <View style={styles.toolGrid}>
-        {visibleFeatures.map((f) => {
+        {visibleFeatures.map((f, index) => {
           const iconDef = TOOL_ICONS[f.id] || { icon: 'document-outline', color: colors.brand };
           return (
-            <ToolCard
+            <Animated.View
               key={f.id}
-              iconName={iconDef.icon}
-              iconColor={iconDef.color}
-              title={f.title}
-              subtitle={f.sub}
-              onPress={() => navigation.navigate(f.screen)}
-              accessibilityLabel={`${f.title} — ${f.sub}`}
-            />
+              entering={FadeInDown
+                .delay(index * motion.stagger)
+                .duration(motion.normal)
+                .springify()}
+              style={styles.toolCardWrapper}
+            >
+              <ToolCard
+                iconName={iconDef.icon}
+                iconColor={iconDef.color}
+                title={f.title}
+                subtitle={f.sub}
+                onPress={() => navigation.navigate(f.screen)}
+                accessibilityLabel={`${f.title} — ${f.sub}`}
+              />
+            </Animated.View>
           );
         })}
       </View>
@@ -195,12 +204,16 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  // Grille 2 colonnes — /layout
+  // Grille 2 colonnes — /layout + /animate stagger
   toolGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     paddingHorizontal: spacing.base,
+  },
+  // Wrapper Animated.View — width 47% pour maintenir la grille 2 colonnes
+  toolCardWrapper: {
+    width: '47%',
   },
 
   // Bouton "Voir tout" — /distill
