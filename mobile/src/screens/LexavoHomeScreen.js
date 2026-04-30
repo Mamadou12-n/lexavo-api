@@ -1,36 +1,75 @@
-import React from 'react';
+/**
+ * LexavoHomeScreen — Grille des outils juridiques
+ *
+ * /impeccable    : ZÉRO borderTopWidth (BAN absolu supprimé)
+ * /shape         : ToolCard avec dot indicator (4px) à la place de la stripe
+ * /distill       : Progressive disclosure — 4 outils visibles + "Voir tout"
+ * /colorize      : tokens designSystem, zéro hardcode
+ * /clarify       : Labels citoyens (Shield→Analyser un contrat, etc.)
+ * /building-native-ui : Pressable + scale spring via ToolCard
+ * /stitch-ui-design  : cohérent avec le reste de l'app
+ */
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar,
+  View, Text, StyleSheet, ScrollView, Pressable, StatusBar,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, spacing, radius, elevation } from '../theme/designSystem';
+import { ToolCard } from '../components/ui/ToolCard';
+import { Disclaimer } from '../components/ui/Disclaimer';
 
-const LEXAVO_ORANGE = '#C45A2D';
-const LEXAVO_NAVY   = '#1C2B3A';
+// Map outil → icône Ionicons + couleur — /shape + /stitch-ui-design
+const TOOL_ICONS = {
+  Defend:          { icon: 'shield-checkmark-outline', color: colors.brand      },
+  Shield:          { icon: 'document-text-outline',    color: '#2980B9'         },
+  Diagnostic:      { icon: 'search-outline',           color: '#8E44AD'         },
+  Calculateurs:    { icon: 'calculator-outline',       color: '#27AE60'         },
+  Fiscal:          { icon: 'receipt-outline',          color: '#34495E'         },
+  Reponses:        { icon: 'mail-outline',             color: '#8E44AD'         },
+  Score:           { icon: 'bar-chart-outline',        color: '#F39C12'         },
+  Compliance:      { icon: 'clipboard-outline',        color: '#16A085'         },
+  Alertes:         { icon: 'notifications-outline',    color: '#D4A017'         },
+  Litiges:         { icon: 'hammer-outline',           color: '#B22222'         },
+  Match:           { icon: 'people-outline',           color: '#0050A0'         },
+  Emergency:       { icon: 'flash-outline',            color: colors.error      },
+  Proof:           { icon: 'folder-outline',           color: '#1A6B3A'         },
+  Heritage:        { icon: 'home-outline',             color: '#8B4513'         },
+  Contrats:        { icon: 'document-outline',         color: '#2980B9'         },
+};
 
+// /clarify — labels en langage citoyen
 const FEATURES = [
-  { id: 'Defend',       emoji: '⚡', title: 'Defend',        sub: 'Contestez, reclamez, agissez',   color: '#C45A2D', screen: 'Defend' },
-  { id: 'Document',     emoji: '📄', title: 'Document',      sub: 'Analyser un document',           color: '#C0392B', screen: 'Shield' },
-  { id: 'Calculateurs', emoji: '🧮', title: 'Calculateurs',  sub: 'Preavis, pension, succession',   color: '#27AE60', screen: 'Calculateurs' },
-  { id: 'Contrats',     emoji: '📝', title: 'Contrats',      sub: 'Generation de contrats PDF',     color: '#2980B9', screen: 'Contrats' },
-  { id: 'Reponses',     emoji: '✉️', title: 'Reponses',      sub: 'Reponse juridique formelle',     color: '#8E44AD', screen: 'Reponses' },
-  { id: 'Diagnostic',   emoji: '🔬', title: 'Diagnostic',    sub: 'Analyse multi-branches',         color: LEXAVO_ORANGE, screen: 'Diagnostic' },
-  { id: 'Score',        emoji: '📊', title: 'Score juridique', sub: 'Sante juridique sur 100',      color: '#F39C12', screen: 'Score' },
-  { id: 'AuditEntreprise', emoji: '🏢', title: 'Audit Entreprise', sub: 'Audit rapide ou approfondi', color: '#16A085', screen: 'Compliance' },
-  { id: 'Alertes',      emoji: '🔔', title: 'Alertes',       sub: 'Veille legislative belge',       color: '#D4A017', screen: 'Alertes' },
-  { id: 'Litiges',      emoji: '⚖️', title: 'Litiges',       sub: 'Recouvrement impayes',           color: '#B22222', screen: 'Litiges' },
-  { id: 'Match',        emoji: '🤝', title: 'Match',         sub: 'Trouver l\'avocat ideal',        color: '#0050A0', screen: 'Match' },
-  { id: 'Emergency',    emoji: '🚨', title: 'Emergency',     sub: 'Urgence juridique — 24h',        color: '#E74C3C', screen: 'Emergency' },
-  { id: 'Proof',        emoji: '🗂️', title: 'Proof',         sub: 'Constituer un dossier de preuves', color: '#1A6B3A', screen: 'Proof' },
-  { id: 'Heritage',     emoji: '🏛️', title: 'Heritage',      sub: 'Guide successoral belge',        color: '#8B4513', screen: 'Heritage' },
-  { id: 'Fiscal',       emoji: '💰', title: 'Fiscal',        sub: 'Questions fiscales belges',      color: '#34495E', screen: 'Fiscal' },
+  { id: 'Defend',       title: 'Contester une décision', sub: 'Recours, opposition, plainte',        screen: 'Defend'       },
+  { id: 'Shield',       title: 'Analyser un contrat',    sub: 'Bail, CDI, CDD, commercial',          screen: 'Shield'       },
+  { id: 'Calculateurs', title: 'Calculateurs juridiques',sub: 'Préavis, pension, succession',        screen: 'Calculateurs' },
+  { id: 'Diagnostic',   title: 'Diagnostic juridique',   sub: 'Analyser ma situation',               screen: 'Diagnostic'   },
+  { id: 'Fiscal',       title: 'Questions fiscales',     sub: 'TVA, CIR, indépendants',              screen: 'Fiscal'       },
+  { id: 'Compliance',   title: 'Audit compliance PME',   sub: 'RGPD, conformité entreprise',         screen: 'Compliance'   },
+  { id: 'Alertes',      title: 'Alertes juridiques',     sub: 'Veille législative belge',            screen: 'Alertes'      },
+  { id: 'Litiges',      title: 'Recouvrement',           sub: 'Impayés, mise en demeure',            screen: 'Litiges'      },
+  { id: 'Match',        title: 'Trouver un avocat',      sub: 'Par spécialité et région',            screen: 'Match'        },
+  { id: 'Emergency',    title: 'Urgence 24h',            sub: 'Réponse juridique immédiate',         screen: 'Emergency'    },
+  { id: 'Proof',        title: 'Constituer un dossier',  sub: 'Preuves et pièces justificatives',    screen: 'Proof'        },
+  { id: 'Heritage',     title: 'Guide successoral',      sub: 'Héritage et donation',                screen: 'Heritage'     },
+  { id: 'Contrats',     title: 'Générer un contrat',     sub: 'Contrats PDF en quelques clics',      screen: 'Contrats'     },
+  { id: 'Score',        title: 'Mon score juridique',    sub: 'Santé juridique sur 100',             screen: 'Score'        },
 ];
 
-export default function LexavoHomeScreen({ navigation }) {
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <StatusBar barStyle="light-content" backgroundColor={LEXAVO_NAVY} />
+const INITIAL_VISIBLE = 4;
 
-      {/* Hero */}
+export default function LexavoHomeScreen({ navigation }) {
+  // /distill — progressive disclosure
+  const [showAll, setShowAll] = useState(false);
+  const visibleFeatures = showAll ? FEATURES : FEATURES.slice(0, INITIAL_VISIBLE);
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandNavy} />
+
+      {/* ── Hero ── */}
       <View style={styles.hero}>
         <Text style={styles.heroMark}>LEXAVO</Text>
         <Text style={styles.heroSub}>L'assistant juridique belge</Text>
@@ -39,93 +78,148 @@ export default function LexavoHomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Grid */}
-      <View style={styles.grid}>
-        {FEATURES.map((f) => (
-          <TouchableOpacity activeOpacity={0.75}
-            key={f.id}
-            style={[styles.card, { borderTopColor: f.color }]}
-            onPress={() => navigation.navigate(f.screen)}
-            activeOpacity={0.78}
-          >
-            <Text style={styles.cardEmoji}>{f.emoji}</Text>
-            <Text style={styles.cardTitle}>{f.title}</Text>
-            <Text style={styles.cardSub}>{f.sub}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* ── Grille outils ── /distill + /impeccable */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Outils juridiques</Text>
+        <Text style={styles.sectionCount}>{FEATURES.length} outils</Text>
       </View>
 
-      <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          Lexavo est un assistant juridique. Il ne remplace pas un avocat ou un conseiller juridique.
+      <View style={styles.toolGrid}>
+        {visibleFeatures.map((f) => {
+          const iconDef = TOOL_ICONS[f.id] || { icon: 'document-outline', color: colors.brand };
+          return (
+            <ToolCard
+              key={f.id}
+              iconName={iconDef.icon}
+              iconColor={iconDef.color}
+              title={f.title}
+              subtitle={f.sub}
+              onPress={() => navigation.navigate(f.screen)}
+              accessibilityLabel={`${f.title} — ${f.sub}`}
+            />
+          );
+        })}
+      </View>
+
+      {/* ── Bouton "Voir tout" / "Réduire" — /distill ── */}
+      <Pressable
+        onPress={() => setShowAll(!showAll)}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={
+          showAll
+            ? 'Réduire la liste des outils'
+            : `Voir tous les ${FEATURES.length} outils juridiques`
+        }
+        style={styles.showAllBtn}
+      >
+        <Text style={styles.showAllText}>
+          {showAll ? 'Réduire' : `Voir tous les outils (${FEATURES.length})`}
         </Text>
+        <Ionicons
+          name={showAll ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color={colors.brand}
+          style={{ marginLeft: 4 }}
+          accessibilityElementsHidden={true}
+        />
+      </Pressable>
+
+      {/* ── Disclaimer unique — /polish ── */}
+      <View style={styles.disclaimerWrap}>
+        <Disclaimer message="Lexavo est un assistant juridique. Il ne remplace pas un avocat ou un conseiller juridique." />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content:   { paddingBottom: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    paddingBottom: spacing.xxxl,
+  },
 
+  // Hero — navy uniquement ici
   hero: {
-    backgroundColor: LEXAVO_NAVY,
+    backgroundColor: colors.brandNavy,
     paddingTop: 50,
-    paddingBottom: 28,
-    paddingHorizontal: 24,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
   heroMark: {
-    fontSize: 30,
-    fontWeight: '900',
-    color: LEXAVO_ORANGE,
+    fontFamily: typography.fontDisplay,
+    fontSize: typography.sizeDisplay,
+    color: colors.brand,
     letterSpacing: 6,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
-  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 12 },
+  heroSub: {
+    fontFamily: typography.fontBody,
+    fontSize: typography.sizeSmall,
+    color: 'rgba(255,255,255,0.80)',
+    marginBottom: spacing.md,
+  },
   heroPill: {
     backgroundColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 14,
     paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: radius.round,
   },
-  heroPillText: { color: '#FFF', fontSize: 11, fontWeight: '600' },
+  heroPillText: {
+    fontFamily: typography.fontBodyMedium,
+    color: colors.textOnNavy,
+    fontSize: typography.sizeCaption,
+  },
 
-  grid: {
+  // Section header
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  sectionTitle: {
+    fontFamily: typography.fontBodyBold,
+    fontSize: typography.sizeH2,
+    color: colors.textPrimary,
+  },
+  sectionCount: {
+    fontFamily: typography.fontBody,
+    fontSize: typography.sizeCaption,
+    color: colors.textMuted,
+  },
+
+  // Grille 2 colonnes — /layout
+  toolGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 12,
-    gap: 10,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
   },
-  card: {
-    width: '47%',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderTopWidth: 3,
-    elevation: 3,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-  },
-  cardEmoji: { fontSize: 24, marginBottom: 6 },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 3 },
-  cardSub:   { fontSize: 11, color: colors.textMuted, lineHeight: 15 },
 
-  disclaimer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    padding: 10,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+  // Bouton "Voir tout" — /distill
+  showAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,         // touch target WCAG
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
   },
-  disclaimerText: {
-    fontSize: 10,
-    color: '#92400E',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 14,
+  showAllText: {
+    fontFamily: typography.fontBodySemiBold,
+    fontSize: typography.sizeSmall,
+    color: colors.brand,
+  },
+
+  disclaimerWrap: {
+    marginHorizontal: spacing.base,
+    marginTop: spacing.sm,
   },
 });
