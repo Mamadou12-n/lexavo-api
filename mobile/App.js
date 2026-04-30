@@ -26,6 +26,17 @@ import { NavigationContainer }         from '@react-navigation/native';
 import { createBottomTabNavigator }    from '@react-navigation/bottom-tabs';
 import { createStackNavigator }        from '@react-navigation/stack';
 import { SafeAreaProvider }            from 'react-native-safe-area-context';
+import { Ionicons }                    from '@expo/vector-icons';
+import { useFonts,
+  EBGaramond_700Bold,
+  EBGaramond_700BoldItalic,
+}                                      from '@expo-google-fonts/eb-garamond';
+import {
+  Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+}                                      from '@expo-google-fonts/nunito';
 
 // Original screens
 import HomeScreen     from './src/screens/HomeScreen';
@@ -59,13 +70,11 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import ConsentModal, { CONSENT_KEY } from './src/components/ConsentModal';
 
 import { colors }                        from './src/theme/colors';
+import { typography, spacing }           from './src/theme/designSystem';
 import { initApiUrl, initAuthToken, setUnauthHandler, logout,
          registerPushToken }             from './src/api/client';
 import { registerForPushNotifications }  from './src/utils/notifications';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
-
-const LEXAVO_ORANGE = '#C45A2D';
-const LEXAVO_NAVY   = '#1C2B3A';
 
 const ONBOARDING_KEY = '@lexavo_onboarding_done';
 
@@ -74,9 +83,9 @@ const LexavoStackNav = createStackNavigator();
 const SettingsNav    = createStackNavigator();
 
 const STACK_SCREEN_OPTIONS = {
-  headerStyle:      { backgroundColor: LEXAVO_NAVY },
-  headerTintColor:  '#FFF',
-  headerTitleStyle: { fontWeight: '700', fontSize: 15 },
+  headerStyle:      { backgroundColor: colors.brandNavy, elevation: 0, shadowColor: 'transparent' },
+  headerTintColor:  colors.textOnNavy,
+  headerTitleStyle: { fontFamily: typography.fontBodyBold, fontSize: typography.sizeBody, color: colors.textOnNavy },
   cardStyle:        { backgroundColor: colors.background },
 };
 
@@ -84,13 +93,13 @@ const STACK_SCREEN_OPTIONS = {
 function LexavoStack() {
   return (
     <LexavoStackNav.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-      <LexavoStackNav.Screen name="Defend"       component={DefendScreen}       options={{ headerTitle: '⚡ Contester' }} />
-      <LexavoStackNav.Screen name="Shield"       component={ShieldScreen}       options={{ headerTitle: '📄 Analyser un document' }} />
-      <LexavoStackNav.Screen name="Diagnostic"   component={DiagnosticScreen}   options={{ headerTitle: '🔬 Diagnostic juridique' }} />
-      <LexavoStackNav.Screen name="Calculateurs" component={CalculateursScreen} options={{ headerTitle: '🧮 Calculateurs juridiques' }} />
-      <LexavoStackNav.Screen name="Match"        component={MatchScreen}        options={{ headerTitle: '🤝 Trouver un avocat' }} />
-      <LexavoStackNav.Screen name="Emergency"    component={EmergencyScreen}    options={{ headerTitle: '🚨 Urgence 24h' }} />
-      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}       options={{ headerTitle: '💰 Questions fiscales' }} />
+      <LexavoStackNav.Screen name="Defend"       component={DefendScreen}       options={{ headerTitle: 'Contester une décision' }} />
+      <LexavoStackNav.Screen name="Shield"       component={ShieldScreen}       options={{ headerTitle: 'Analyser un contrat' }} />
+      <LexavoStackNav.Screen name="Diagnostic"   component={DiagnosticScreen}   options={{ headerTitle: 'Diagnostic juridique' }} />
+      <LexavoStackNav.Screen name="Calculateurs" component={CalculateursScreen} options={{ headerTitle: 'Calculateurs juridiques' }} />
+      <LexavoStackNav.Screen name="Match"        component={MatchScreen}        options={{ headerTitle: 'Trouver un avocat' }} />
+      <LexavoStackNav.Screen name="Emergency"    component={EmergencyScreen}    options={{ headerTitle: 'Urgence juridique 24h' }} />
+      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}       options={{ headerTitle: 'Questions fiscales' }} />
     </LexavoStackNav.Navigator>
   );
 }
@@ -99,14 +108,14 @@ function LexavoStack() {
 function SettingsStack() {
   return (
     <SettingsNav.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-      <SettingsNav.Screen name="SettingsMain"    component={SettingsScreen}        options={{ headerTitle: '⚙️  Réglages' }} />
-      <SettingsNav.Screen name="Subscription"    component={SubscriptionScreen}    options={{ headerTitle: '⭐ Abonnement' }} />
-      <SettingsNav.Screen name="Notifications"   component={NotificationsScreen}   options={{ headerTitle: '🔔 Notifications' }} />
-      <SettingsNav.Screen name="History"         component={HistoryScreen}         options={{ headerTitle: '📜 Historique des conversations' }} />
-      <SettingsNav.Screen name="Lawyers"         component={LawyerScreen}          options={{ headerTitle: '👨‍⚖️ Annuaire des avocats' }} />
-      <SettingsNav.Screen name="CGU"             component={CGUScreen}             options={{ headerTitle: "📋 Conditions d'utilisation" }} />
-      <SettingsNav.Screen name="Privacy"         component={PrivacyScreen}         options={{ headerTitle: '🔒 Politique de confidentialité' }} />
-      <SettingsNav.Screen name="MentionsLegales" component={MentionsLegalesScreen} options={{ headerTitle: 'ℹ️  Mentions légales' }} />
+      <SettingsNav.Screen name="SettingsMain"    component={SettingsScreen}        options={{ headerTitle: 'Réglages' }} />
+      <SettingsNav.Screen name="Subscription"    component={SubscriptionScreen}    options={{ headerTitle: 'Abonnement' }} />
+      <SettingsNav.Screen name="Notifications"   component={NotificationsScreen}   options={{ headerTitle: 'Notifications' }} />
+      <SettingsNav.Screen name="History"         component={HistoryScreen}         options={{ headerTitle: 'Historique des conversations' }} />
+      <SettingsNav.Screen name="Lawyers"         component={LawyerScreen}          options={{ headerTitle: 'Annuaire des avocats' }} />
+      <SettingsNav.Screen name="CGU"             component={CGUScreen}             options={{ headerTitle: "Conditions d'utilisation" }} />
+      <SettingsNav.Screen name="Privacy"         component={PrivacyScreen}         options={{ headerTitle: 'Politique de confidentialité' }} />
+      <SettingsNav.Screen name="MentionsLegales" component={MentionsLegalesScreen} options={{ headerTitle: 'Mentions légales' }} />
     </SettingsNav.Navigator>
   );
 }
@@ -118,26 +127,31 @@ function MainApp() {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
-          tabBarActiveTintColor:   LEXAVO_ORANGE,
+          tabBarActiveTintColor:   colors.brand,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor:  colors.border,
+            borderTopWidth:  1,
             paddingBottom:   Platform.OS === 'ios' ? 20 : 8,
-            paddingTop:      6,
-            height:          Platform.OS === 'ios' ? 85 : 65,
+            paddingTop:      4,
+            height:          Platform.OS === 'ios' ? 85 : 60,
           },
           tabBarLabelStyle: {
-            fontSize: 9,
-            fontWeight: '600',
+            fontFamily: typography.fontBodyMedium,
+            fontSize:   10,
+            marginTop:  2,
           },
           headerStyle: {
-            backgroundColor: LEXAVO_NAVY,
+            backgroundColor: colors.brandNavy,
+            elevation: 0,
+            shadowColor: 'transparent',
           },
-          headerTintColor: '#FFF',
+          headerTintColor: colors.textOnNavy,
           headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 16,
+            fontFamily: typography.fontBodyBold,
+            fontSize:   typography.sizeBody,
+            color:      colors.textOnNavy,
           },
         })}
       >
@@ -146,9 +160,17 @@ function MainApp() {
           name="Home"
           component={HomeScreen}
           options={{
-            headerTitle: '⚖️  Lexavo',
+            headerTitle: 'Lexavo',
             tabBarLabel: t('tab_home'),
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text>,
+            tabBarAccessibilityLabel: 'Accueil — navigation principale',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                size={24}
+                color={color}
+                accessibilityLabel="Accueil"
+              />
+            ),
           }}
         />
         {/* ── 2. Campus ── */}
@@ -156,9 +178,17 @@ function MainApp() {
           name="Campus"
           component={StudentScreen}
           options={{
-            headerTitle: '🎓 Lexavo Campus',
+            headerTitle: 'Lexavo Campus',
             tabBarLabel: t('tab_campus'),
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>🎓</Text>,
+            tabBarAccessibilityLabel: 'Campus — apprendre le droit',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'school' : 'school-outline'}
+                size={24}
+                color={color}
+                accessibilityLabel="Campus"
+              />
+            ),
           }}
         />
         {/* ── 3. Chat IA ── */}
@@ -166,9 +196,17 @@ function MainApp() {
           name="Ask"
           component={AskScreen}
           options={{
-            headerTitle: '💬 Chat juridique IA',
+            headerTitle: 'Chat juridique',
             tabBarLabel: t('tab_chat'),
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>💬</Text>,
+            tabBarAccessibilityLabel: 'Chat — poser une question juridique',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+                size={24}
+                color={color}
+                accessibilityLabel="Chat"
+              />
+            ),
           }}
         />
         {/* ── 4. Abonnement ── */}
@@ -176,11 +214,19 @@ function MainApp() {
           name="Abonnement"
           component={SubscriptionScreen}
           options={{
-            headerTitle: '⭐ Abonnement',
-            headerStyle: { backgroundColor: LEXAVO_NAVY },
-            headerTintColor: '#FFF',
+            headerTitle: 'Abonnement',
+            headerStyle: { backgroundColor: colors.brandNavy, elevation: 0, shadowColor: 'transparent' },
+            headerTintColor: colors.textOnNavy,
             tabBarLabel: t('tab_abo'),
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>⭐</Text>,
+            tabBarAccessibilityLabel: 'Abonnement — gérer mon plan',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'star' : 'star-outline'}
+                size={24}
+                color={color}
+                accessibilityLabel="Abonnement"
+              />
+            ),
           }}
         />
         {/* ── 5. Réglages ── */}
@@ -190,7 +236,15 @@ function MainApp() {
           options={{
             headerShown: false,
             tabBarLabel: t('tab_more'),
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+            tabBarAccessibilityLabel: 'Réglages — paramètres et options',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'settings' : 'settings-outline'}
+                size={24}
+                color={color}
+                accessibilityLabel="Réglages"
+              />
+            ),
           }}
         />
         {/* ── Outils (caché, navigation interne depuis HomeScreen) ── */}
@@ -208,8 +262,21 @@ function MainApp() {
 }
 
 export default function App() {
+  // Chargement des polices — /google-fonts-skill
+  const [fontsLoaded] = useFonts({
+    EBGaramond_700Bold,
+    EBGaramond_700BoldItalic,
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+  });
+
   // null = loading | 'onboarding' | 'consent' | 'auth' | 'main'
   const [appState, setAppState] = useState(null);
+
+  // Splash silencieuse tant que les fonts ne sont pas chargées
+  if (!fontsLoaded) return null;
 
   useEffect(() => {
     bootstrap();
@@ -256,7 +323,7 @@ export default function App() {
     setUnauthHandler(() => setAppState('auth'));
   }, []);
 
-  // Splash silencieuse pendant le chargement
+  // Splash pendant chargement état app
   if (appState === null) return null;
 
   // ─── Onboarding ──────────────────────────────────────────────────────────────
