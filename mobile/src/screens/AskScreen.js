@@ -39,9 +39,11 @@ export default function AskScreen() {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let mounted = true;
     getSubscriptionStatus()
-      .then(data => setQuota(data))
+      .then(data => { if (mounted) setQuota(data); })
       .catch(() => {});
+    return () => { mounted = false; };
   }, []);
 
   const submit = async (q = question) => {

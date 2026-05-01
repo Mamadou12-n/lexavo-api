@@ -21,6 +21,8 @@ from typing import List, Optional, Dict
 from dataclasses import dataclass
 
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"   # évite les requêtes HuggingFace (httpx closed error)
+os.environ["HF_DATASETS_OFFLINE"] = "1"
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -110,9 +112,11 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
 def build_index(
     normalized_dir: Path = NORMALIZED_DIR,
     chroma_dir: Path = CHROMA_DIR,
-    batch_size: int = 500,
+    batch_size: int = 2000,
     max_docs: Optional[int] = None,
     reset: bool = False,
+    skip_articles: bool = False,
+    file_filter: Optional[list] = None,
 ) -> int:
     """
     Construit l'index vectoriel depuis les documents normalisés.
@@ -138,7 +142,7 @@ def build_index(
     log.info(f"  Répertoire docs   : {normalized_dir}")
     log.info(f"  Base ChromaDB     : {chroma_dir}")
 
-    # Charger le modèle d'embedding
+    # Charger le modèle d'embedding (PyTorch, cache local)
     log.info("Chargement modèle d'embedding...")
     model = SentenceTransformer(EMBED_MODEL)
     log.info(f"  Modèle chargé (dim={model.get_sentence_embedding_dimension()})")
@@ -162,7 +166,10 @@ def build_index(
     )
 
     # Charger les documents normalisés
-    files = sorted(normalized_dir.glob("*.json"))
+    if file_filter is not None:
+        files = sorted(file_filter)
+    else:
+        files = sorted(normalized_dir.glob("*.json"))
     if max_docs:
         files = files[:max_docs]
 
@@ -271,7 +278,7 @@ def build_index(
 
             # Indexer par batch
             if len(batch_docs) >= batch_size:
-                embeddings = model.encode(batch_docs, show_progress_bar=False).tolist()
+                embeddings = model.encode(batch_docs, batch_size=128, show_progress_bar=False).tolist()
                 collection.add(
                     documents=batch_docs,
                     embeddings=embeddings,
@@ -284,7 +291,7 @@ def build_index(
 
     # Dernier batch
     if batch_docs:
-        embeddings = model.encode(batch_docs, show_progress_bar=False).tolist()
+        embeddings = model.encode(batch_docs, batch_size=128, show_progress_bar=False).tolist()
         collection.add(
             documents=batch_docs,
             embeddings=embeddings,
@@ -295,10 +302,13 @@ def build_index(
 
     log.info(f"=== Indexation terminée : {total_chunks} chunks dans ChromaDB ===")
 
-    # ─── Alt.8 : Index articles séparé ───────────────────────────────────
-    log.info("  Construction index articles séparé (Alt.8)...")
-    articles_count = _build_articles_index(client, normalized_dir)
-    log.info(f"  → {articles_count} articles indexés dans legal_articles_be")
+    # ─── Alt.8 : Index articles séparé (optionnel — lancer séparément après mass indexation) ──
+    if not skip_articles:
+        log.info("  Construction index articles séparé (Alt.8)...")
+        articles_count = _build_articles_index(client, normalized_dir)
+        log.info(f"  → {articles_count} articles indexés dans legal_articles_be")
+    else:
+        log.info("  Index articles ignoré (skip_articles=True) — lancer build_articles_only() séparément")
 
     return total_chunks
 
@@ -450,6 +460,9 @@ if __name__ == "__main__":
     parser.add_argument("--normalize-first", action="store_true", help="Normaliser les docs avant indexation")
     parser.add_argument("--reset", action="store_true", help="Réinitialiser l'index")
     parser.add_argument("--max", type=int, default=None, help="Limite de docs")
+    parser.add_argument("--skip-articles", action="store_true", help="Ne pas construire l'index articles (plus rapide)")
+    parser.add_argument("--articles-only", action="store_true", help="Construire uniquement l'index articles")
+    parser.add_argument("--batch-size", type=int, default=2000, help="Taille des batches (défaut: 2000)")
     args = parser.parse_args()
 
     if args.normalize_first:
@@ -460,8 +473,20 @@ if __name__ == "__main__":
         total_valid = sum(s["valid"] for s in stats.values())
         log.info(f"Normalisation : {total_valid} docs valides")
 
+    if args.articles_only:
+        import chromadb
+        client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        n = _build_articles_index(client, NORMALIZED_DIR)
+        print(f"\nIndex articles construit : {n} articles")
+        sys.exit(0)
+
     # Lancer l'indexation
-    count = build_index(reset=args.reset, max_docs=args.max)
+    count = build_index(
+        reset=args.reset,
+        max_docs=args.max,
+        batch_size=args.batch_size,
+        skip_articles=args.skip_articles,
+    )
     print(f"\nIndex construit : {count} chunks")
 
     stats = get_index_stats()

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Lexavo",
     "slug": "lexavo",
+    "scheme": "lexavo",
     "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,7 +29,11 @@
         "backgroundColor": "#0D1F33"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["INTERNET", "CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "INTERNET",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       [
@@ -37,7 +42,8 @@
           "photosPermission": "Lexavo accède à vos photos pour analyser vos documents.",
           "cameraPermission": "Lexavo utilise la caméra pour photographier vos documents juridiques."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "web": {
       "favicon": "./assets/favicon.png",

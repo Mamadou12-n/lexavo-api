@@ -299,7 +299,9 @@ def get_index_stats() -> Dict:
             "backend": "qdrant",
             "collection": COLLECTION_NAME,
             "total_chunks": count,
+            "total_documents": len(doc_ids),
             "total_documents_sample": len(doc_ids),
+            "sources": sources,
             "sources_sample": sources,
             "vectors_on_disk": True,
         }
@@ -324,13 +326,14 @@ def search(query: str, top_k: int = 10, source_filter: str = None) -> List[Dict]
             FieldCondition(key="source", match=MatchValue(value=source_filter))
         ])
 
-    results = client.search(
+    _qr = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vec,
+        query=query_vec,
         limit=top_k,
         query_filter=search_filter,
         with_payload=True,
     )
+    results = _qr.points
 
     return [
         {

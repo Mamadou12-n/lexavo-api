@@ -13,7 +13,53 @@
  */
 
 import axios from 'axios';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+
+// ─── Storage sécurisé pour tokens (JWT + refresh) ────────────────────────────
+// Sur natif iOS/Android : Keychain/Keystore via expo-secure-store
+// Sur web : fallback AsyncStorage (localStorage) — Keychain indisponible
+// Les clés SecureStore ne supportent pas '@' donc on utilise un alias sans préfixe.
+const _isSecureAvailable = Platform.OS !== 'web';
+const _secureKeyMap = {
+  '@lexavo_auth_token':    'lexavo_auth_token',
+  '@lexavo_refresh_token': 'lexavo_refresh_token',
+};
+async function secureSet(key, value) {
+  if (_isSecureAvailable && _secureKeyMap[key]) {
+    try {
+      await SecureStore.setItemAsync(_secureKeyMap[key], value);
+      // Nettoyer toute valeur héritée d'AsyncStorage (migration)
+      await AsyncStorage.removeItem(key).catch(() => {});
+      return;
+    } catch (_) { /* fallback */ }
+  }
+  await AsyncStorage.setItem(key, value);
+}
+async function secureGet(key) {
+  if (_isSecureAvailable && _secureKeyMap[key]) {
+    try {
+      const v = await SecureStore.getItemAsync(_secureKeyMap[key]);
+      if (v) return v;
+      // Migration : si ancien token en AsyncStorage, le déplacer vers SecureStore
+      const legacy = await AsyncStorage.getItem(key);
+      if (legacy) {
+        await SecureStore.setItemAsync(_secureKeyMap[key], legacy);
+        await AsyncStorage.removeItem(key).catch(() => {});
+        return legacy;
+      }
+      return null;
+    } catch (_) { /* fallback */ }
+  }
+  return AsyncStorage.getItem(key);
+}
+async function secureRemove(key) {
+  if (_isSecureAvailable && _secureKeyMap[key]) {
+    try { await SecureStore.deleteItemAsync(_secureKeyMap[key]); } catch (_) {}
+  }
+  await AsyncStorage.removeItem(key).catch(() => {});
+}
 
 // ─── Clés AsyncStorage ────────────────────────────────────────────────────────
 const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://lexavo-api-production.up.railway.app';
@@ -22,7 +68,9 @@ const AUTH_TOKEN_KEY    = '@lexavo_auth_token';
 const AUTH_USER_KEY     = '@lexavo_auth_user';
 const REFRESH_TOKEN_KEY = '@lexavo_refresh_token';
 export const REGION_KEY = '@lexavo_region'; // bruxelles | wallonie | flandre
-export const LANG_KEY   = 'lexavo_lang';    // fr | nl | de | en | es | it | pt | ar
+export const LANG_KEY   = '@lexavo_lang';   // fr | nl | de | en | es | it | pt | ar
+// Anciennes clés (migration) : 'lexavo_lang' (sans @) et '@lexavo_language'
+const LEGACY_LANG_KEYS  = ['lexavo_lang', '@lexavo_language'];
 
 let _baseURL   = DEFAULT_API_URL;
 let _authToken = null;   // JWT en mémoire
@@ -36,7 +84,19 @@ export async function setLanguage(code) {
 
 export async function initLanguage() {
   try {
-    const saved = await AsyncStorage.getItem(LANG_KEY);
+    let saved = await AsyncStorage.getItem(LANG_KEY);
+    // Migration : si la clé canonique n'existe pas, copier l'ancienne
+    if (!saved) {
+      for (const legacy of LEGACY_LANG_KEYS) {
+        const v = await AsyncStorage.getItem(legacy).catch(() => null);
+        if (v) {
+          saved = v;
+          await AsyncStorage.setItem(LANG_KEY, v).catch(() => {});
+          await AsyncStorage.removeItem(legacy).catch(() => {});
+          break;
+        }
+      }
+    }
     if (saved) _lang = saved;
   } catch (_) {}
 }
@@ -83,14 +143,14 @@ api.interceptors.response.use(
       _isRefreshing = true;
 
       try {
-        const rt = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+        const rt = await secureGet(REFRESH_TOKEN_KEY);
         if (rt) {
           const res = await axios.post(`${_baseURL}/auth/refresh`, { refresh_token: rt });
           const { token, refresh_token: newRt } = res.data;
 
           _authToken = token;
-          await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
-          await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRt);
+          await secureSet(AUTH_TOKEN_KEY, token);
+          if (newRt) await secureSet(REFRESH_TOKEN_KEY, newRt);
 
           // Résoudre toutes les requêtes en attente
           _refreshQueue.forEach((q) => q.resolve(token));
@@ -108,7 +168,9 @@ api.interceptors.response.use(
 
       // Refresh échoué → logout
       _authToken = null;
-      await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, AUTH_USER_KEY, REFRESH_TOKEN_KEY]).catch(() => {});
+      await secureRemove(AUTH_TOKEN_KEY);
+      await secureRemove(REFRESH_TOKEN_KEY);
+      await AsyncStorage.removeItem(AUTH_USER_KEY).catch(() => {});
       if (_onUnauth) _onUnauth();
     }
     return Promise.reject(error);
@@ -163,7 +225,7 @@ export function getApiUrl() {
  */
 export async function initAuthToken() {
   try {
-    const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    const token = await secureGet(AUTH_TOKEN_KEY);
     if (token) {
       _authToken = token;
       return true;
@@ -184,9 +246,9 @@ export async function register(email, password, name = '', language = 'fr') {
   const response = await api.post('/auth/register', { email, password, name, language });
   const { token, user, refresh_token } = response.data;
   _authToken = token;
-  await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+  await secureSet(AUTH_TOKEN_KEY, token);
   await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-  if (refresh_token) await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+  if (refresh_token) await secureSet(REFRESH_TOKEN_KEY, refresh_token);
   return response.data;
 }
 
@@ -198,9 +260,9 @@ export async function login(email, password) {
   const response = await api.post('/auth/login', { email, password });
   const { token, user, refresh_token } = response.data;
   _authToken = token;
-  await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+  await secureSet(AUTH_TOKEN_KEY, token);
   await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-  if (refresh_token) await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+  if (refresh_token) await secureSet(REFRESH_TOKEN_KEY, refresh_token);
   return response.data;
 }
 
@@ -225,7 +287,9 @@ export async function resetPassword(token, newPassword) {
  */
 export async function logout() {
   _authToken = null;
-  await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, AUTH_USER_KEY, REFRESH_TOKEN_KEY]).catch(() => {});
+  await secureRemove(AUTH_TOKEN_KEY);
+  await secureRemove(REFRESH_TOKEN_KEY);
+  await AsyncStorage.removeItem(AUTH_USER_KEY).catch(() => {});
 }
 
 /**
@@ -761,7 +825,7 @@ export async function deleteSharedNote(noteId) {
 export async function uploadNoteFile(fileUri, fileName, mimeType) {
   const formData = new FormData();
   formData.append('file', { uri: fileUri, name: fileName, type: mimeType });
-  const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  const token = await secureGet(AUTH_TOKEN_KEY);
   const baseURL = api.defaults.baseURL;
   const response = await fetch(`${baseURL}/student/notes/upload-file`, {
     method: 'POST',

@@ -22,7 +22,7 @@ export const colors = {
   // Texte
   textPrimary:   '#1C2B3A',   // Corps principal
   textSecondary: '#5A6275',   // Corps secondaire
-  textMuted:     '#9CA3AF',   // Captions
+  textMuted:     '#6B7280',   // Captions — WCAG AA OK (ratio 4.69:1 sur surface)
   textOnBrand:   '#FFFFFF',   // Sur fond terracotta
   textOnNavy:    '#FFFFFF',   // Sur fond navy
 
@@ -81,8 +81,8 @@ export const typography = {
   lineH1:      32,
   lineH2:      28,
   lineBody:    24,
-  lineSmall:   18,
-  lineCaption: 15,
+  lineSmall:   20,
+  lineCaption: 18,
 };
 
 // SPACING 4pt — /layout

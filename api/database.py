@@ -720,9 +720,11 @@ def _safe_add_column(conn, table: str, column: str, col_type: str):
 def create_user(email: str, password_hash: str, name: str, language: str = "fr") -> dict:
     conn = _get_conn()
     try:
-        # Le premier utilisateur inscrit (id=1) recoit le role admin
-        count_row = _fetchone(conn, "SELECT COUNT(*) AS cnt FROM users")
-        role = "admin" if (count_row and count_row["cnt"] == 0) else "user"
+        # Tous les nouveaux utilisateurs sont créés avec le rôle "user".
+        # Pour promouvoir un compte admin, exécuter via le CLI/SQL :
+        #   UPDATE users SET role = 'admin' WHERE email = 'admin@lexavo.be';
+        # Cela évite toute escalade de privilège via /auth/register.
+        role = "user"
         new_id = _insert_returning_id(
             conn,
             f"INSERT INTO users (email, password_hash, name, language, role) VALUES ({PH}, {PH}, {PH}, {PH}, {PH})",
@@ -1897,5 +1899,123 @@ def delete_shared_note(note_id: int, user_id: int) -> bool:
         _execute(conn, f"DELETE FROM student_shared_notes WHERE id = {PH}", (note_id,))
         conn.commit()
         return True
+    finally:
+        conn.close()
+
+
+# ─── RGPD : droit a l'oubli (art.17) + portabilite (art.20) ──────────────────
+
+# Tables liees a un user_id. Ordre = enfants -> parents (foreign keys d'abord).
+_RGPD_USER_TABLES = [
+    # Conversations + messages : supprimer messages via subselect avant conversations
+    ("messages", "conversation_id IN (SELECT id FROM conversations WHERE user_id = {PH})"),
+    ("conversations", "user_id = {PH}"),
+    ("shield_analyses", "user_id = {PH}"),
+    ("subscriptions", "user_id = {PH}"),
+    ("refresh_tokens", "user_id = {PH}"),
+    ("emergency_requests", "user_id = {PH}"),
+    ("audit_reports", "user_id = {PH}"),
+    ("proof_entries", "case_id IN (SELECT id FROM proof_cases WHERE user_id = {PH})"),
+    ("proof_cases", "user_id = {PH}"),
+    ("alert_preferences", "user_id = {PH}"),
+    ("push_tokens", "user_id = {PH}"),
+    ("password_reset_tokens", "user_id = {PH}"),
+    ("student_progress", "user_id = {PH}"),
+    ("student_badges", "user_id = {PH}"),
+    ("student_quiz_history", "user_id = {PH}"),
+    ("student_flashcard_srs", "user_id = {PH}"),
+    ("student_group_members", "user_id = {PH}"),
+    ("student_lms_connections", "user_id = {PH}"),
+    ("student_shared_notes", "user_id = {PH}"),
+]
+
+
+def delete_user_cascade(user_id: int) -> dict:
+    """RGPD art.17 — supprime un utilisateur et toutes ses donnees liees.
+
+    Best-effort : si une table n'existe pas encore (migration partielle), on l'ignore.
+    Retourne un compte par table supprimee.
+    """
+    conn = _get_conn()
+    deleted = {}
+    try:
+        for table, where_template in _RGPD_USER_TABLES:
+            where_clause = where_template.replace("{PH}", PH)
+            try:
+                _execute(conn, f"DELETE FROM {table} WHERE {where_clause}", (user_id,))
+                deleted[table] = "ok"
+            except Exception as e:
+                deleted[table] = f"skip:{type(e).__name__}"
+        # Enfin l'utilisateur lui-meme
+        try:
+            _execute(conn, f"DELETE FROM users WHERE id = {PH}", (user_id,))
+            deleted["users"] = "ok"
+        except Exception as e:
+            deleted["users"] = f"erreur:{type(e).__name__}:{e}"
+        conn.commit()
+        return {"user_id": user_id, "deleted": deleted}
+    finally:
+        conn.close()
+
+
+def export_user_data(user_id: int) -> dict:
+    """RGPD art.20 — exporte toutes les donnees d'un utilisateur en JSON.
+
+    Best-effort : tables manquantes ignorees silencieusement.
+    """
+    import datetime as _dt
+    conn = _get_conn()
+    try:
+        out: dict = {
+            "user_id": user_id,
+            "exported_at": _dt.datetime.utcnow().isoformat() + "Z",
+            "rgpd_article": "art.20 — droit a la portabilite",
+            "data": {},
+        }
+
+        def _safe_fetchall(table, where_sql):
+            try:
+                return _fetchall(conn, f"SELECT * FROM {table} WHERE {where_sql}", (user_id,))
+            except Exception as e:
+                return [{"_error": f"{type(e).__name__}: {e}"}]
+
+        # User principal (sans password_hash)
+        try:
+            user = _fetchone(conn, f"SELECT id, email, name, language, role, region, profession, created_at FROM users WHERE id = {PH}", (user_id,))
+            out["data"]["user"] = user
+        except Exception as e:
+            out["data"]["user"] = {"_error": str(e)}
+
+        out["data"]["conversations"] = _safe_fetchall("conversations", f"user_id = {PH}")
+        try:
+            out["data"]["messages"] = _fetchall(
+                conn,
+                f"SELECT m.* FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.user_id = {PH}",
+                (user_id,),
+            )
+        except Exception as e:
+            out["data"]["messages"] = [{"_error": str(e)}]
+        out["data"]["shield_analyses"] = _safe_fetchall("shield_analyses", f"user_id = {PH}")
+        out["data"]["subscriptions"] = _safe_fetchall("subscriptions", f"user_id = {PH}")
+        out["data"]["emergency_requests"] = _safe_fetchall("emergency_requests", f"user_id = {PH}")
+        out["data"]["audit_reports"] = _safe_fetchall("audit_reports", f"user_id = {PH}")
+        out["data"]["proof_cases"] = _safe_fetchall("proof_cases", f"user_id = {PH}")
+        try:
+            out["data"]["proof_entries"] = _fetchall(
+                conn,
+                f"SELECT e.* FROM proof_entries e JOIN proof_cases c ON e.case_id = c.id WHERE c.user_id = {PH}",
+                (user_id,),
+            )
+        except Exception as e:
+            out["data"]["proof_entries"] = [{"_error": str(e)}]
+        out["data"]["alert_preferences"] = _safe_fetchall("alert_preferences", f"user_id = {PH}")
+        out["data"]["push_tokens"] = _safe_fetchall("push_tokens", f"user_id = {PH}")
+        out["data"]["student_progress"] = _safe_fetchall("student_progress", f"user_id = {PH}")
+        out["data"]["student_badges"] = _safe_fetchall("student_badges", f"user_id = {PH}")
+        out["data"]["student_quiz_history"] = _safe_fetchall("student_quiz_history", f"user_id = {PH}")
+        out["data"]["student_flashcard_srs"] = _safe_fetchall("student_flashcard_srs", f"user_id = {PH}")
+        out["data"]["student_shared_notes"] = _safe_fetchall("student_shared_notes", f"user_id = {PH}")
+
+        return out
     finally:
         conn.close()

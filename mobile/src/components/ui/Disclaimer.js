@@ -24,7 +24,7 @@ export const Disclaimer = ({ message }) => (
       style={styles.icon}
       accessibilityElementsHidden={true}
     />
-    <Text style={styles.text}>
+    <Text style={styles.text} allowFontScaling={true}>
       {message ||
         "Cette réponse ne constitue pas un avis juridique. Consultez un avocat pour votre situation spécifique."}
     </Text>

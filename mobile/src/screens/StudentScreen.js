@@ -10,7 +10,9 @@ import {
   Modal, Share, Alert, Image, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
+// expo-av retiré d'Expo Go SDK 54 → import lazy via require() pour éviter
+// "Exception in HostFunction" au chargement du bundle. Audio résolu uniquement
+// à l'appel de handlePlayPodcast (cf. ligne ~390).
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   generateQuiz, generateFlashcards, generateSummary, askQuestion,
@@ -197,12 +199,14 @@ export default function StudentScreen() {
   useEffect(() => { if (view === 'dashboard') loadDashboard(); }, [view]);
 
   useEffect(() => {
+    let mounted = true;
     if (lbScope === 'global') {
-      getStudentLeaderboard('global').then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
+      getStudentLeaderboard('global').then(d => { if (mounted) setLeaderboard(d?.leaderboard || []); }).catch(() => {});
     } else {
       // lbScope = group ID
-      getStudentLeaderboard('group', lbScope).then(d => setLeaderboard(d?.leaderboard || [])).catch(() => {});
+      getStudentLeaderboard('group', lbScope).then(d => { if (mounted) setLeaderboard(d?.leaderboard || []); }).catch(() => {});
     }
+    return () => { mounted = false; };
   }, [lbScope]);
 
   // Timer examen blanc — submitExamRef évite le stale closure
@@ -388,6 +392,8 @@ export default function StudentScreen() {
     try {
       const data = await generatePodcastAudio(podcastResult.script);
       const uri = `data:audio/mp3;base64,${data.audio_base64}`;
+      // Lazy require — évite crash "Runtime not ready" sur Expo Go SDK 54
+      const { Audio } = require('expo-av');
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync({ uri });
       soundRef.current = sound;

@@ -33,7 +33,7 @@ export const translations = {
     // Outils
     tools_title: 'Outils juridiques',
     tool_contester: 'Contester',
-    tool_contester_sub: 'Contester une décision',
+    tool_contester_sub: 'Amende, refus admin, décision SNCB/CPAS...',
     tool_document: 'Document',
     tool_document_sub: 'Analyser un contrat',
     tool_diagnostic: 'Diagnostic',
@@ -42,6 +42,8 @@ export const translations = {
     tool_calculateurs_sub: 'Préavis · Pension · Succession',
     tool_fiscal: 'Fiscal',
     tool_fiscal_sub: 'Questions fiscales',
+    tool_heritage: 'Guide successoral',
+    tool_heritage_sub: 'Héritage, donation, droits',
 
     // Disclaimer
     disclaimer: '⚖️ Lexavo est un outil d\'information juridique. Il ne remplace pas un avocat.',

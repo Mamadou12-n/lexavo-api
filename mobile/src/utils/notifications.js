@@ -18,14 +18,23 @@ export const DEFAULT_PREFS = {
   subscription:   true,   // rappels & renouvellement
 };
 
-// Comportement de l'app quand une notif arrive en foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge:  true,
-  }),
-});
+// Comportement de l'app quand une notif arrive en foreground.
+// ⚠️ Encapsulé dans une fonction (au lieu d'être appelé au top-level)
+// pour éviter "Exception in HostFunction" sur Expo Go SDK 54.
+export function initNotificationHandler() {
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList:   true,
+        shouldPlaySound:  true,
+        shouldSetBadge:   true,
+      }),
+    });
+  } catch (e) {
+    console.warn('[Notifications] setNotificationHandler error:', e?.message);
+  }
+}
 
 /**
  * Demande les permissions et retourne le push token Expo.
@@ -82,10 +91,16 @@ export async function registerForPushNotifications() {
     });
   }
 
+  const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
+  if (!projectId) {
+    console.warn(
+      '[Notifications] EXPO_PUBLIC_PROJECT_ID non défini — push token non enregistré. ' +
+      'Configurer la variable dans app.json/extra.eas.projectId ou via EAS.'
+    );
+    return null;
+  }
   try {
-    const tokenResponse = await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID ?? 'lexavo-app',
-    });
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenResponse.data;
     await AsyncStorage.setItem(PUSH_TOKEN_KEY, token);
     return token;

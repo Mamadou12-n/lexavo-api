@@ -48,10 +48,10 @@ PLANS = {
         "subtitle": "Etudiants en droit",
         "price_monthly": 0,
         "price_annual": 0,
-        "questions_per_month": 3,
+        "questions_per_month": 7,
         "max_users": 1,
         "features": [
-            "3 questions / mois",
+            "7 questions / mois",
             "Recherche vectorielle",
             "Acces a la base juridique",
             "Lexavo Score",

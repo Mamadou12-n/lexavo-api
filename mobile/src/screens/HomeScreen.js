@@ -47,6 +47,7 @@ const TOOL_DEFS = [
   { icon: 'search-outline',           color: '#8E44AD',     titleKey: 'tool_diagnostic',   subKey: 'tool_diagnostic_sub',   screen: 'Diagnostic'   },
   { icon: 'calculator-outline',       color: '#1A6B8A',     titleKey: 'tool_calculateurs', subKey: 'tool_calculateurs_sub', screen: 'Calculateurs' },
   { icon: 'receipt-outline',          color: '#34495E',     titleKey: 'tool_fiscal',       subKey: 'tool_fiscal_sub',       screen: 'Fiscal'       },
+  { icon: 'git-branch-outline',       color: '#8B4513',     titleKey: 'tool_heritage',     subKey: 'tool_heritage_sub',     screen: 'Heritage'     },
 ];
 
 export default function HomeScreen({ navigation }) {
@@ -199,8 +200,8 @@ export default function HomeScreen({ navigation }) {
                 <View style={[styles.campusFeatureIcon, { backgroundColor: `${feat.color}22` }]}>
                   <Ionicons name={feat.icon} size={20} color={feat.color} accessibilityElementsHidden />
                 </View>
-                <Text style={styles.campusFeatureLabel}>{t(feat.labelKey)}</Text>
-                <Text style={styles.campusFeatureSub}>{t(feat.subKey)}</Text>
+                <Text style={styles.campusFeatureLabel} allowFontScaling={true}>{t(feat.labelKey)}</Text>
+                <Text style={styles.campusFeatureSub} allowFontScaling={true}>{t(feat.subKey)}</Text>
               </View>
             ))}
           </View>
@@ -245,8 +246,8 @@ export default function HomeScreen({ navigation }) {
                 <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
                   <Ionicons name={tool.icon} size={22} color={tool.color} accessibilityElementsHidden />
                 </View>
-                <Text style={styles.toolTitle}>{t(tool.titleKey)}</Text>
-                <Text style={styles.toolSub}>{t(tool.subKey)}</Text>
+                <Text style={styles.toolTitle} allowFontScaling={true}>{t(tool.titleKey)}</Text>
+                <Text style={styles.toolSub} allowFontScaling={true}>{t(tool.subKey)}</Text>
               </TouchableOpacity>
             </Animated.View>
           ))}

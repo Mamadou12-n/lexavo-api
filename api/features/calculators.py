@@ -165,3 +165,51 @@ def calculate_succession_duties(
         "legal_basis": f"Code des droits de succession — Région de {region.capitalize()}",
         "disclaimer": "Estimation indicative. Les exemptions et abattements spécifiques ne sont pas inclus.",
     }
+
+
+# ─── Indexation loyer ─────────────────────────────────────────────────────────
+# Indice santé Belgique : (loyer_base × indice_nouveau) / indice_depart
+# Source : SPF Économie — Statbel (https://statbel.fgov.be)
+
+def calculate_indexation_loyer(
+    loyer_base: float,
+    indice_depart: float,
+    indice_nouveau: float,
+    region: str = "bruxelles",
+) -> dict:
+    """Calcule le loyer indexé selon l'indice santé belge.
+
+    Formule légale : loyer_indexé = loyer_base × (indice_nouveau / indice_depart)
+    Référence : Loi du 20 février 1991, art. 1728bis Code civil ; bail régional.
+    """
+    if loyer_base <= 0:
+        raise ValueError("Loyer de base requis (> 0)")
+    if indice_depart <= 0 or indice_nouveau <= 0:
+        raise ValueError("Indices santé requis (> 0)")
+
+    loyer_indexe = round(loyer_base * (indice_nouveau / indice_depart), 2)
+    augmentation = round(loyer_indexe - loyer_base, 2)
+    pct = round((augmentation / loyer_base) * 100, 2) if loyer_base else 0.0
+
+    region_n = (region or "bruxelles").lower()
+    legal_refs = {
+        "bruxelles": "Code bruxellois du logement — art. 224 ; Loi 20/02/1991.",
+        "wallonie": "Code wallon du logement — art. 13 ; Loi 20/02/1991.",
+        "flandre": "Vlaamse Wooncode — Woninghuurdecreet 09/11/2018.",
+    }
+
+    return {
+        "result": loyer_indexe,
+        "unit": "€/mois (loyer indexé)",
+        "details": {
+            "loyer_base": loyer_base,
+            "indice_depart": indice_depart,
+            "indice_nouveau": indice_nouveau,
+            "augmentation": augmentation,
+            "pourcentage": f"{pct}%",
+            "region": region_n,
+            "formula": "loyer_base × (indice_nouveau / indice_depart)",
+        },
+        "legal_basis": legal_refs.get(region_n, legal_refs["bruxelles"]),
+        "disclaimer": "Estimation indicative. L'indexation suppose une clause d'indexation au bail et ne s'applique qu'à la date anniversaire.",
+    }

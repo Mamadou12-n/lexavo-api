@@ -2,7 +2,7 @@
 RAG Pipeline — App Droit Belgique (Lexavo)
 Orchestration : Question → Detection branche → Retrieval → Contexte → Claude → Humanizer → Reponse
 
-Modele : claude-sonnet-4-6 (qualite maximale)
+Modele : claude-sonnet-4-5-20250929 (qualite maximale)
 15 branches du droit avec prompts et sources specifiques.
 Post-processing humanizer pour ton naturel.
 """
@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("pipeline")
 
 # Modèle Claude par défaut — Sonnet pour qualité maximale
-DEFAULT_MODEL  = "claude-sonnet-4-6"
+DEFAULT_MODEL  = "claude-sonnet-4-5-20250929"
 MAX_TOKENS_OUT = 2048  # Reponse structuree (sections: loi, pratique, attention, sources)
 TOP_K_CHUNKS   = 6     # Nombre de chunks à récupérer (par defaut, ajuste par branche)
 

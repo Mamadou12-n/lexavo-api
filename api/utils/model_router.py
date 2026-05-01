@@ -6,8 +6,8 @@ Le client ne choisit jamais — tout est automatique."""
 
 def select_model(task_type: str, text_length: int = 0) -> str:
     HAIKU = "claude-haiku-4-5-20251001"
-    SONNET = "claude-sonnet-4-6"
-    OPUS = "claude-opus-4-6"
+    SONNET = "claude-sonnet-4-5-20250929"
+    OPUS = "claude-opus-4-5-20251001"
 
     routing = {
         # ─── Haiku (rapide, économique) ───────────────────

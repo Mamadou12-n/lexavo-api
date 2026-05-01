@@ -136,7 +136,7 @@ class AskRequest(BaseModel):
         description="Nombre de documents sources a consulter",
     )
     model: str = Field(
-        default="claude-sonnet-4-6",
+        default="claude-sonnet-4-5-20250929",
         description="Modele Claude a utiliser",
     )
     branch: Optional[str] = Field(

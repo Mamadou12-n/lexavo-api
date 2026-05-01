@@ -71,7 +71,7 @@ import ConsentModal, { CONSENT_KEY } from './src/components/ConsentModal';
 
 import { colors }                        from './src/theme/colors';
 import { typography, spacing }           from './src/theme/designSystem';
-import { initApiUrl, initAuthToken, initLanguage, setUnauthHandler, logout,
+import { initApiUrl, initAuthToken, setUnauthHandler, logout,
          registerPushToken }             from './src/api/client';
 import { registerForPushNotifications, initNotificationHandler } from './src/utils/notifications';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
@@ -262,10 +262,8 @@ function MainApp() {
 }
 
 export default function App() {
-  // Chargement des polices Google en TÂCHE DE FOND (non-bloquant).
-  // L'app démarre immédiatement avec fonts système → fonts custom apparaissent
-  // dès qu'elles sont téléchargées. Évite le splash bloquant si pas d'internet.
-  useFonts({
+  // Chargement des polices — /google-fonts-skill
+  const [fontsLoaded] = useFonts({
     EBGaramond_700Bold,
     EBGaramond_700BoldItalic,
     Nunito_400Regular,
@@ -288,7 +286,6 @@ export default function App() {
   async function bootstrap() {
     try {
       await initApiUrl();
-      await initLanguage();
 
       // 1. Onboarding — une seule fois
       const onboardingDone = await AsyncStorage.getItem(ONBOARDING_KEY);
@@ -327,7 +324,18 @@ export default function App() {
     setUnauthHandler(() => setAppState('auth'));
   }, []);
 
-  // Splash pendant init — pas de blocage sur fonts (chargement en tâche de fond)
+  // Splash visible — pour debug : si on voit ces messages, on sait où ça bloque
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex:1, alignItems:'center', justifyContent:'center', backgroundColor:'#1C2B3A' }}>
+          <Text style={{ color:'#C45A2D', fontSize:32, fontWeight:'700', letterSpacing:4 }}>LEXAVO</Text>
+          <Text style={{ color:'#fff', fontSize:13, marginTop:12 }}>Chargement des polices...</Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   if (appState === null) {
     return (
       <SafeAreaProvider>

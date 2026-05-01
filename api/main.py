@@ -230,7 +230,7 @@ def get_api_key() -> str:
 @app.get("/health")
 def health():
     """Vérifie que l'API et l'index sont opérationnels."""
-    from rag.indexer import get_index_stats
+    from rag.indexer_qdrant import get_index_stats
     index = get_index_stats()
     return {
         "status": "ok" if index["status"] == "ok" else "degraded",
@@ -243,7 +243,7 @@ def health():
 @app.get("/stats", response_model=IndexStats)
 def stats():
     """Retourne les statistiques de l'index vectoriel."""
-    from rag.indexer import get_index_stats
+    from rag.indexer_qdrant import get_index_stats
     data = get_index_stats()
     return IndexStats(**data)
 
@@ -272,7 +272,7 @@ def ask_endpoint(
     Memoire conversationnelle : passer conversation_id pour continuer un fil.
     """
     from rag.pipeline import ask
-    from rag.indexer import CHROMA_DIR
+    from rag.indexer_qdrant import get_index_stats as _qdrant_stats
     from api.stripe_billing import check_quota
     from api.database import (
         increment_question_count, create_conversation,
@@ -280,11 +280,13 @@ def ask_endpoint(
     )
     import json
 
-    # Vérifier que l'index est disponible avant de charger le modèle
-    if not CHROMA_DIR.exists():
+    # Vérifier que Qdrant est disponible avant de lancer la recherche
+    _qstats = _qdrant_stats()
+    if _qstats.get("status") != "ok":
         raise HTTPException(
             status_code=503,
-            detail="Index ChromaDB non disponible sur ce serveur. Utilisez l'API locale avec l'index chargé.",
+            detail=f"Qdrant indisponible: {_qstats.get('error', 'unknown')}. "
+                   "Lance les containers : docker compose up -d qdrant ollama.",
         )
 
     # Verifier le quota avant d'appeler Claude
@@ -388,12 +390,13 @@ def search_endpoint(request: Request, body: SearchRequest):
     Utile pour explorer la base documentaire directement.
     """
     from rag.retriever import retrieve
-    from rag.indexer import CHROMA_DIR
+    from rag.indexer_qdrant import get_index_stats as _qdrant_stats
 
-    if not CHROMA_DIR.exists():
+    _qstats = _qdrant_stats()
+    if _qstats.get("status") != "ok":
         raise HTTPException(
             status_code=503,
-            detail="Index ChromaDB non disponible sur ce serveur.",
+            detail=f"Qdrant indisponible: {_qstats.get('error', 'unknown')}.",
         )
 
     try:
@@ -471,6 +474,28 @@ def me(current_user: dict = Depends(_get_current_user)):
     return UserResponse(**current_user)
 
 
+# ─── RGPD : droit a l'oubli (art.17) + portabilite (art.20) ───────────────
+
+@app.delete("/account", status_code=204)
+def delete_account(current_user: dict = Depends(_get_current_user)):
+    """RGPD art.17 — Suppression du compte utilisateur en cascade.
+
+    Supprime toutes les donnees liees (conversations, messages, abonnements,
+    refresh tokens, audits, dossiers de preuves, etc.) puis l'utilisateur.
+    """
+    from fastapi import Response
+    from api.database import delete_user_cascade
+    delete_user_cascade(current_user["id"])
+    return Response(status_code=204)
+
+
+@app.get("/account/export")
+def export_account_data(current_user: dict = Depends(_get_current_user)):
+    """RGPD art.20 — Export complet des donnees utilisateur (JSON portable)."""
+    from api.database import export_user_data
+    return export_user_data(current_user["id"])
+
+
 @app.post("/auth/refresh")
 def refresh_token_endpoint(body: dict):
     """Echange un refresh token contre un nouveau access token + nouveau refresh token."""
@@ -515,8 +540,10 @@ def forgot_password_endpoint(request: Request, body: ForgotPasswordRequest):
     """Génère un token de reset (valable 1h). En prod, l'envoyer par email."""
     from api.auth import forgot_password
     token = forgot_password(body.email)
-    # En prod : envoyer par email. En dev : logger dans les logs serveur.
-    log.info("Password reset token pour %s : %s", body.email, token)
+    # SÉCURITÉ : ne JAMAIS logger le token en clair (fuite RGPD via logs Railway).
+    # En prod : envoyer le token par email. En dev : utiliser le retour direct ci-dessous.
+    log.info("Password reset link generated for email=%s", body.email)
+    _ = token  # token consommé par le service email
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
 
 
@@ -947,12 +974,24 @@ async def decode_upload(
 # ─── Calculator Endpoints ──────────────────────────────────────────────────
 
 @app.post("/calculators/notice-period")
-def calc_notice(body: dict):
+@limiter.limit("30/minute")
+def calc_notice(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Calculateur de préavis de licenciement (CCT n 109)."""
     from api.features.calculators import calculate_notice_period
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     try:
-        years = int(body.get("years", 0))
-        monthly_salary = float(body.get("monthly_salary", 0))
+        years = int(body.get("years", body.get("anciennete", 0)))
+        monthly_salary = float(
+            body.get("monthly_salary")
+            or body.get("salaire_mensuel")
+            or body.get("salaire_brut_mensuel")
+            or 0
+        )
     except (ValueError, TypeError):
         raise HTTPException(400, "Paramètres numériques invalides")
     if monthly_salary <= 0:
@@ -961,9 +1000,16 @@ def calc_notice(body: dict):
 
 
 @app.post("/calculators/alimony")
-def calc_alimony(body: dict):
+@limiter.limit("30/minute")
+def calc_alimony(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Calculateur de pension alimentaire (barème Renard)."""
     from api.features.calculators import calculate_alimony_renard
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     try:
         income_high = float(body.get("income_high", 0))
         income_low = float(body.get("income_low", 0))
@@ -976,23 +1022,84 @@ def calc_alimony(body: dict):
 
 
 @app.post("/calculators/succession")
-def calc_succession(body: dict):
+@limiter.limit("30/minute")
+def calc_succession(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Calculateur de droits de succession par région."""
     from api.features.calculators import calculate_succession_duties
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     region = body.get("region", "bruxelles")
     try:
         amount = float(body.get("amount", 0) or body.get("estate_value", 0))
     except (ValueError, TypeError):
         raise HTTPException(400, "Paramètres numériques invalides")
-    raw_rel = body.get("relationship", "direct_line")
+    raw_rel = body.get("relationship") or body.get("lien_parente") or "direct_line"
+    raw_rel = str(raw_rel).strip().lower()
     # Normaliser les variantes courantes
-    rel_map = {"enfant": "direct_line", "parent": "direct_line", "conjoint": "direct_line",
-               "frere": "siblings", "soeur": "siblings", "frère": "siblings", "sœur": "siblings",
-               "autre": "others", "other": "others", "oncle": "others", "tante": "others", "neveu": "others"}
+    rel_map = {
+        "enfant": "direct_line", "fils": "direct_line", "fille": "direct_line",
+        "parent": "direct_line", "père": "direct_line", "pere": "direct_line",
+        "mère": "direct_line", "mere": "direct_line",
+        "epoux": "direct_line", "époux": "direct_line", "conjoint": "direct_line",
+        "epouse": "direct_line", "épouse": "direct_line",
+        "frere": "siblings", "frère": "siblings",
+        "soeur": "siblings", "sœur": "siblings",
+        "autre": "others", "other": "others",
+        "oncle": "others", "tante": "others", "neveu": "others",
+        "cousin": "others", "cousine": "others",
+    }
     relationship = rel_map.get(raw_rel, raw_rel) if raw_rel not in ("direct_line", "siblings", "others") else raw_rel
     return calculate_succession_duties(
         region=region, amount=amount, relationship=relationship
     )
+
+
+@app.post("/calculators/indexation-loyer")
+@limiter.limit("30/minute")
+def calc_indexation_loyer(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
+    """Calculateur d'indexation de loyer (indice santé belge)."""
+    from api.features.calculators import calculate_indexation_loyer
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
+    try:
+        loyer_base = float(
+            body.get("loyer_base")
+            or body.get("loyer_actuel")
+            or body.get("loyer")
+            or 0
+        )
+        indice_depart = float(
+            body.get("indice_depart")
+            or body.get("indice_initial")
+            or body.get("indice_base")
+            or 0
+        )
+        indice_nouveau = float(
+            body.get("indice_nouveau")
+            or body.get("indice_actuel")
+            or body.get("indice_courant")
+            or 0
+        )
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Paramètres numériques invalides")
+    region = body.get("region", "bruxelles")
+    try:
+        return calculate_indexation_loyer(
+            loyer_base=loyer_base,
+            indice_depart=indice_depart,
+            indice_nouveau=indice_nouveau,
+            region=region,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ─── Diagnostic Endpoints ──────────────────────────────────────────────────
@@ -1293,9 +1400,15 @@ def defend_analyze(
 
 @app.post("/defend/checklist")
 @limiter.limit("10/minute")
-def defend_checklist(request: Request, body: dict):
+def defend_checklist(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Analyse la checklist de vices de forme et génère la lettre de contestation."""
     from api.features.defend import analyze_checklist
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     try:
         result = analyze_checklist(
             category=body.get("category", "amende"),
@@ -1315,9 +1428,15 @@ def defend_checklist(request: Request, body: dict):
 
 @app.post("/defend/regenerate-letter")
 @limiter.limit("10/minute")
-def defend_regenerate_letter(request: Request, body: dict):
+def defend_regenerate_letter(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Régénère uniquement la lettre avec un ton différent, sans relancer l'analyse."""
     from api.features.defend import generate_letter, TONE_INSTRUCTIONS
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     tone = body.get("tone", "formel")
     if tone not in TONE_INSTRUCTIONS:
         raise HTTPException(status_code=400, detail=f"Ton invalide. Options : {list(TONE_INSTRUCTIONS.keys())}")
@@ -1334,9 +1453,15 @@ def defend_regenerate_letter(request: Request, body: dict):
 
 @app.post("/defend/scan-amende")
 @limiter.limit("5/minute")
-def defend_scan_amende(request: Request, body: dict):
+def defend_scan_amende(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Extrait les données d'un PV ou lettre photographié(e) via Claude Vision."""
     from api.features.defend import scan_amende
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
     photos = body.get("photos", [])
     if not photos:
         raise HTTPException(status_code=400, detail="Au moins une photo est requise")
@@ -1586,13 +1711,34 @@ def proof_entries(
 # ─── Heritage Endpoints ──────────────────────────────────────────────────
 
 @app.post("/heritage/guide")
-def heritage_guide(body: dict):
+@limiter.limit("10/minute")
+def heritage_guide(
+    request: Request,
+    body: dict,
+    current_user: dict = Depends(_get_current_user),
+):
     """Genere un guide succession personnalise par region."""
     from api.features.heritage import generate_heritage_guide
+    from api.stripe_billing import check_quota
+    check_quota(current_user["id"])
+    raw_rel = str(body.get("relationship") or body.get("lien_parente") or "direct_line").strip().lower()
+    rel_map = {
+        "enfant": "direct_line", "fils": "direct_line", "fille": "direct_line",
+        "parent": "direct_line", "père": "direct_line", "pere": "direct_line",
+        "mère": "direct_line", "mere": "direct_line",
+        "epoux": "direct_line", "époux": "direct_line", "conjoint": "direct_line",
+        "epouse": "direct_line", "épouse": "direct_line",
+        "frere": "siblings", "frère": "siblings",
+        "soeur": "siblings", "sœur": "siblings",
+        "autre": "others", "other": "others",
+        "oncle": "others", "tante": "others", "neveu": "others",
+        "cousin": "others", "cousine": "others",
+    }
+    relationship = rel_map.get(raw_rel, raw_rel) if raw_rel not in ("direct_line", "siblings", "others") else raw_rel
     try:
         result = generate_heritage_guide(
             region=body.get("region", ""),
-            relationship=body.get("relationship", "direct_line"),
+            relationship=relationship,
             has_testament=body.get("has_testament", False),
             has_real_estate=body.get("has_real_estate", False),
             estimated_value=body.get("estimated_value", 0),

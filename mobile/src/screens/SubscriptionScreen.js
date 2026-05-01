@@ -32,7 +32,7 @@ const PLANS = [
     highlight: false,
     badge: null,
     features: [
-      { ok: true,  label: '3 questions / mois' },
+      { ok: true,  label: '7 questions / mois' },
       { ok: true,  label: 'Recherche vectorielle' },
       { ok: true,  label: 'Acces a la base juridique' },
       { ok: true,  label: 'Lexavo Score' },

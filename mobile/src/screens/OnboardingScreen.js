@@ -13,7 +13,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const STORAGE_KEYS = {
   ONBOARDING_DONE: '@lexavo_onboarding_done',
-  LANGUAGE: '@lexavo_language',
+  LANGUAGE: '@lexavo_lang',
 };
 
 const REGIONS = [
@@ -48,7 +48,7 @@ const LANGUAGES = [
   { code: 'pt', flag: '🇵🇹', label: 'Português' },
 ];
 
-export default function OnboardingScreen({ navigation }) {
+export default function OnboardingScreen({ navigation, onDone }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedLang, setSelectedLang] = useState(getDeviceLanguage());
   const [selectedRegion, setSelectedRegion] = useState('bruxelles');
@@ -83,11 +83,18 @@ export default function OnboardingScreen({ navigation }) {
       await AsyncStorage.setItem(STORAGE_KEYS.LANGUAGE, selectedLang);
       await AsyncStorage.setItem(REGION_KEY, selectedRegion);
     } catch (_) {}
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
-    });
-  }, [navigation, selectedLang, selectedRegion]);
+    // Sortie onboarding : appeler le callback fourni par App.js (mode standalone,
+    // hors NavigationContainer). Fallback sur navigation.reset() si rendu dans
+    // un Navigator.
+    if (typeof onDone === 'function') {
+      onDone();
+    } else if (navigation?.reset) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+    }
+  }, [navigation, onDone, selectedLang, selectedRegion]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
@@ -155,7 +162,7 @@ export default function OnboardingScreen({ navigation }) {
               <Text style={styles.stepTitle}>
                 {t('language', selectedLang)}
               </Text>
-              <Text style={styles.stepDescription}>
+              <Text style={styles.stepDescription} allowFontScaling={true}>
                 Choisissez votre langue preferee. Vous pourrez la modifier dans les parametres.
               </Text>
               <View style={styles.languageGrid}>
@@ -203,7 +210,7 @@ export default function OnboardingScreen({ navigation }) {
             <View style={styles.stepContent}>
               <Text style={styles.stepIcon}>📍</Text>
               <Text style={styles.stepTitle}>Votre région</Text>
-              <Text style={styles.stepDescription}>
+              <Text style={styles.stepDescription} allowFontScaling={true}>
                 Le droit belge varie selon la région. Lexavo adaptera ses réponses à votre droit régional automatiquement.
               </Text>
               <View style={styles.languageGrid}>
@@ -251,20 +258,10 @@ export default function OnboardingScreen({ navigation }) {
           <View style={styles.stepContainer}>
             <View style={styles.stepContent}>
               <Text style={styles.stepIcon}>&#x26A0;&#xFE0F;</Text>
-              <Text style={styles.stepTitle}>Avertissement important</Text>
+              <Text style={styles.stepTitle}>Bon à savoir</Text>
               <View style={styles.disclaimerBox}>
-                <Text style={styles.disclaimerTitle}>
-                  Information juridique &#x2260; Conseil juridique
-                </Text>
-                <Text style={styles.disclaimerText}>
-                  Lexavo est un outil d'aide a la recherche juridique. Les informations
-                  fournies sont a titre informatif uniquement et ne remplacent en aucun
-                  cas l'avis d'un professionnel du droit.
-                </Text>
-                <View style={styles.disclaimerDivider} />
-                <Text style={styles.disclaimerText}>
-                  Pour toute question juridique specifique a votre situation, nous vous
-                  recommandons de consulter un avocat inscrit a un barreau belge.
+                <Text style={styles.disclaimerText} allowFontScaling={true}>
+                  Lexavo = info juridique, pas conseil professionnel.
                 </Text>
               </View>
             </View>

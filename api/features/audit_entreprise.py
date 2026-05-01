@@ -310,8 +310,9 @@ Pour chaque recommandation, indique :
 Reponds en JSON :
 [{{"priority": "high|medium", "action": "...", "deadline": "...", "cost_estimate": "...", "legal_ref": "..."}}]"""
 
+        from api.utils.model_router import select_model
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=select_model("audit", text_length=len(prompt)),
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
