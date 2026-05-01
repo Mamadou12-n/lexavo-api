@@ -305,7 +305,7 @@ export default function ShieldScreen() {
                 {result.clauses.map((clause, i) => {
                   const cv = VERDICT_CONFIG[clause.status] || VERDICT_CONFIG.orange;
                   return (
-                    <View key={i} style={[styles.clauseCard, { borderLeftColor: cv.color }]}>
+                    <View key={i} style={[styles.clauseCard, { backgroundColor: `${cv.color}12`, borderColor: `${cv.color}40` }]}>
                       <View style={[styles.clauseBadge, { backgroundColor: cv.bg }]}>
                         <Text style={[styles.clauseBadgeText, { color: cv.color }]}>
                           {cv.icon} {clause.status === 'green' ? 'Conforme' : clause.status === 'red' ? 'Clause abusive' : 'Attention'}
@@ -505,8 +505,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 10, marginTop: 4 },
 
   clauseCard: {
-    backgroundColor: colors.surface, borderRadius: 12, padding: 14,
-    marginBottom: 10, borderLeftWidth: 4, elevation: 1,
+    borderRadius: 12, padding: 14,
+    marginBottom: 10, borderWidth: 1, elevation: 1,
     shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 1,
   },
   clauseBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 8 },

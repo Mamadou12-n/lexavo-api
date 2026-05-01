@@ -14,7 +14,7 @@ import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const DIAG_ORANGE = '#C45A2D';
+const DIAG_ORANGE = colors.brand;
 
 const USER_TYPES = [
   { id: 'particulier', label: '👤 Particulier' },
@@ -152,7 +152,7 @@ export default function DiagnosticScreen() {
 
         {/* ── Header ── */}
         <LinearGradient
-          colors={mode === 'score' ? ['#7C4D00', '#F39C12'] : mode === 'succession' ? ['#3D1F00', '#8B4513'] : ['#7C2D12', '#C45A2D']}
+          colors={[colors.brandNavy, colors.brandNavyLight]}
           style={s.heroHeader}
         >
           <Text style={s.heroEmoji}>{mode === 'score' ? '📊' : mode === 'succession' ? '🏛️' : '🔬'}</Text>

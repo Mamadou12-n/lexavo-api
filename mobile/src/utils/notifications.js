@@ -77,7 +77,7 @@ export async function registerForPushNotifications() {
     await Notifications.setNotificationChannelAsync('subscription', {
       name:             '⭐ Abonnement',
       importance:       Notifications.AndroidImportance.LOW,
-      lightColor:       '#C45A2D',
+      lightColor:       '#C45A2D', // Android channel notif LED — couleur fixe brand (Android n'accepte que hex)
       description:      'Informations d\'abonnement Lexavo',
     });
   }

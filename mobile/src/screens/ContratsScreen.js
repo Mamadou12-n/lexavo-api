@@ -67,7 +67,7 @@ export default function ContratsScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         {/* Template selector */}
-        <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
+        <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
           <Text style={styles.heroEmoji}>📝</Text>
           <Text style={styles.heroTitle}>Contrats — Génération PDF</Text>
           <Text style={styles.heroSub}>Choisissez un modèle de contrat</Text>

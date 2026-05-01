@@ -185,7 +185,7 @@ export default function ProofScreen() {
                 {entries.map((e, i) => {
                   const t = ENTRY_TYPES.find((x) => x.id === e.type);
                   return (
-                    <View key={i} style={[styles.entryItem, { borderLeftColor: t?.color ?? colors.primary }]}>
+                    <View key={i} style={[styles.entryItem, { backgroundColor: `${(t?.color ?? colors.brand)}15`, borderColor: `${(t?.color ?? colors.brand)}40` }]}>
                       <View style={styles.entryHeader}>
                         <Text style={styles.entryType}>{t?.label ?? e.type}</Text>
                         <Text style={styles.entryDate}>{e.date}</Text>
@@ -295,11 +295,10 @@ const styles = StyleSheet.create({
   typeLabel: { fontSize: 11, color: colors.textSecondary },
 
   entryItem: {
-    borderLeftWidth: 3,
-    borderRadius: 6,
+    borderWidth: 1,
+    borderRadius: 8,
     padding: 10,
     marginBottom: 8,
-    backgroundColor: '#FAFAFA',
   },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   entryType:   { fontSize: 11, fontWeight: '700', color: colors.textSecondary },

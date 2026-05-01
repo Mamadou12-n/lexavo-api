@@ -9,7 +9,6 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Linking, Alert, Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getSubscriptionStatus,
@@ -18,12 +17,7 @@ import {
   restoreSubscription,
   getCachedUser,
 } from '../api/client';
-import { colors } from '../theme/colors';
-
-const NAVY   = '#1C2B3A';
-const ORANGE = '#C45A2D';
-const PRO_BG = '#1A3A5C';
-const GREEN  = '#27AE60';
+import { colors, typography, spacing, radius, elevation } from '../theme/designSystem';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── Plans alignes sur le backend ──────────────────────────────────────────
@@ -280,9 +274,8 @@ export default function SubscriptionScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      {/* Hero gradient */}
-      <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.hero}>
-        <Text style={styles.heroEmoji}>{'\u2696\uFE0F'}</Text>
+      {/* Hero */}
+      <View style={styles.hero}>
         <Text style={styles.heroTitle}>Choisissez votre plan</Text>
         <Text style={styles.heroSub}>Investissez dans votre s{'\u00E9'}curit{'\u00E9'} juridique</Text>
         {user && (
@@ -298,7 +291,7 @@ export default function SubscriptionScreen() {
             </Text>
           </View>
         )}
-      </LinearGradient>
+      </View>
 
       {/* Beta banner — date volontairement cachee, notification par email J-30 */}
       {isBeta && (
@@ -328,9 +321,9 @@ export default function SubscriptionScreen() {
           <Text style={[styles.toggleText, billing === 'annual' && styles.toggleTextActive]}>
             Annuel
           </Text>
-          <LinearGradient colors={['#FF6B6B', '#FFB84D']} style={styles.savePill}>
+          <View style={[styles.savePill, { backgroundColor: colors.warning }]}>
             <Text style={styles.saveText}>-17%</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -345,7 +338,7 @@ export default function SubscriptionScreen() {
               styles.quotaFill,
               {
                 width: `${Math.min(100, (status.questions_used / status.questions_limit) * 100)}%`,
-                backgroundColor: status.questions_used >= status.questions_limit ? colors.error : colors.primary,
+                backgroundColor: status.questions_used >= status.questions_limit ? colors.error : colors.brand,
               },
             ]} />
           </View>
@@ -427,15 +420,11 @@ export default function SubscriptionScreen() {
               >
                 {isLoading
                   ? <View style={styles.subscribeBtnFallback}><ActivityIndicator color="#FFF" /></View>
-                  : <LinearGradient
-                      colors={plan.highlight ? ['#6C3FA0', '#8B5CF6'] : ['#1A3A5C', '#2A5A8C']}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                      style={styles.subscribeBtn}
-                    >
+                  : <View style={[styles.subscribeBtn, { backgroundColor: plan.highlight ? '#8B5CF6' : colors.brandNavy }]}>
                       <Text style={styles.subscribeBtnText}>
                         {isEnterprise ? 'Nous contacter' : `Souscrire \u2014 ${priceLabel}`}
                       </Text>
-                    </LinearGradient>
+                    </View>
                 }
               </TouchableOpacity>
             )}
@@ -449,16 +438,14 @@ export default function SubscriptionScreen() {
         );
 
         return plan.highlight ? (
-          <LinearGradient
+          <View
             key={plan.id}
-            colors={['#6C3FA0', '#C45A2D', '#FFB84D']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={[styles.planCardGradientBorder, isCurrent && { borderColor: GREEN, borderWidth: 2 }]}
+            style={[styles.planCardGradientBorder, { borderColor: colors.brand, borderWidth: 2 }, isCurrent && { borderColor: colors.success }]}
           >
             <View style={styles.planCardInner}>
               {cardContent}
             </View>
-          </LinearGradient>
+          </View>
         ) : (
           <View
             key={plan.id}
@@ -491,35 +478,34 @@ export default function SubscriptionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: '#080B14' },
+  container:  { flex: 1, backgroundColor: colors.background },
   content:    { padding: 16, paddingBottom: 40 },
-  centerLoad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centerLoad: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
   hero: {
+    backgroundColor: colors.brandNavy,
     borderRadius: 20,
     padding: 24,
     marginBottom: 14,
     alignItems: 'center',
-    overflow: 'hidden',
   },
-  heroEmoji: { fontSize: 36, marginBottom: 8 },
-  heroTitle: { fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 4, letterSpacing: 0.5 },
-  heroSub:   { fontSize: 13, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
-  heroEmail: { fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 6 },
+  heroTitle: { fontFamily: typography.fontDisplay, fontSize: typography.sizeH1, color: colors.textOnNavy, marginBottom: 4, letterSpacing: 0.5 },
+  heroSub:   { fontFamily: typography.fontBody, fontSize: typography.sizeSmall, color: 'rgba(255,255,255,0.80)', textAlign: 'center' },
+  heroEmail: { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: 'rgba(255,255,255,0.75)', marginTop: 6 },
   currentPlanBadge: {
     marginTop: 12,
-    backgroundColor: 'rgba(196,90,45,0.25)',
+    backgroundColor: `${colors.brand}30`,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(196,90,45,0.4)',
+    borderColor: `${colors.brand}50`,
   },
-  currentPlanText: { fontSize: 11, color: '#FFB84D', fontWeight: '700' },
+  currentPlanText: { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeCaption, color: colors.warning },
 
   // Beta banner
   betaBanner: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.successLight,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
@@ -527,13 +513,13 @@ const styles = StyleSheet.create({
     borderColor: '#A7F3D0',
     alignItems: 'center',
   },
-  betaTitle: { fontSize: 15, fontWeight: '800', color: '#065F46', marginBottom: 4 },
-  betaText:  { fontSize: 12, color: '#047857', textAlign: 'center', lineHeight: 18 },
+  betaTitle: { fontFamily: typography.fontBodyBold, fontSize: typography.sizeSmall, color: '#065F46', marginBottom: 4 },
+  betaText:  { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: '#047857', textAlign: 'center', lineHeight: typography.lineSmall },
 
   // Toggle mensuel/annuel
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 14,
     padding: 4,
     marginBottom: 14,
@@ -546,16 +532,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
+    minHeight: 44,
   },
-  togglePillActive: { backgroundColor: '#1A3A5C' },
-  toggleText:       { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.4)' },
-  toggleTextActive: { color: '#FFF' },
+  togglePillActive: { backgroundColor: colors.brandNavy },
+  toggleText:       { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeSmall, color: colors.textMuted },
+  toggleTextActive: { color: colors.textOnNavy },
   savePill: {
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  saveText: { fontSize: 10, fontWeight: '800', color: '#FFF' },
+  saveText: { fontFamily: typography.fontBodyBold, fontSize: typography.sizeCaption, color: '#FFF' },
 
   quotaBar: {
     backgroundColor: colors.surface,
@@ -565,108 +552,99 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  quotaLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
+  quotaLabel: { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: colors.textSecondary, marginBottom: 6 },
   quotaTrack: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
   quotaFill:  { height: '100%', borderRadius: 3 },
 
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.errorLight,
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#FCA5A5',
   },
-  errorText: { fontSize: 12, color: colors.error },
+  errorText: { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: colors.error },
 
   planCard: {
-    backgroundColor: '#0F1629',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 14,
-    elevation: 3,
-    shadowColor: 'rgba(0,0,0,0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
+    ...elevation.low,
     borderWidth: 1,
-    borderColor: '#1E2A45',
+    borderColor: colors.border,
   },
   planCardGradientBorder: {
     borderRadius: 20,
-    padding: 2,
     marginBottom: 14,
-    elevation: 4,
-    shadowColor: 'rgba(108,63,160,0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
+    ...elevation.medium,
   },
   planCardInner: {
-    backgroundColor: PRO_BG,
+    backgroundColor: colors.brandNavy,
     borderRadius: 18,
     padding: 20,
   },
-  planCardCurrent: { borderColor: GREEN, borderWidth: 2 },
+  planCardCurrent: { borderColor: colors.success, borderWidth: 2 },
 
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: `${colors.border}80`,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: 12,
   },
-  badgeHighlight:     { backgroundColor: 'rgba(255,184,77,0.2)' },
-  badgeText:          { fontSize: 10, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.5 },
-  badgeTextHighlight: { color: '#FFB84D' },
+  badgeHighlight:     { backgroundColor: `${colors.warning}30` },
+  badgeText:          { fontFamily: typography.fontBodyBold, fontSize: typography.sizeCaption, color: colors.textSecondary, letterSpacing: 0.5 },
+  badgeTextHighlight: { color: colors.warning },
 
   planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   planEmoji:  { fontSize: 28 },
   planInfo:   { flex: 1 },
-  planName:   { fontSize: 17, fontWeight: '900', color: '#F0F4FF' },
-  planNameHighlight:  { color: '#FFF' },
-  planSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  planPrice:          { fontSize: 28, fontWeight: '900', color: '#00D4AA', marginTop: 6 },
-  planPriceHighlight: { color: '#FFF' },
-  activePill:     { backgroundColor: '#D1FAE5', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  activePillText: { fontSize: 10, fontWeight: '800', color: '#065F46' },
+  planName:   { fontFamily: typography.fontBodyBold, fontSize: typography.sizeH2, color: colors.textPrimary },
+  planNameHighlight:  { color: colors.textOnNavy },
+  planSubtitle: { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: colors.textMuted, marginTop: 2 },
+  planPrice:          { fontFamily: typography.fontBodyBold, fontSize: 28, color: colors.brand, marginTop: 6 },
+  planPriceHighlight: { color: colors.textOnNavy },
+  activePill:     { backgroundColor: colors.successLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  activePillText: { fontFamily: typography.fontBodyBold, fontSize: typography.sizeCaption, color: '#065F46' },
 
   // Founding member
   foundingBox: {
-    backgroundColor: 'rgba(196,90,45,0.12)',
+    backgroundColor: `${colors.brand}15`,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginBottom: 10,
   },
-  foundingText: { fontSize: 11, color: ORANGE, fontWeight: '600' },
+  foundingText: { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeCaption, color: colors.brand },
 
   featureList: { marginBottom: 14 },
   featureRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   featureDot:   { width: 8, height: 8, borderRadius: 4 },
-  featureDotOk: { backgroundColor: '#10B981' },
-  featureDotNo: { backgroundColor: '#374151' },
-  featureText:    { fontSize: 12, color: '#C8D6E5', flex: 1 },
-  featureTextOff: { color: '#3A4A6A' },
+  featureDotOk: { backgroundColor: colors.success },
+  featureDotNo: { backgroundColor: colors.border },
+  featureText:    { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: colors.textPrimary, flex: 1 },
+  featureTextOff: { color: colors.textMuted },
 
-  subscribeBtn:         { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  subscribeBtnFallback: { backgroundColor: NAVY, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  subscribeBtnText:     { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 0.3 },
+  subscribeBtn:         { borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 44 },
+  subscribeBtnFallback: { backgroundColor: colors.brandNavy, borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 44 },
+  subscribeBtnText:     { fontFamily: typography.fontBodyBold, color: '#FFF', fontSize: typography.sizeBody, letterSpacing: 0.3 },
 
-  cancelBtn:     { borderWidth: 1, borderColor: '#FCA5A5', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText: { fontSize: 12, color: colors.error, fontWeight: '600' },
+  cancelBtn:     { borderWidth: 1, borderColor: '#FCA5A5', borderRadius: 10, paddingVertical: 10, alignItems: 'center', minHeight: 44 },
+  cancelBtnText: { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeCaption, color: colors.error },
 
   legalBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  legalText: { fontSize: 11, color: colors.textMuted, lineHeight: 18 },
+  legalText: { fontFamily: typography.fontBody, fontSize: typography.sizeCaption, color: colors.textMuted, lineHeight: typography.lineSmall },
 
   restoreBtn:     { alignItems: 'center', paddingVertical: 12 },
-  restoreBtnText: { fontSize: 12, color: colors.primary, textDecorationLine: 'underline' },
+  restoreBtnText: { fontFamily: typography.fontBodySemiBold, fontSize: typography.sizeCaption, color: colors.brand, textDecorationLine: 'underline' },
 });

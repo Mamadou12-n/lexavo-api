@@ -19,8 +19,8 @@ import { registerPushToken, updateNotificationPreferences } from '../api/client'
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const NAVY   = '#1C2B3A';
-const ORANGE = '#C45A2D';
+const NAVY   = colors.brandNavy;
+const ORANGE = colors.brand;
 
 const NOTIF_TYPES = [
   {
@@ -179,7 +179,7 @@ export default function NotificationsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
+      <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
         <Text style={styles.heroEmoji}>🔔</Text>
         <Text style={styles.heroTitle}>Notifications</Text>
         <Text style={styles.heroSub}>Gérez vos alertes juridiques</Text>

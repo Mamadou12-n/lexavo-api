@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   content:   { padding: 16, paddingBottom: 40 },
 
   heroBox: {
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     borderRadius: 16,
     padding: 20,
     marginBottom: 14,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
   },
-  cardTitle: { fontSize: 13, fontWeight: '800', color: '#1C2B3A', marginBottom: 10 },
+  cardTitle: { fontSize: 13, fontWeight: '800', color: colors.brandNavy, marginBottom: 10 },
   body:      { fontSize: 12, color: colors.textPrimary, lineHeight: 18 },
 
   row: {

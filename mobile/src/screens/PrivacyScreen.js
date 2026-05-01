@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   content:   { padding: 16, paddingBottom: 40 },
 
   heroBox: {
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     borderRadius: 16,
     padding: 20,
     marginBottom: 14,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
   },
-  cardTitle: { fontSize: 13, fontWeight: '800', color: '#1C2B3A', marginBottom: 12 },
+  cardTitle: { fontSize: 13, fontWeight: '800', color: colors.brandNavy, marginBottom: 12 },
 
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 },
   infoLabel: { fontSize: 12, color: colors.textMuted },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 8,
   },
-  dataCat:    { fontSize: 12, fontWeight: '700', color: '#1C2B3A', marginBottom: 4 },
+  dataCat:    { fontSize: 12, fontWeight: '700', color: colors.brandNavy, marginBottom: 4 },
   dataDetail: { fontSize: 11, color: colors.textSecondary, lineHeight: 17 },
 
   thirdPartyRow: {

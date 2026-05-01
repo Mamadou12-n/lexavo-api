@@ -3,6 +3,7 @@ import {
   Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors } from '../theme/designSystem';
 
 export const CONSENT_KEY = 'lexavo_consent_v1';
 
@@ -112,19 +113,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFBFC' },
 
   header: {
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 20,
     paddingHorizontal: 24,
     alignItems: 'center',
   },
-  logo:     { fontSize: 24, fontWeight: '900', color: '#C45A2D', letterSpacing: 4 },
+  logo:     { fontSize: 24, fontWeight: '900', color: colors.brand, letterSpacing: 4 },
   subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4 },
 
   scrollArea:   { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 10 },
 
-  sectionTitle: { fontSize: 14, fontWeight: '800', color: '#1C2B3A', marginBottom: 8 },
+  sectionTitle: { fontSize: 14, fontWeight: '800', color: colors.brandNavy, marginBottom: 8 },
   body:         { fontSize: 13, color: '#374151', lineHeight: 21 },
   bold:         { fontWeight: '700' },
 
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   acceptBtn: {
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

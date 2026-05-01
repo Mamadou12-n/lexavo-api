@@ -7,8 +7,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { colors } from '../theme/designSystem';
 
-const LEXAVO_ORANGE = '#C45A2D';
+const LEXAVO_ORANGE = colors.brand;
 
 export default function PhotoPicker({ photos = [], onPhotosChange = () => {}, maxPhotos = 3, label = '📷 Ajouter une photo' }) {
   const pickImage = async (useCamera) => {

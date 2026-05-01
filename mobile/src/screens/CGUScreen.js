@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   content:   { padding: 16, paddingBottom: 40 },
 
   heroBox: {
-    backgroundColor: '#1C2B3A',
+    backgroundColor: colors.brandNavy,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  legalPillText: { fontSize: 10, color: '#C45A2D', fontWeight: '700' },
+  legalPillText: { fontSize: 10, color: colors.brand, fontWeight: '700' },
 
   section: {
     backgroundColor: colors.surface,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
   },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#1C2B3A', marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.brandNavy, marginBottom: 8 },
   sectionBody:  { fontSize: 12, color: colors.textPrimary, lineHeight: 19 },
 
   footer: {

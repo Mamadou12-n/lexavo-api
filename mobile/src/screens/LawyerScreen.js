@@ -156,7 +156,7 @@ export default function LawyerScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Header */}
-      <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
+      <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
         <Text style={styles.heroEmoji}>{'\uD83D\uDC68\u200D\u2696\uFE0F'}</Text>
         <Text style={styles.heroTitle}>Annuaire des avocats</Text>
         <Text style={styles.heroSub}>
@@ -468,8 +468,8 @@ const styles = StyleSheet.create({
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.accent,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardRow: {
     flexDirection: 'row',

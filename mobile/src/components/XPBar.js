@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { colors, typography } from '../theme/designSystem';
 
 export default function XPBar({ currentXP, nextLevelXP = 500, level }) {
   const progress = Math.min((currentXP / nextLevelXP) * 100, 100);
@@ -12,12 +12,7 @@ export default function XPBar({ currentXP, nextLevelXP = 500, level }) {
         <Text style={styles.xpText}>{currentXP}/{nextLevelXP} XP</Text>
       </View>
       <View style={styles.trackBar}>
-        <LinearGradient
-          colors={['#00D4AA', '#8B5CF6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.fillBar, { width: `${progress}%` }]}
-        />
+        <View style={[styles.fillBar, { width: `${progress}%` }]} />
       </View>
     </View>
   );
@@ -34,22 +29,25 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   levelText: {
-    color: '#00D4AA',
-    fontWeight: 'bold',
+    fontFamily: typography.fontBodyBold,
+    color: colors.brand,
+    fontWeight: '700',
     fontSize: 14,
   },
   xpText: {
-    color: '#5A6B8A',
+    fontFamily: typography.fontBody,
+    color: 'rgba(255,255,255,0.70)',
     fontSize: 12,
   },
   trackBar: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1E2A45',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
   },
   fillBar: {
-    height: 10,
-    borderRadius: 5,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.brand,
   },
 });

@@ -257,7 +257,7 @@ export default function ComplianceScreen() {
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Non-conformites ({compResult.non_compliant_items.length})</Text>
                   {compResult.non_compliant_items.map((item, i) => (
-                    <View key={i} style={[styles.nonCompliantItem, { borderLeftColor: RISK_COLOR[item.risk] ?? colors.warning }]}>
+                    <View key={i} style={[styles.nonCompliantItem, { backgroundColor: `${RISK_COLOR[item.risk] ?? colors.warning}15`, borderColor: `${RISK_COLOR[item.risk] ?? colors.warning}40` }]}>
                       <Text style={styles.ncQuestion}>{item.question}</Text>
                       {item.action_required && <Text style={styles.ncAction}>→ {item.action_required}</Text>}
                       {item.risk_description && <Text style={styles.ncRisk}>⚠️ {item.risk_description}</Text>}
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 12 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  nonCompliantItem: { borderLeftWidth: 3, borderRadius: 6, padding: 10, marginBottom: 8, backgroundColor: '#FAFAFA' },
+  nonCompliantItem: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 8 },
   ncQuestion: { fontSize: 12, fontWeight: '600', color: colors.textPrimary, marginBottom: 3 },
   ncAction: { fontSize: 12, color: colors.primary, lineHeight: 17, marginBottom: 2 },
   ncRisk: { fontSize: 11, color: colors.error, lineHeight: 16 },

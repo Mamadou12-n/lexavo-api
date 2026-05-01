@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { colors } from '../theme/designSystem';
 import ScoreGauge from './ScoreGauge';
 
 export default function ChecklistStep({ questions = [], answers = {}, onAnswer, score = 0, level = 'faible' }) {
@@ -56,20 +57,20 @@ export default function ChecklistStep({ questions = [], answers = {}, onAnswer, 
 }
 
 const s = StyleSheet.create({
-  progress: { fontSize: 12, color: '#6B7280', fontWeight: '600', marginBottom: 12, textAlign: 'center' },
+  progress: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginBottom: 12, textAlign: 'center' },
   card: {
-    backgroundColor: '#FFF', borderRadius: 12, padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E5E7EB',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2,
+    backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: colors.border,
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 1, elevation: 2,
   },
   numRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
-  numCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#C45A2D', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  numCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   num: { color: '#FFF', fontSize: 11, fontWeight: '800' },
-  question: { flex: 1, fontSize: 13, color: '#1F2937', lineHeight: 19, fontWeight: '500' },
+  question: { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 19, fontWeight: '500' },
   btnRow: { flexDirection: 'row', gap: 8 },
   btn: {
     flex: 1, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5,
-    borderColor: '#D1D5DB', backgroundColor: '#F9FAFB', alignItems: 'center',
+    borderColor: colors.border, backgroundColor: colors.surfaceAlt, alignItems: 'center',
   },
   btnOui: { borderColor: '#10B981', backgroundColor: '#ECFDF5' },
   btnNon: { borderColor: '#EF4444', backgroundColor: '#FEF2F2' },

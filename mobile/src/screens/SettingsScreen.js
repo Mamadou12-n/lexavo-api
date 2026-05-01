@@ -8,8 +8,8 @@ import { REGION_KEY, logout } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const LEXAVO_ORANGE = '#C45A2D';
-const LEXAVO_NAVY   = '#1C2B3A';
+const LEXAVO_ORANGE = colors.brand;
+const LEXAVO_NAVY   = colors.brandNavy;
 
 const REGIONS = [
   { id: 'bruxelles', flag: '🏙️', label: 'Bruxelles-Capitale' },
@@ -39,7 +39,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
+      <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
         <Text style={styles.heroEmoji}>&#x2699;&#xFE0F;</Text>
         <Text style={styles.heroTitle}>Paramètres</Text>
         <Text style={styles.heroSub}>Configurez votre expérience Lexavo</Text>

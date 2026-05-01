@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { colors } from '../theme/designSystem';
 
 const FIELDS = [
   { key: 'montant',           label: 'Montant (€)',        type: 'number' },
@@ -91,7 +92,7 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 12, color: '#6B7280', fontWeight: '600', flex: 1 },
   fieldValue: { fontSize: 13, color: '#1F2937', fontWeight: '700', flex: 1, textAlign: 'right' },
   editRow: { flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' },
-  editInput: { flex: 1, borderBottomWidth: 2, borderBottomColor: '#C45A2D', fontSize: 13, color: '#1F2937', paddingVertical: 2 },
+  editInput: { flex: 1, borderBottomWidth: 2, borderBottomColor: colors.brand, fontSize: 13, color: '#1F2937', paddingVertical: 2 },
   okBtn: { width: 28, height: 28, backgroundColor: '#10B981', borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   okText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   empty: { color: '#9CA3AF', fontSize: 13, textAlign: 'center', padding: 12 },

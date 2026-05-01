@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import { login, register, forgotPassword } from '../api/client';
 import { colors } from '../theme/colors';
+import { typography, spacing, radius } from '../theme/designSystem';
 
-const LEXAVO_NAVY   = '#1C2B3A';
-const LEXAVO_ORANGE = '#C45A2D';
+// Tokens — utiliser colors.brand / colors.brandNavy partout
+const LEXAVO_NAVY   = colors.brandNavy;
+const LEXAVO_ORANGE = colors.brand;
 
 export default function AuthScreen({ onAuthSuccess }) {
   const [mode, setMode]         = useState('login');   // 'login' | 'register' | 'forgot'

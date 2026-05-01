@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors, typography, radius, spacing } from '../theme/designSystem';
 
 export default function StreakCounter({ count, isActive = false }) {
-  const showGlow = isActive && count > 0;
-
   if (count === 0) {
     return (
       <View style={styles.container}>
@@ -13,9 +12,9 @@ export default function StreakCounter({ count, isActive = false }) {
   }
 
   return (
-    <View style={[styles.container, showGlow && styles.glow]}>
+    <View style={[styles.container, isActive && styles.active]}>
       <Text style={styles.emoji}>🔥</Text>
-      <Text style={[styles.text, showGlow ? styles.activeText : styles.inactiveText]}>
+      <Text style={[styles.text, isActive ? styles.activeText : styles.inactiveText]}>
         {count} jours
       </Text>
     </View>
@@ -26,32 +25,31 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F1629',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  glow: {
-    borderColor: '#00D4AA',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
-    shadowColor: '#00D4AA',
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  active: {
+    borderColor: colors.brand,
+    backgroundColor: `${colors.brand}20`,
   },
   emoji: {
     fontSize: 18,
     marginRight: 6,
   },
   text: {
-    fontWeight: 'bold',
+    fontFamily: typography.fontBodyBold,
+    fontWeight: '700',
     fontSize: 14,
   },
   activeText: {
-    color: '#F0F4FF',
+    color: colors.textOnNavy,
   },
   inactiveText: {
-    color: '#5A6B8A',
+    fontFamily: typography.fontBody,
+    color: 'rgba(255,255,255,0.60)',
   },
 });

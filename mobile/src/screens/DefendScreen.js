@@ -595,7 +595,7 @@ export default function DefendScreen() {
                     <View style={s.resultCard}>
                       <Text style={s.resultTitle}>📄 Lettre de contestation — {TONES.find(t => t.id === letterTone)?.label}</Text>
                       {letterLoading ? (
-                        <ActivityIndicator color="#C45A2D" style={{ marginVertical: 20 }} />
+                        <ActivityIndicator color={colors.brand} style={{ marginVertical: 20 }} />
                       ) : (
                         <View style={s.letterBox}>
                           <Text style={s.letterText}>{letterText}</Text>

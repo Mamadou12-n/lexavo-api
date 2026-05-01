@@ -119,7 +119,7 @@ export default function HistoryScreen({ navigation }) {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Header */}
-      <LinearGradient colors={['#0A1628', '#1A3A5C']} style={styles.heroHeader}>
+      <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
         <Text style={styles.heroEmoji}>📜</Text>
         <Text style={styles.heroTitle}>Historique</Text>
         <Text style={styles.heroSub}>
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
     elevation: 2,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },

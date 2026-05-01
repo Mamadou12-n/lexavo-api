@@ -4,7 +4,7 @@ import {
   Dimensions, StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../theme/colors';
+import { colors, typography, spacing } from '../theme/designSystem';
 import { t, getDeviceLanguage } from '../i18n/translations';
 import { REGION_KEY } from '../api/client';
 
@@ -276,7 +276,7 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primaryDark} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandDark} />
 
       <FlatList
         ref={flatListRef}
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 36,
     fontWeight: '800',
-    color: colors.primary,
+    color: colors.brand,
     letterSpacing: 1,
   },
 
@@ -436,13 +436,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   languageBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#EEF3FA',
+    borderColor: colors.brand,
+    backgroundColor: colors.surfaceAlt,
   },
   languageFlag: {
     fontSize: 20,
     fontWeight: '800',
-    color: colors.primary,
+    color: colors.brand,
     marginRight: 14,
     width: 36,
     textAlign: 'center',
@@ -454,14 +454,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   languageLabelActive: {
-    color: colors.primary,
+    color: colors.brand,
     fontWeight: '700',
   },
   languageCheck: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
 
   // Buttons
   primaryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   paginationDotActive: {
     width: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
   },
 
   // Skip
