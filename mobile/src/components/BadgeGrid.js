@@ -1,6 +1,25 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 
+/**
+ * @typedef {Object} Badge
+ * @property {string} id - Identifiant unique du badge.
+ * @property {string} [label] - Libellé affiché sous l'icône.
+ * @property {string} [icon] - Emoji ou nom d'icône.
+ * @property {string} [description] - Description du critère d'obtention.
+ *
+ * @typedef {Object} BadgeGridProps
+ * @property {Badge[]} badges - Liste de tous les badges disponibles.
+ * @property {string[]} earnedIds - Identifiants des badges déjà obtenus par l'utilisateur.
+ */
+
+/**
+ * BadgeGrid — Grille horizontale scrollable affichant les badges Lexavo Campus.
+ * Les badges obtenus sont mis en évidence ; les autres apparaissent grisés.
+ *
+ * @param {BadgeGridProps} props
+ * @returns {React.ReactElement}
+ */
 export default function BadgeGrid({ badges, earnedIds }) {
   const earnedSet = new Set(earnedIds);
 

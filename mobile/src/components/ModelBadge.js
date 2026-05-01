@@ -1,12 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
+/**
+ * @typedef {Object} ModelBadgeProps
+ * @property {string} model - Nom du modèle Anthropic utilisé (ex. "claude-haiku-3-5", "claude-sonnet-4-5").
+ *                            Le composant détecte automatiquement la famille (Haiku/Sonnet/Opus).
+ */
+
 const MODEL_MAP = {
   haiku:  { icon: '⚡', label: 'Haiku',  desc: 'Réponse rapide',  color: '#27AE60', bg: '#F0FDF4', border: '#BBF7D0' },
   sonnet: { icon: '🔵', label: 'Sonnet', desc: 'Analyse avancée', color: '#2980B9', bg: '#EBF5FB', border: '#BFDBFE' },
   opus:   { icon: '💎', label: 'Opus',   desc: 'Cas complexe',    color: '#D4A017', bg: '#FFFBEB', border: '#FDE68A' },
 };
 
+/**
+ * Détecte la famille du modèle Claude à partir de son identifiant.
+ * @param {string} modelStr
+ * @returns {'haiku'|'sonnet'|'opus'|null}
+ */
 function detectModel(modelStr) {
   if (!modelStr) return null;
   const s = modelStr.toLowerCase();

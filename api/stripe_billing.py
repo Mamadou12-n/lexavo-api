@@ -311,9 +311,17 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict:
         raise HTTPException(status_code=400, detail="Signature invalide.")
 
     event_type = event["type"]
+    event_id = event.get("id", "")
     data = event["data"]["object"]
 
-    log.info(f"Webhook Stripe: {event_type}")
+    # Idempotency : Stripe peut redélivrer un même évènement (réseau, retry).
+    # On stocke chaque event_id en DB et on no-op les duplicatas.
+    from api.security import webhook_event_already_processed
+    if webhook_event_already_processed(event_id):
+        log.info(f"Webhook Stripe duplique ignore: {event_id} ({event_type})")
+        return {"status": "ok", "event": event_type, "duplicate": True}
+
+    log.info(f"Webhook Stripe: {event_type} id={event_id}")
 
     if event_type == "checkout.session.completed":
         _handle_checkout_completed(data)

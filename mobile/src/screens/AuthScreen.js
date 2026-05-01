@@ -14,12 +14,14 @@ import { login, register, forgotPassword } from '../api/client';
 import { colors } from '../theme/colors';
 import { typography, spacing, radius } from '../theme/designSystem';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext';
 
 // Tokens — utiliser colors.brand / colors.brandNavy partout
 const LEXAVO_NAVY   = colors.brandNavy;
 const LEXAVO_ORANGE = colors.brand;
 
 export default function AuthScreen({ onAuthSuccess }) {
+  const { t } = useLanguage();
   const [mode, setMode]         = useState('login');   // 'login' | 'register' | 'forgot'
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -34,13 +36,13 @@ export default function AuthScreen({ onAuthSuccess }) {
   const submitForgot = async () => {
     setError(null);
     const trimEmail = email.trim().toLowerCase();
-    if (!trimEmail) { setError('Entrez votre adresse email.'); return; }
+    if (!trimEmail) { setError(t('auth_err_email_required')); return; }
     setLoading(true);
     try {
       await forgotPassword(trimEmail);
       setForgotSent(true);
     } catch (e) {
-      setError(e.response?.data?.detail || 'Erreur. Réessayez.');
+      setError(e.response?.data?.detail || t('auth_err_retry'));
     } finally {
       setLoading(false);
     }
@@ -52,15 +54,15 @@ export default function AuthScreen({ onAuthSuccess }) {
     const trimPass  = password.trim();
 
     if (!trimEmail || !trimPass) {
-      setError('Email et mot de passe obligatoires.');
+      setError(t('auth_err_creds'));
       return;
     }
     if (trimPass.length < 6) {
-      setError('Le mot de passe doit faire au moins 6 caractères.');
+      setError(t('auth_err_pass_short'));
       return;
     }
     if (!isLogin && !name.trim()) {
-      setError('Le nom est obligatoire pour l\'inscription.');
+      setError(t('auth_err_name_required'));
       return;
     }
 
@@ -77,7 +79,7 @@ export default function AuthScreen({ onAuthSuccess }) {
         e.response?.data?.detail ||
         e.response?.data?.message ||
         e.message ||
-        'Une erreur est survenue. Vérifiez votre connexion.';
+        t('auth_err_generic');
       setError(msg);
     } finally {
       setLoading(false);
@@ -94,7 +96,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           <Ionicons name="scale-outline" size={28} color="#FFF" accessibilityElementsHidden />
           <Text style={styles.logo}>Lexavo</Text>
         </View>
-        <Text style={styles.tagline}>Droit belge — RAG + IA</Text>
+        <Text style={styles.tagline}>{t('auth_tagline')}</Text>
       </View>
 
       {/* Card */}
@@ -113,11 +115,11 @@ export default function AuthScreen({ onAuthSuccess }) {
               onPress={() => { setMode('login'); setError(null); }}
               accessible={true}
               accessibilityRole="tab"
-              accessibilityLabel="Onglet connexion"
+              accessibilityLabel={t('auth_tab_login')}
               accessibilityState={{ selected: isLogin }}
             >
               <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>
-                Connexion
+                {t('auth_tab_login')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.75}
@@ -125,11 +127,11 @@ export default function AuthScreen({ onAuthSuccess }) {
               onPress={() => { setMode('register'); setError(null); }}
               accessible={true}
               accessibilityRole="tab"
-              accessibilityLabel="Onglet inscription"
+              accessibilityLabel={t('auth_tab_register')}
               accessibilityState={{ selected: !isLogin }}
             >
               <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>
-                Inscription
+                {t('auth_tab_register')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -137,7 +139,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           {/* Champ nom (inscription uniquement) */}
           {!isLogin && (
             <View style={styles.field}>
-              <Text style={styles.label}>Nom complet</Text>
+              <Text style={styles.label}>{t('auth_full_name')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
@@ -147,14 +149,14 @@ export default function AuthScreen({ onAuthSuccess }) {
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="next"
-                accessibilityLabel="Nom complet"
+                accessibilityLabel={t('auth_full_name')}
               />
             </View>
           )}
 
           {/* Email */}
           <View style={styles.field}>
-            <Text style={styles.label}>Adresse email</Text>
+            <Text style={styles.label}>{t('auth_email')}</Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -165,24 +167,24 @@ export default function AuthScreen({ onAuthSuccess }) {
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
-              accessibilityLabel="Adresse email"
+              accessibilityLabel={t('auth_email')}
             />
           </View>
 
           {/* Mot de passe */}
           <View style={styles.field}>
-            <Text style={styles.label}>Mot de passe</Text>
+            <Text style={styles.label}>{t('auth_password')}</Text>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Min. 6 caractères"
+              placeholder={t('auth_password_hint')}
               placeholderTextColor={colors.textMuted}
               secureTextEntry
               autoCapitalize="none"
               returnKeyType="done"
               onSubmitEditing={submit}
-              accessibilityLabel="Mot de passe"
+              accessibilityLabel={t('auth_password')}
             />
           </View>
 
@@ -200,7 +202,7 @@ export default function AuthScreen({ onAuthSuccess }) {
             disabled={loading}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel={isLogin ? 'Se connecter' : 'Créer mon compte'}
+            accessibilityLabel={isLogin ? t('auth_login_btn') : t('auth_register_btn')}
           >
             {loading ? (
               <ActivityIndicator color="#FFF" />
@@ -208,7 +210,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name={isLogin ? 'lock-closed-outline' : 'sparkles-outline'} size={18} color="#FFF" accessibilityElementsHidden />
                 <Text style={styles.btnText}>
-                  {isLogin ? 'Se connecter' : 'Créer mon compte'}
+                  {isLogin ? t('auth_login_btn') : t('auth_register_btn')}
                 </Text>
               </View>
             )}
@@ -216,8 +218,8 @@ export default function AuthScreen({ onAuthSuccess }) {
 
           {/* Lien mot de passe oublié */}
           {isLogin && !isForgot && (
-            <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('forgot'); setError(null); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel="Mot de passe oublié">
-              <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
+            <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('forgot'); setError(null); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel={t('auth_forgot')}>
+              <Text style={styles.forgotLink}>{t('auth_forgot')}</Text>
             </TouchableOpacity>
           )}
 
@@ -226,19 +228,19 @@ export default function AuthScreen({ onAuthSuccess }) {
             <View style={styles.forgotBox}>
               {forgotSent ? (
                 <>
-                  <Text style={styles.forgotTitle}>Email envoyé ✓</Text>
+                  <Text style={styles.forgotTitle}>{t('auth_forgot_sent_title')}</Text>
                   <Text style={styles.forgotText}>
-                    Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.
+                    {t('auth_forgot_sent_text')}
                   </Text>
-                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel="Retour à la connexion">
-                    <Text style={styles.forgotLink}>← Retour à la connexion</Text>
+                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel={t('auth_forgot_back')}>
+                    <Text style={styles.forgotLink}>{t('auth_forgot_back')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.forgotTitle}>Réinitialiser le mot de passe</Text>
+                  <Text style={styles.forgotTitle}>{t('auth_forgot_title')}</Text>
                   <View style={styles.field}>
-                    <Text style={styles.label}>Adresse email</Text>
+                    <Text style={styles.label}>{t('auth_email')}</Text>
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -248,7 +250,7 @@ export default function AuthScreen({ onAuthSuccess }) {
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      accessibilityLabel="Adresse email"
+                      accessibilityLabel={t('auth_email')}
                     />
                   </View>
                   <TouchableOpacity activeOpacity={0.75}
@@ -257,12 +259,12 @@ export default function AuthScreen({ onAuthSuccess }) {
                     disabled={loading}
                     accessible={true}
                     accessibilityRole="button"
-                    accessibilityLabel="Envoyer le lien de réinitialisation"
+                    accessibilityLabel={t('auth_forgot_send')}
                   >
-                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>Envoyer le lien</Text>}
+                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>{t('auth_forgot_send')}</Text>}
                   </TouchableOpacity>
-                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setError(null); }} accessible={true} accessibilityRole="link" accessibilityLabel="Retour à la connexion">
-                    <Text style={styles.forgotLink}>← Retour à la connexion</Text>
+                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setError(null); }} accessible={true} accessibilityRole="link" accessibilityLabel={t('auth_forgot_back')}>
+                    <Text style={styles.forgotLink}>{t('auth_forgot_back')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -271,17 +273,11 @@ export default function AuthScreen({ onAuthSuccess }) {
 
           {/* Note plans gratuits */}
           {!isLogin && !isForgot && (
-            <Text style={styles.planNote}>
-              Compte gratuit : 5 questions/mois incluses.{'\n'}
-              Passez au plan Pro (29€/mois) depuis les Réglages.
-            </Text>
+            <Text style={styles.planNote}>{t('auth_plan_note')}</Text>
           )}
 
           {/* Avertissement légal */}
-          <Text style={styles.disclaimer}>
-            🇧🇪 Lexavo fournit une aide à la recherche juridique.
-            Les réponses ne constituent pas un conseil juridique professionnel.
-          </Text>
+          <Text style={styles.disclaimer}>{t('auth_legal_note')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

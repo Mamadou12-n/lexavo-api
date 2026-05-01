@@ -5,6 +5,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Doit être défini AVANT l'import de api.main (slowapi lit l'env au démarrage)
+os.environ.setdefault("RATELIMIT_ENABLED", "0")
+os.environ.setdefault("LEXAVO_JWT_SECRET", "test-secret-key")
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+
 from fastapi.testclient import TestClient
 from api.main import app
 from api.database import init_db, create_user
@@ -15,6 +20,8 @@ from api.auth import create_token
 def setup_db():
     os.environ.setdefault("LEXAVO_JWT_SECRET", "test-secret-key")
     os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+    # Désactive le rate limiter slowapi en mode test
+    os.environ.setdefault("RATELIMIT_ENABLED", "0")
     init_db()
     yield
 

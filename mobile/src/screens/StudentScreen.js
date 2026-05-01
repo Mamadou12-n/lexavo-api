@@ -33,9 +33,9 @@ import XPBar from '../components/XPBar';
 import StreakCounter from '../components/StreakCounter';
 import BadgeGrid from '../components/BadgeGrid';
 import { colors, typography, spacing, radius } from '../theme/designSystem';
+import { XP_PER_LEVEL, MODES, fmtTime, computeQuizScore } from './student/utils';
 
 const { width: SW } = Dimensions.get('window');
-const XP_PER_LEVEL = 500;
 
 // ─── Design System — thème light (remplace neon dark) ────────────────────────
 // /stitch-design-taste : T remappé vers tokens designSystem, zéro touche au JSX fonctionnel
@@ -59,18 +59,6 @@ const T = {
   glow3: colors.errorLight,         // '#FEF0EF'
 };
 
-
-const MODES = [
-  { id: 'quiz', label: 'Quiz IA', sub: 'L\'IA s\'adapte à ton niveau.', gradient: ['#4A1D96', '#8B5CF6'], glowColor: 'rgba(139, 92, 246, 0.25)', icon: '⚡', badge: '+50 XP', xpMode: 'quiz_pass' },
-  { id: 'flashcards', label: 'Flashcards SRS', sub: 'Algorithme Leitner. Mémorise moins, retiens plus.', gradient: ['#004D8F', '#4DA6FF'], glowColor: 'rgba(77, 166, 255, 0.25)', icon: '🃏', badge: '+20 XP', xpMode: 'flashcards' },
-  { id: 'summary', label: 'Résumé Turbo', sub: 'Des heures de cours en 30 secondes.', gradient: ['#991B1B', '#FF6B6B'], glowColor: 'rgba(255, 107, 107, 0.25)', icon: '🚀', badge: '+10 XP', xpMode: 'summary' },
-  { id: 'chat', label: 'Tuteur IA', sub: 'Ton prof 24/7. Pose n\'importe quelle question.', gradient: ['#004D40', '#00D4AA'], glowColor: 'rgba(0, 212, 170, 0.25)', icon: '🤖', badge: 'ILLIMITÉ', xpMode: null },
-  { id: 'podcast', label: 'Podcast IA', sub: 'Script dialogue 2 hosts + export NotebookLM.', gradient: ['#7C4D00', '#FFB84D'], glowColor: 'rgba(255, 184, 77, 0.25)', icon: '🎙️', badge: '+10 XP', xpMode: 'summary' },
-  { id: 'case_study', label: 'Cas Pratique', sub: 'Résoudre un cas réel. Correction IA enrichie.', gradient: ['#1A4731', '#2DD4BF'], glowColor: 'rgba(45, 212, 191, 0.25)', icon: '🧠', badge: '+75 XP', xpMode: 'case_study' },
-  { id: 'mock_exam', label: 'Examen Blanc', sub: '20 questions chrono. Solo ou groupe.', gradient: ['#4A1A1A', '#E53E3E'], glowColor: 'rgba(229, 62, 62, 0.25)', icon: '📝', badge: '+150 XP', xpMode: 'mock_exam' },
-  { id: 'interleaved', label: 'Révision Mixte', sub: 'Mélange de branches. +50% de rétention prouvé.', gradient: ['#1A1A4A', '#6366F1'], glowColor: 'rgba(99, 102, 241, 0.25)', icon: '🔀', badge: '+50 XP', xpMode: 'quiz_pass' },
-  { id: 'free_recall', label: 'Rappel Libre', sub: 'Question ouverte. ×2 rétention vs QCM.', gradient: ['#2D1A4A', '#A855F7'], glowColor: 'rgba(168, 85, 247, 0.25)', icon: '✍️', badge: '+75 XP', xpMode: 'free_recall' },
-];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function StudentScreen() {
@@ -222,7 +210,7 @@ export default function StudentScreen() {
   }, [examStep]);
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
-  const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  // fmtTime importé depuis ./student/utils
 
   const goMode = (m) => {
     if (m.disabled) { Alert.alert('Bientôt', 'Cette fonctionnalité arrive bientôt !'); return; }
@@ -261,12 +249,7 @@ export default function StudentScreen() {
     } catch (_) {}
   };
 
-  const getScore = () => {
-    if (!result?.questions) return { correct: 0, total: 0 };
-    let c = 0;
-    result.questions.forEach(q => { if (selectedAnswers[q.id] === q.correct) c++; });
-    return { correct: c, total: result.questions.length };
-  };
+  const getScore = () => computeQuizScore(result, selectedAnswers);
 
   // ─── Génération quiz/flashcards/résumé ─────────────────────────────────────
   const generate = async () => {

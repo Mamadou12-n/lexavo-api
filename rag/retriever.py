@@ -90,6 +90,50 @@ SOURCE_DETECT = {
     r"assurance":                    "Loi sur les assurances",
 }
 
+# ─── Alt.6 bis : Mapping source détectée → mots-clés titre JUSTEL ──────────
+# Le `detected_source` est un libellé humain (ex. "Loi sur les contrats de travail"),
+# alors que les `payload.title` JUSTEL contiennent les dates officielles
+# (ex. "22 août 1978…"). Ce mapping permet à Alt.6 de reconnaître la source
+# malgré la divergence de libellés.
+SOURCE_TO_KEYWORDS = {
+    "Code pénal":                          ["code pénal", "code penal", "1867", "8 juin 1867"],
+    "Code pénal social":                   ["code pénal social", "pénal social", "6 juin 2010"],
+    "Code civil":                          ["code civil", "ancien code civil", "nouveau code civil"],
+    "Code judiciaire":                     ["code judiciaire", "10 octobre 1967"],
+    "Constitution belge":                  ["constitution"],
+    "Code des sociétés et associations":   ["sociétés et associations", "csa", "23 mars 2019"],
+    "Code de droit économique":            ["droit économique", "cde", "28 février 2013"],
+    "Code de la TVA":                      ["tva", "taxe sur la valeur ajoutée", "3 juillet 1969"],
+    "Code des impôts":                     ["impôts sur les revenus", "cir", "cir 1992", "10 avril 1992"],
+    "Loi sur les etrangers":               ["étrangers", "etrangers", "15 décembre 1980", "accès au territoire"],
+    "Loi sur les contrats de travail":     ["contrats de travail", "contrat de travail", "3 juillet 1978"],
+    "Loi relative aux droits du patient":  ["droits du patient", "22 août 2002"],
+    "Loi du 17 juin 2016":                 ["marchés publics", "17 juin 2016"],
+    "Loi relative au bien-être":           ["bien-être", "bien être", "4 août 1996"],
+    "Loi sur les accidents du travail":    ["accidents du travail", "10 avril 1971"],
+    "Code de la nationalite":              ["nationalité", "nationalite", "code de la nationalité"],
+    "Code d'instruction criminelle":       ["instruction criminelle", "17 novembre 1808"],
+    "Loi sur les assurances":              ["assurances", "4 avril 2014"],
+}
+
+
+def _matches_detected_source(title: str, detected_source: Optional[str]) -> bool:
+    """
+    Alt.6 : vrai si le titre du document correspond à la source détectée
+    dans la question. Utilise un mapping mots-clés pour rattraper les
+    titres JUSTEL (dates officielles) quand `detected_source` est un libellé humain.
+    """
+    if not detected_source or not title:
+        return False
+    title_lc = title.lower()
+    # 1) Match direct (cas où le titre contient le libellé canonique)
+    if detected_source.lower() in title_lc:
+        return True
+    # 2) Match via keywords (titres JUSTEL avec dates officielles)
+    keywords = SOURCE_TO_KEYWORDS.get(detected_source, [])
+    return any(kw.lower() in title_lc for kw in keywords)
+
+
 # Stopwords pour Alt.3
 STOPWORDS_FR = {
     "quel", "quelle", "quels", "quelles", "dans", "pour", "avec", "sont",
@@ -430,7 +474,7 @@ def retrieve(
                 for doc_text, meta in hits:
                     if detected_source:
                         title = meta.get("title", "")
-                        if detected_source.lower() in title.lower():
+                        if _matches_detected_source(title, detected_source):
                             keyword_chunks.insert(0, (doc_text, meta))  # en tête
                         else:
                             keyword_chunks.append((doc_text, meta))
@@ -487,8 +531,9 @@ def retrieve(
             return
 
         # Alt.6 : Bonus si source détectée correspond
+        # (matching élargi via SOURCE_TO_KEYWORDS pour titres JUSTEL avec dates)
         source_bonus = 0.0
-        if detected_source and detected_source.lower() in title.lower():
+        if _matches_detected_source(title, detected_source):
             source_bonus = 0.3
 
         priority_bonus = SOURCE_PRIORITY.get(source, 2) * 0.01

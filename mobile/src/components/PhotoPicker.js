@@ -11,6 +11,25 @@ import { colors } from '../theme/designSystem';
 
 const LEXAVO_ORANGE = colors.brand;
 
+/**
+ * @typedef {Object} Photo
+ * @property {string} uri - URI locale de la photo.
+ * @property {string} [base64] - Représentation base64 (envoyée au backend).
+ *
+ * @typedef {Object} PhotoPickerProps
+ * @property {Photo[]} [photos=[]] - Photos déjà sélectionnées.
+ * @property {(photos: Photo[]) => void} [onPhotosChange] - Callback de mise à jour.
+ * @property {number} [maxPhotos=3] - Nombre maximum de photos autorisé.
+ * @property {string} [label] - Libellé du bouton d'ajout.
+ */
+
+/**
+ * PhotoPicker — Composant réutilisable pour ajouter jusqu'à 3 photos
+ * (caméra ou galerie) avec encodage base64 pour l'envoi au backend Lexavo.
+ *
+ * @param {PhotoPickerProps} props
+ * @returns {React.ReactElement}
+ */
 export default function PhotoPicker({ photos = [], onPhotosChange = () => {}, maxPhotos = 3, label = '📷 Ajouter une photo' }) {
   const pickImage = async (useCamera) => {
     if (photos.length >= maxPhotos) {

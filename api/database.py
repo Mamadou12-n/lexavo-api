@@ -375,9 +375,34 @@ CREATE TABLE IF NOT EXISTS student_shared_notes (
     likes INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS failed_logins (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL,
+    ip TEXT,
+    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+    event_id TEXT PRIMARY KEY,
+    processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    ip TEXT,
+    user_agent TEXT,
+    details TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 _PG_INDEXES = """
+CREATE INDEX IF NOT EXISTS idx_failed_logins_email_time ON failed_logins(email, attempted_at);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_user ON admin_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_time ON admin_audit_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
@@ -669,6 +694,32 @@ CREATE TABLE IF NOT EXISTS student_shared_notes (
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS failed_logins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    ip TEXT,
+    attempted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_failed_logins_email_time ON failed_logins(email, attempted_at);
+
+CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+    event_id TEXT PRIMARY KEY,
+    processed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    ip TEXT,
+    user_agent TEXT,
+    details TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_user ON admin_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_time ON admin_audit_log(created_at);
 """ + _PG_INDEXES
 
 

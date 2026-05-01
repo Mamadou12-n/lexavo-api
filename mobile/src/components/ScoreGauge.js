@@ -1,7 +1,3 @@
-/**
- * ScoreGauge — Jauge de contestabilité animée
- * Props: score (0-100), level ('forte'|'moyenne'|'faible'), size
- */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -11,6 +7,20 @@ const COLORS = {
   faible: { bar: '#EF4444', bg: '#FEF2F2', text: '#991B1B', label: 'Faible chance' },
 };
 
+/**
+ * @typedef {Object} ScoreGaugeProps
+ * @property {number} [score=0] - Score de contestabilité (0-100).
+ * @property {'forte'|'moyenne'|'faible'} [level='faible'] - Niveau qualitatif associé.
+ * @property {boolean} [compact=false] - Mode compact (taille réduite).
+ */
+
+/**
+ * ScoreGauge — Jauge de contestabilité animée affichant un score 0-100
+ * avec le code couleur Lexavo (vert/orange/rouge).
+ *
+ * @param {ScoreGaugeProps} props
+ * @returns {React.ReactElement}
+ */
 export default function ScoreGauge({ score = 0, level = 'faible', compact = false }) {
   const c = COLORS[level] || COLORS.faible;
   const pct = Math.min(100, Math.max(0, score));

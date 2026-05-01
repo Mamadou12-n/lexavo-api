@@ -4,8 +4,17 @@ import { colors, sourceColor } from '../theme/colors';
 import { typography, spacing, radius } from '../theme/designSystem';
 
 /**
- * Carte d'une source dans le rapport de statistiques.
+ * @typedef {Object} SourceCardProps
+ * @property {string} source - Nom de la source juridique.
+ * @property {number} count - Nombre de documents indexés pour cette source.
+ */
+
+/**
+ * SourceCard — Carte d'une source dans le rapport de statistiques.
  * /impeccable : ZÉRO borderLeftWidth — indicateur = dot 8px coloré uniquement.
+ *
+ * @param {SourceCardProps} props
+ * @returns {React.ReactElement}
  */
 export default function SourceCard({ source, count }) {
   const bg = sourceColor(source);

@@ -2,6 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography } from '../theme/designSystem';
 
+/**
+ * @typedef {Object} XPBarProps
+ * @property {number} currentXP - XP courant de l'utilisateur dans le niveau actuel.
+ * @property {number} [nextLevelXP=500] - XP requis pour atteindre le niveau suivant.
+ * @property {number} level - Niveau actuel de l'utilisateur (à afficher).
+ */
+
+/**
+ * XPBar — Barre de progression d'XP du système de gamification Lexavo Campus.
+ *
+ * @param {XPBarProps} props
+ * @returns {React.ReactElement}
+ */
 export default function XPBar({ currentXP, nextLevelXP = 500, level }) {
   const progress = Math.min((currentXP / nextLevelXP) * 100, 100);
 

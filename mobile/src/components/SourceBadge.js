@@ -3,7 +3,17 @@ import { View, Text, StyleSheet } from 'react-native';
 import { sourceColor } from '../theme/colors';
 
 /**
- * Badge coloré affichant le nom de la source juridique.
+ * @typedef {Object} SourceBadgeProps
+ * @property {string} source - Nom de la source juridique (JUSTEL, HUDOC, EUR-Lex, etc.).
+ * @property {boolean} [small=false] - Variante compacte du badge.
+ */
+
+/**
+ * SourceBadge — Badge coloré affichant le nom de la source juridique.
+ * La couleur est dérivée automatiquement du nom de la source via `sourceColor`.
+ *
+ * @param {SourceBadgeProps} props
+ * @returns {React.ReactElement}
  */
 export default function SourceBadge({ source, small = false }) {
   const bg = sourceColor(source);

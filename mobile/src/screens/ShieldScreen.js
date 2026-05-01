@@ -345,7 +345,7 @@ export default function ShieldScreen() {
                       <Text style={styles.clauseExplain}>{clause.explanation}</Text>
                       {clause.legal_basis && (
                         <View style={styles.legalRef}>
-                          <Text style={styles.legalRefText}>📖 {clause.legal_basis}</Text>
+                          <Text style={styles.legalRefText}>{clause.legal_basis}</Text>
                         </View>
                       )}
                     </View>
@@ -388,7 +388,7 @@ export default function ShieldScreen() {
             {result.document_type && (
               <View style={styles.docTypePill}>
                 <Text style={styles.docTypePillText}>
-                  📄 {result.document_type.replace(/_/g, ' ')}
+                  {result.document_type.replace(/_/g, ' ')}
                 </Text>
               </View>
             )}
@@ -414,14 +414,14 @@ export default function ShieldScreen() {
 
             {result.action_required && (
               <View style={styles.actionBox}>
-                <Text style={styles.actionTitle}>➡️  Action requise</Text>
+                <Text style={styles.actionTitle}>Action requise</Text>
                 <Text style={styles.actionText}>{result.action_required}</Text>
               </View>
             )}
 
             {result.legal_context && (
               <View style={styles.legalContextBox}>
-                <Text style={styles.legalContextText}>📖 {result.legal_context}</Text>
+                <Text style={styles.legalContextText}>{result.legal_context}</Text>
               </View>
             )}
 
@@ -433,7 +433,7 @@ export default function ShieldScreen() {
 
         <View style={{ marginTop: 12, padding: 10, backgroundColor: '#FFFBEB', borderRadius: 8, borderWidth: 1, borderColor: '#FDE68A' }}>
           <Text style={{ fontSize: 10, color: '#92400E', textAlign: 'center', fontStyle: 'italic', lineHeight: 14 }}>
-            ⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat ni un conseiller juridique professionnel.
+            Lexavo est un outil d'information juridique. Il ne remplace pas un avocat ni un conseiller juridique professionnel.
           </Text>
         </View>
       </ScrollView>

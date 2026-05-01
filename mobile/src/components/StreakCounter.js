@@ -2,6 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography, radius, spacing } from '../theme/designSystem';
 
+/**
+ * @typedef {Object} StreakCounterProps
+ * @property {number} count - Nombre de jours consécutifs d'activité.
+ * @property {boolean} [isActive=false] - Indique si l'utilisateur a été actif aujourd'hui.
+ */
+
+/**
+ * StreakCounter — Compteur de jours consécutifs d'apprentissage Lexavo Campus.
+ * Affiche un badge inactif si count === 0.
+ *
+ * @param {StreakCounterProps} props
+ * @returns {React.ReactElement}
+ */
 export default function StreakCounter({ count, isActive = false }) {
   if (count === 0) {
     return (

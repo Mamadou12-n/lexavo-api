@@ -214,7 +214,7 @@ export default function DiagnosticScreen() {
               </TouchableOpacity>
             </View>
 
-            {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
+            {error && <View style={s.errorBox}><Text style={s.errorText}>{error}</Text></View>}
 
             {result && (
               <View style={s.card}>
@@ -240,7 +240,7 @@ export default function DiagnosticScreen() {
                     <Text style={s.sectionTitle}>Droit applicable</Text>
                     {result.applicable_law.map((l, i) => (
                       <View key={i} style={s.listItem}>
-                        <Text style={s.bullet}>⚖️</Text>
+                        <Ionicons name="scale-outline" size={14} color="#1F2937" style={{ marginRight: 6, marginTop: 2 }} accessibilityElementsHidden />
                         <Text style={s.listText}>{l}</Text>
                       </View>
                     ))}
@@ -260,7 +260,7 @@ export default function DiagnosticScreen() {
                 {result.urgency_level && (
                   <View style={[s.urgencyBox, { borderColor: result.urgency_level === 'high' ? colors.error : colors.warning }]}>
                     <Text style={s.urgencyText}>
-                      {result.urgency_level === 'high' ? '🚨' : '⚠️'} Urgence : {result.urgency_level}
+                      Urgence : {result.urgency_level}
                     </Text>
                   </View>
                 )}
@@ -314,7 +314,7 @@ export default function DiagnosticScreen() {
                     </View>
                   ))}
                 </View>
-                {scoreError && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {scoreError}</Text></View>}
+                {scoreError && <View style={s.errorBox}><Text style={s.errorText}>{scoreError}</Text></View>}
                 <TouchableOpacity activeOpacity={0.75}
                   style={[s.btn, (!canSubmit || scoreLoading) && s.btnDisabled]}
                   onPress={evaluateSc} disabled={!canSubmit || scoreLoading}
@@ -411,7 +411,7 @@ export default function DiagnosticScreen() {
                   ))}
                 </View>
 
-                {hError && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {hError}</Text></View>}
+                {hError && <View style={s.errorBox}><Text style={s.errorText}>{hError}</Text></View>}
 
                 <TouchableOpacity activeOpacity={0.75}
                   style={[s.btn, { marginTop: 16 }, (!estateValue || hLoading) && s.btnDisabled]}
@@ -465,7 +465,7 @@ export default function DiagnosticScreen() {
         )}
 
         <View style={s.disclaimerBox}>
-          <Text style={s.disclaimerBoxText}>⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat.</Text>
+          <Text style={s.disclaimerBoxText}>Lexavo est un outil d'information juridique. Il ne remplace pas un avocat.</Text>
         </View>
 
       </ScrollView>

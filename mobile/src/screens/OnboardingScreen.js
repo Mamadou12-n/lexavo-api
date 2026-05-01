@@ -5,9 +5,13 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography, spacing } from '../theme/designSystem';
-import { t, getDeviceLanguage } from '../i18n/translations';
+import { t as tStatic, getDeviceLanguage } from '../i18n/translations';
 import { REGION_KEY } from '../api/client';
 import { Ionicons } from '@expo/vector-icons';
+
+// Helper local : utilise selectedLang (state) car le LanguageContext n'est pas
+// encore source de vérité durant l'onboarding (l'utilisateur le choisit ici).
+const tt = (key, lang) => tStatic(key, lang);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -16,25 +20,10 @@ const STORAGE_KEYS = {
   LANGUAGE: '@lexavo_lang',
 };
 
-const REGIONS = [
-  {
-    id: 'bruxelles',
-    flag: '🏙️',
-    label: 'Bruxelles',
-    sub: 'Région de Bruxelles-Capitale',
-  },
-  {
-    id: 'wallonie',
-    flag: '🌿',
-    label: 'Wallonie',
-    sub: 'Région wallonne',
-  },
-  {
-    id: 'flandre',
-    flag: '🦁',
-    label: 'Flandre',
-    sub: 'Vlaams Gewest',
-  },
+const REGION_DEFS = [
+  { id: 'bruxelles', flag: '🏙️', labelKey: 'region_bxl', subKey: 'region_bxl_sub' },
+  { id: 'wallonie',  flag: '🌿', labelKey: 'region_wal', subKey: 'region_wal_sub' },
+  { id: 'flandre',   flag: '🦁', labelKey: 'region_fla', subKey: 'region_fla_sub' },
 ];
 
 const LANGUAGES = [
@@ -124,32 +113,32 @@ export default function OnboardingScreen({ navigation, onDone }) {
                 <Text style={styles.logoText}>Lexavo</Text>
               </View>
               <Text style={styles.stepTitle}>
-                {t('onboarding_title', selectedLang)}
+                {tt('onb_welcome_title', selectedLang)}
               </Text>
               <Text style={styles.stepSubtitle}>
-                {t('onboarding_subtitle', selectedLang)}
+                {tt('onb_welcome_sub', selectedLang)}
               </Text>
               <View style={styles.featureList}>
                 <FeatureItem
                   icon="&#x1F4AC;"
-                  text="Posez vos questions juridiques en langage naturel"
+                  text={tt('onb_feature_chat', selectedLang)}
                 />
                 <FeatureItem
                   icon="&#x1F4DA;"
-                  text="Base de donnees juridique belge complete"
+                  text={tt('onb_feature_db', selectedLang)}
                 />
                 <FeatureItem
                   icon="&#x1F50D;"
-                  text="Recherche intelligente dans 15+ sources officielles"
+                  text={tt('onb_feature_search', selectedLang)}
                 />
                 <FeatureItem
                   icon="&#x1F1E7;&#x1F1EA;"
-                  text="Droit belge, europeen et international"
+                  text={tt('onb_feature_scope', selectedLang)}
                 />
               </View>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Commencer l'onboarding">
-              <Text style={styles.primaryBtnText}>Commencer</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel={tt('common_start', selectedLang)}>
+              <Text style={styles.primaryBtnText}>{tt('common_start', selectedLang)}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -160,10 +149,10 @@ export default function OnboardingScreen({ navigation, onDone }) {
             <View style={styles.stepContent}>
               <Ionicons name="globe-outline" size={50} color={colors.brand} style={{ marginBottom: 16 }} accessibilityElementsHidden />
               <Text style={styles.stepTitle}>
-                {t('language', selectedLang)}
+                {tt('onb_lang_title', selectedLang)}
               </Text>
               <Text style={styles.stepDescription} allowFontScaling={true}>
-                Choisissez votre langue preferee. Vous pourrez la modifier dans les parametres.
+                {tt('onb_lang_desc', selectedLang)}
               </Text>
               <View style={styles.languageGrid}>
                 {LANGUAGES.map((lang) => (
@@ -198,8 +187,8 @@ export default function OnboardingScreen({ navigation, onDone }) {
                 ))}
               </View>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Continuer">
-              <Text style={styles.primaryBtnText}>Continuer</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel={tt('common_continue', selectedLang)}>
+              <Text style={styles.primaryBtnText}>{tt('common_continue', selectedLang)}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -209,46 +198,50 @@ export default function OnboardingScreen({ navigation, onDone }) {
           <View style={styles.stepContainer}>
             <View style={styles.stepContent}>
               <Text style={styles.stepIcon}>📍</Text>
-              <Text style={styles.stepTitle}>Votre région</Text>
+              <Text style={styles.stepTitle}>{tt('onb_region_title', selectedLang)}</Text>
               <Text style={styles.stepDescription} allowFontScaling={true}>
-                Le droit belge varie selon la région. Lexavo adaptera ses réponses à votre droit régional automatiquement.
+                {tt('onb_region_desc', selectedLang)}
               </Text>
               <View style={styles.languageGrid}>
-                {REGIONS.map((r) => (
-                  <TouchableOpacity activeOpacity={0.75}
-                    key={r.id}
-                    style={[
-                      styles.languageBtn,
-                      selectedRegion === r.id && styles.languageBtnActive,
-                    ]}
-                    onPress={() => handleRegionSelect(r.id)}
-                    activeOpacity={0.8}
-                    accessible={true}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Choisir la région ${r.label}`}
-                    accessibilityState={{ selected: selectedRegion === r.id }}
-                  >
-                    <Text style={styles.languageFlag}>{r.flag}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.languageLabel, selectedRegion === r.id && styles.languageLabelActive]}>
-                        {r.label}
-                      </Text>
-                      <Text style={styles.regionSubLabel}>{r.sub}</Text>
-                    </View>
-                    {selectedRegion === r.id && (
-                      <View style={styles.languageCheck}>
-                        <Text style={styles.languageCheckText}>✓</Text>
+                {REGION_DEFS.map((r) => {
+                  const label = tt(r.labelKey, selectedLang);
+                  const sub = tt(r.subKey, selectedLang);
+                  return (
+                    <TouchableOpacity activeOpacity={0.75}
+                      key={r.id}
+                      style={[
+                        styles.languageBtn,
+                        selectedRegion === r.id && styles.languageBtnActive,
+                      ]}
+                      onPress={() => handleRegionSelect(r.id)}
+                      activeOpacity={0.8}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected: selectedRegion === r.id }}
+                    >
+                      <Text style={styles.languageFlag}>{r.flag}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.languageLabel, selectedRegion === r.id && styles.languageLabelActive]}>
+                          {label}
+                        </Text>
+                        <Text style={styles.regionSubLabel}>{sub}</Text>
                       </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                      {selectedRegion === r.id && (
+                        <View style={styles.languageCheck}>
+                          <Text style={styles.languageCheckText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
               <Text style={styles.regionNote}>
-                Vous pourrez modifier votre région à tout moment dans les paramètres.
+                {tt('onb_region_note', selectedLang)}
               </Text>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Continuer">
-              <Text style={styles.primaryBtnText}>Continuer</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel={tt('common_continue', selectedLang)}>
+              <Text style={styles.primaryBtnText}>{tt('common_continue', selectedLang)}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -258,10 +251,10 @@ export default function OnboardingScreen({ navigation, onDone }) {
           <View style={styles.stepContainer}>
             <View style={styles.stepContent}>
               <Text style={styles.stepIcon}>&#x26A0;&#xFE0F;</Text>
-              <Text style={styles.stepTitle}>Bon à savoir</Text>
+              <Text style={styles.stepTitle}>{tt('onb_disclaimer_title', selectedLang)}</Text>
               <View style={styles.disclaimerBox}>
                 <Text style={styles.disclaimerText} allowFontScaling={true}>
-                  Lexavo = info juridique, pas conseil professionnel.
+                  {tt('onb_disclaimer_text', selectedLang)}
                 </Text>
               </View>
             </View>
@@ -271,9 +264,9 @@ export default function OnboardingScreen({ navigation, onDone }) {
               activeOpacity={0.8}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel="J'ai compris, terminer l'onboarding"
+              accessibilityLabel={tt('common_understood', selectedLang)}
             >
-              <Text style={styles.primaryBtnText}>J'ai compris</Text>
+              <Text style={styles.primaryBtnText}>{tt('common_understood', selectedLang)}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -281,7 +274,7 @@ export default function OnboardingScreen({ navigation, onDone }) {
       default:
         return null;
     }
-  }, [selectedLang, handleNext, handleLanguageSelect, handleComplete]);
+  }, [selectedLang, selectedRegion, handleNext, handleLanguageSelect, handleRegionSelect, handleComplete]);
 
   return (
     <View style={styles.container}>
@@ -326,9 +319,9 @@ export default function OnboardingScreen({ navigation, onDone }) {
           activeOpacity={0.7}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel="Passer l'onboarding"
+          accessibilityLabel={tt('common_skip', selectedLang)}
         >
-          <Text style={styles.skipText}>Passer</Text>
+          <Text style={styles.skipText}>{tt('common_skip', selectedLang)}</Text>
         </TouchableOpacity>
       )}
     </View>

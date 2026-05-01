@@ -352,7 +352,7 @@ export default function DefendScreen() {
               </View>
             ))}
             <View style={s.disclaimer}>
-              <Text style={s.disclaimerText}>⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat.</Text>
+              <Text style={s.disclaimerText}>Lexavo est un outil d'information juridique. Il ne remplace pas un avocat.</Text>
             </View>
           </>
         )}
@@ -382,7 +382,7 @@ export default function DefendScreen() {
             {/* SCAN (si catégorie scannable) */}
             {canScan && (
               <View style={s.scanBox}>
-                <Text style={s.scanTitle}>📷 Scanner votre document (optionnel)</Text>
+                <Text style={s.scanTitle}>Scanner votre document (optionnel)</Text>
                 <Text style={s.scanSub}>Photographiez votre amende/lettre — l'IA extrait les données automatiquement</Text>
                 <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="Ajouter la photo" />
                 {photos.length > 0 && !scanResult && (
@@ -397,7 +397,7 @@ export default function DefendScreen() {
                   >
                     {scanLoading
                       ? <ActivityIndicator color="#FFF" />
-                      : <Text style={s.scanBtnText}>🔍 Analyser le document</Text>
+                      : <Text style={s.scanBtnText}>Analyser le document</Text>
                     }
                   </TouchableOpacity>
                 )}
@@ -488,7 +488,7 @@ export default function DefendScreen() {
               ))}
             </View>
 
-            {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
+            {error && <View style={s.errorBox}><Text style={s.errorText}>{error}</Text></View>}
 
             <TouchableOpacity
               activeOpacity={0.85}
@@ -502,7 +502,7 @@ export default function DefendScreen() {
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={s.analyzeBtnText}>🔍 Analyser ma situation</Text>
+                : <Text style={s.analyzeBtnText}>Analyser ma situation</Text>
               }
             </TouchableOpacity>
           </>
@@ -533,9 +533,9 @@ export default function DefendScreen() {
             {/* Probabilité de succès (flow libre) */}
             {result.success_probability && !result.contestability_score && (
               <View style={[s.resultCard, { borderWidth: 1.5, borderColor: result.success_probability === 'elevee' ? '#10B981' : result.success_probability === 'moyenne' ? '#F59E0B' : '#EF4444', backgroundColor: result.success_probability === 'elevee' ? '#ECFDF5' : result.success_probability === 'moyenne' ? '#FFFBEB' : '#FEF2F2' }]}>
-                <Text style={s.resultTitle}>📊 Probabilité de succès</Text>
+                <Text style={s.resultTitle}>Probabilité de succès</Text>
                 <Text style={[s.resultText, { fontWeight: '700', fontSize: 16 }]}>
-                  {result.success_probability === 'elevee' ? '🟢 Élevée' : result.success_probability === 'moyenne' ? '🟠 Moyenne' : '🔴 Faible'}
+                  {result.success_probability === 'elevee' ? 'Élevée' : result.success_probability === 'moyenne' ? 'Moyenne' : 'Faible'}
                 </Text>
               </View>
             )}
@@ -550,7 +550,7 @@ export default function DefendScreen() {
             {/* Analyse situation détaillée */}
             {result.situation_analysis && (
               <View style={s.resultCard}>
-                <Text style={s.resultTitle}>📋 Analyse de votre situation</Text>
+                <Text style={s.resultTitle}>Analyse de votre situation</Text>
                 <Text style={s.resultText}>{result.situation_analysis}</Text>
               </View>
             )}
@@ -558,7 +558,7 @@ export default function DefendScreen() {
             {/* Vices de forme détectés */}
             {result.vices_detected?.length > 0 && (
               <View style={s.resultCard}>
-                <Text style={s.resultTitle}>🎯 Vices de forme détectés</Text>
+                <Text style={s.resultTitle}>Vices de forme détectés</Text>
                 {result.vices_detected.map((v, i) => (
                   <View key={i} style={s.viceRow}>
                     <Text style={s.viceBullet}>✓</Text>
@@ -571,7 +571,7 @@ export default function DefendScreen() {
             {/* Contexte juridique */}
             {result.legal_context && (
               <View style={s.legalBox}>
-                <Text style={s.legalTitle}>⚖️ Contexte juridique</Text>
+                <Text style={s.legalTitle}>Contexte juridique</Text>
                 <Text style={s.legalText}>{result.legal_context}</Text>
               </View>
             )}
@@ -579,7 +579,7 @@ export default function DefendScreen() {
             {/* Prochaines étapes */}
             {result.next_steps?.length > 0 && (
               <View style={s.resultCard}>
-                <Text style={s.resultTitle}>📌 Prochaines étapes</Text>
+                <Text style={s.resultTitle}>Prochaines étapes</Text>
                 {result.next_steps.map((st, i) => (
                   <View key={i} style={s.stepRow}>
                     <View style={s.stepNum2}><Text style={s.stepNumText}>{i + 1}</Text></View>
@@ -632,13 +632,13 @@ export default function DefendScreen() {
                   >
                     {letterLoading
                       ? <ActivityIndicator color="#FFF" />
-                      : <Text style={s.generateLetterBtnText}>📄 Générer ma lettre de contestation</Text>
+                      : <Text style={s.generateLetterBtnText}>Générer ma lettre de contestation</Text>
                     }
                   </TouchableOpacity>
                 ) : (
                   <>
                     <View style={s.resultCard}>
-                      <Text style={s.resultTitle}>📄 Lettre de contestation — {TONES.find(t => t.id === letterTone)?.label}</Text>
+                      <Text style={s.resultTitle}>Lettre de contestation — {TONES.find(t => t.id === letterTone)?.label}</Text>
                       {letterLoading ? (
                         <ActivityIndicator color={colors.brand} style={{ marginVertical: 20 }} />
                       ) : (
@@ -653,7 +653,7 @@ export default function DefendScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Partager ou copier la lettre"
                       >
-                        <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
+                        <Text style={s.shareBtnText}>Partager / Copier la lettre</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -669,7 +669,7 @@ export default function DefendScreen() {
                     >
                       {letterLoading
                         ? <ActivityIndicator color="#FFF" />
-                        : <Text style={s.regenBtnText}>🔄 Régénérer avec ce ton</Text>
+                        : <Text style={s.regenBtnText}>Régénérer avec ce ton</Text>
                       }
                     </TouchableOpacity>
                   </>
@@ -679,7 +679,7 @@ export default function DefendScreen() {
 
             {/* Disclaimer */}
             <View style={s.disclaimer}>
-              <Text style={s.disclaimerText}>⚖️ {result.disclaimer || 'Lexavo est un outil d\'information juridique. Il ne remplace pas un avocat.'}</Text>
+              <Text style={s.disclaimerText}>{result.disclaimer || 'Lexavo est un outil d\'information juridique. Il ne remplace pas un avocat.'}</Text>
             </View>
 
             <TouchableOpacity
@@ -689,7 +689,7 @@ export default function DefendScreen() {
               accessibilityRole="button"
               accessibilityLabel="Démarrer une nouvelle situation"
             >
-              <Text style={s.resetBtnText}>⚡ Nouvelle situation</Text>
+              <Text style={s.resetBtnText}>Nouvelle situation</Text>
             </TouchableOpacity>
           </>
         )}

@@ -86,6 +86,13 @@ def _setup_json_logging():
 _setup_json_logging()
 log = logging.getLogger("api")
 
+# Install PII scrub filter ASAP so every subsequent log call gets sanitized.
+try:
+    from api.security import install_pii_filter
+    install_pii_filter()
+except Exception:
+    pass
+
 # ─── Rate limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
 
@@ -106,21 +113,44 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Origines autorisées — lire depuis l'env pour ne pas hardcoder en prod
+# Origines autorisées — strict whitelist, jamais de "*", jamais de regex permissive.
 _CORS_ORIGINS_ENV = os.getenv("LEXAVO_ALLOWED_ORIGINS", "")
 if _CORS_ORIGINS_ENV:
-    _ALLOWED_ORIGINS: list[str] = [o.strip() for o in _CORS_ORIGINS_ENV.split(",") if o.strip()]
+    _raw_origins = [o.strip() for o in _CORS_ORIGINS_ENV.split(",") if o.strip()]
+    # Refuse explicitement le wildcard et toute origine non-https en prod.
+    _ALLOWED_ORIGINS: list[str] = [o for o in _raw_origins if o != "*"]
+    if os.getenv("DATABASE_URL"):
+        _ALLOWED_ORIGINS = [
+            o for o in _ALLOWED_ORIGINS
+            if o.startswith("https://") or o.startswith("exp://") or o.startswith("lexavo://")
+        ]
 else:
     if os.getenv("DATABASE_URL"):
         log.warning("PRODUCTION sans LEXAVO_ALLOWED_ORIGINS — CORS restreint a lexavo.be")
-        _ALLOWED_ORIGINS = ["https://lexavo.be", "https://www.lexavo.be"]
+        _ALLOWED_ORIGINS = [
+            "https://lexavo.be",
+            "https://www.lexavo.be",
+            "https://app.lexavo.be",
+            "exp://exp.host",  # Expo Go production
+            "lexavo://",
+        ]
     else:
         _ALLOWED_ORIGINS = [
             "http://localhost:8081",
             "http://localhost:19000",
+            "http://localhost:19006",
             "http://localhost:3000",
             "exp://localhost:8081",
+            "exp://127.0.0.1:8081",
         ]
+
+# Sécurité : valider qu'on n'a JAMAIS "*" dans la liste finale.
+assert "*" not in _ALLOWED_ORIGINS, "CORS wildcard '*' interdit (allow_credentials=True)"
+
+# Headers de sécurité (HSTS, CSP, X-Frame, etc.) — ajouté AVANT CORS pour qu'il
+# s'applique à toutes les réponses, y compris les preflight CORS.
+from api.security import SecurityHeadersMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -128,6 +158,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
+    max_age=600,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -249,12 +280,25 @@ def stats():
 
 
 @app.post("/admin/backup")
-def admin_backup(current_user: dict = Depends(_get_current_user)):
-    """Cree un backup SQLite. Reserve aux admins (user_id=1 pour le MVP)."""
+def admin_backup(request: Request, current_user: dict = Depends(_get_current_user)):
+    """Cree un backup SQLite. Reserve aux admins, accessible UNIQUEMENT via outils CLI.
+    Toute invocation est tracee dans admin_audit_log (user_id, action, ip, user_agent).
+    """
+    from api.security import require_cli_user_agent, admin_audit, mask_ip
     if current_user.get("role") != "admin":
+        admin_audit(current_user["id"], "admin_backup_denied_role", request,
+                    f"role={current_user.get('role')}")
         raise HTTPException(403, "Acces reserve a l'administrateur.")
+    require_cli_user_agent(request)
     from api.database import backup_database
-    path = backup_database()
+    try:
+        path = backup_database()
+    except Exception as e:
+        admin_audit(current_user["id"], "admin_backup_failed", request, str(e)[:200])
+        raise
+    admin_audit(current_user["id"], "admin_backup_ok", request, f"path={path}")
+    log.info("admin_backup user_id=%s ip=%s", current_user["id"],
+             mask_ip(request.client.host if request.client else ""))
     return {"status": "ok", "backup_path": path}
 
 
@@ -458,9 +502,22 @@ def register(request: Request, body: RegisterRequest):
 @app.post("/auth/login", response_model=AuthResponse)
 @limiter.limit("5/minute")
 def login(request: Request, body: LoginRequest):
-    """Connexion — retourne un JWT + refresh token."""
+    """Connexion — retourne un JWT + refresh token. Account lockout 5 fails / 15min -> 30min."""
     from api.auth import login_user
-    result = login_user(email=body.email, password=body.password)
+    from api.security import (
+        check_account_locked, record_failed_login, reset_failed_logins,
+        mask_email, mask_ip,
+    )
+    ip = request.client.host if request.client else ""
+    check_account_locked(body.email)
+    try:
+        result = login_user(email=body.email, password=body.password)
+    except HTTPException as e:
+        if e.status_code == 401:
+            record_failed_login(body.email, ip)
+            log.warning("login_failed email=%s ip=%s", mask_email(body.email), mask_ip(ip))
+        raise
+    reset_failed_logins(body.email)
     return AuthResponse(
         user=UserResponse(**result["user"]),
         token=result["token"],
@@ -497,7 +554,7 @@ def export_account_data(current_user: dict = Depends(_get_current_user)):
 
 
 @app.post("/auth/refresh")
-def refresh_token_endpoint(body: dict):
+def refresh_token_endpoint(request: Request, body: dict):
     """Echange un refresh token contre un nouveau access token + nouveau refresh token."""
     from api.database import get_refresh_token, delete_refresh_token, save_refresh_token, get_user_by_id
     from api.auth import create_token, create_refresh_token, REFRESH_TOKEN_EXPIRY_DAYS
@@ -508,6 +565,15 @@ def refresh_token_endpoint(body: dict):
 
     stored = get_refresh_token(rt)
     if not stored:
+        # Reuse detection : un refresh token déjà supprimé qu'on tente de réutiliser.
+        # On ne peut pas savoir à qui il appartenait → on log et refuse.
+        # Si on a pu décoder le user_id depuis un access token précédent, l'appelant
+        # peut nous le passer dans le header X-Lexavo-Hint-User pour révoquer toute la famille.
+        hint = request.headers.get("X-Lexavo-Hint-User", "")
+        if hint.isdigit():
+            from api.database import delete_user_refresh_tokens
+            delete_user_refresh_tokens(int(hint))
+            log.warning("refresh_token_reuse_suspected user_id=%s — all tokens revoked", hint)
         raise HTTPException(status_code=401, detail="Refresh token invalide ou expire.")
 
     # Verifier expiration
@@ -524,7 +590,9 @@ def refresh_token_endpoint(body: dict):
     if not user:
         raise HTTPException(status_code=401, detail="Utilisateur introuvable.")
 
-    # Rotation : supprimer l'ancien, creer un nouveau
+    # Rotation : supprimer l'ancien (one-shot), creer un nouveau access + nouveau refresh.
+    # Si l'ancien est réutilisé après ce point → branche "reuse detected" plus haut
+    # qui révoque TOUS les refresh tokens de l'utilisateur (force re-login).
     delete_refresh_token(rt)
     new_access = create_token(user["id"], user["email"])
     new_refresh = create_refresh_token(user["id"])
@@ -855,16 +923,14 @@ async def shield_upload(
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(413, "Fichier trop volumineux (max 10 MB)")
-    if not (content[:4] == b'%PDF' or content[:3] == b'\xff\xd8\xff' or content[:4] == b'\x89PNG'):
-        raise HTTPException(400, "Format non supporté. PDF, JPG ou PNG uniquement.")
-    filename = file.filename.lower() if file.filename else ""
+    # Validation MIME RÉELLE par magic bytes (pas l'extension ni l'header client).
+    from api.security import validate_upload_mime
+    detected = validate_upload_mime(content, allowed={"pdf", "jpeg", "png"})
 
-    if filename.endswith(".pdf"):
+    if detected == "pdf":
         text = extract_text_from_pdf(content)
-    elif filename.endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp")):
-        text = extract_text_from_image(content)
     else:
-        raise HTTPException(400, "Format non supporté. Utilisez PDF, JPG ou PNG.")
+        text = extract_text_from_image(content)
 
     if len(text.strip()) < 50:
         raise HTTPException(400, "Impossible d'extraire suffisamment de texte du document.")
@@ -952,16 +1018,13 @@ async def decode_upload(
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(413, "Fichier trop volumineux (max 10 MB)")
-    if not (content[:4] == b'%PDF' or content[:3] == b'\xff\xd8\xff' or content[:4] == b'\x89PNG'):
-        raise HTTPException(400, "Format non supporté. PDF, JPG ou PNG uniquement.")
-    filename = file.filename.lower() if file.filename else ""
+    from api.security import validate_upload_mime
+    detected = validate_upload_mime(content, allowed={"pdf", "jpeg", "png"})
 
-    if filename.endswith(".pdf"):
+    if detected == "pdf":
         text = extract_text_from_pdf(content)
-    elif filename.endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp")):
-        text = extract_text_from_image(content)
     else:
-        raise HTTPException(400, "Format non supporté.")
+        text = extract_text_from_image(content)
 
     if len(text.strip()) < 20:
         raise HTTPException(400, "Impossible d'extraire du texte.")
@@ -2790,11 +2853,14 @@ async def upload_note_file(
     if len(raw) > MAX_SIZE:
         raise HTTPException(400, "Fichier trop volumineux (max 5 MB)")
 
-    extracted = ""
-    file_type = "text"
+    # Validation MIME RÉELLE par magic bytes (anti zip-bomb intégré pour DOCX).
+    from api.security import validate_upload_mime
+    detected = validate_upload_mime(raw, allowed={"pdf", "docx", "txt"})
 
-    if ext == "pdf" or "pdf" in content_type:
-        file_type = "pdf"
+    extracted = ""
+    file_type = detected
+
+    if detected == "pdf":
         try:
             import PyPDF2
             reader = PyPDF2.PdfReader(io.BytesIO(raw))
@@ -2803,8 +2869,7 @@ async def upload_note_file(
         except Exception as e:
             raise HTTPException(422, f"Impossible d'extraire le texte du PDF : {e}")
 
-    elif ext in ("docx",) or "wordprocessingml" in content_type:
-        file_type = "docx"
+    elif detected == "docx":
         try:
             import docx
             doc = docx.Document(io.BytesIO(raw))
@@ -2812,7 +2877,7 @@ async def upload_note_file(
         except Exception as e:
             raise HTTPException(422, f"Impossible d'extraire le texte du DOCX : {e}")
 
-    elif ext == "txt" or "text/plain" in content_type:
+    elif detected == "txt":
         file_type = "txt"
         try:
             extracted = raw.decode("utf-8", errors="replace")

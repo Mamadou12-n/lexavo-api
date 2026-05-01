@@ -13,18 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import SourceBadge from '../components/SourceBadge';
 import PhotoPicker from '../components/PhotoPicker';
 import { Disclaimer } from '../components/ui/Disclaimer';
+import { useLanguage } from '../context/LanguageContext';
 
-const SUGGESTED_QUESTIONS = [
-  'Quelles sont les conditions d\'un licenciement pour motif grave ?',
-  'Comment contester un permis d\'urbanisme refusé ?',
-  'Quels sont les droits d\'un locataire en cas de défaut du bailleur ?',
-  'Qu\'est-ce que le RGPD impose aux entreprises belges ?',
-  'Comment fonctionne la procédure de faillite en Belgique ?',
-  'Quels sont les délais de prescription en droit civil belge ?',
-];
+const SUGGESTED_KEYS = ['ask_q1', 'ask_q2', 'ask_q3', 'ask_q4', 'ask_q5', 'ask_q6'];
 
 export default function AskScreen() {
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer]     = useState(null);
   const [sources, setSources]   = useState([]);
@@ -50,9 +45,9 @@ export default function AskScreen() {
     const trimmed = q.trim();
     if (!trimmed) return;
     if (quota && quota.questions_limit > 0 && quota.questions_used >= quota.questions_limit) {
-      Alert.alert('Quota atteint', 'Passez au plan Pro pour des questions illimitées.', [
-        { text: 'Plus tard' },
-        { text: 'Voir les plans', onPress: () => navigation.navigate('Subscription') },
+      Alert.alert(t('ask_quota_reached_title'), t('ask_quota_reached_msg'), [
+        { text: t('ask_later') },
+        { text: t('ask_view_plans'), onPress: () => navigation.navigate('Subscription') },
       ]);
       return;
     }
@@ -86,7 +81,7 @@ export default function AskScreen() {
           setError(detail || 'Service indisponible');
         }
       } else {
-        setError(e.message || 'Erreur réseau');
+        setError(e.message || t('ask_error_network'));
       }
     } finally {
       setLoading(false);
@@ -116,23 +111,23 @@ export default function AskScreen() {
             style={{ marginBottom: 8 }}
             accessibilityElementsHidden={true}
           />
-          <Text style={styles.heroTitle}>Assistant Juridique</Text>
-          <Text style={styles.heroSub}>Posez votre question en droit belge</Text>
+          <Text style={styles.heroTitle}>{t('ask_hero_title')}</Text>
+          <Text style={styles.heroSub}>{t('ask_hero_sub')}</Text>
         </View>
 
         {/* Zone de saisie */}
         <View style={styles.inputCard}>
-          <Text style={styles.inputLabel}>Votre question juridique</Text>
+          <Text style={styles.inputLabel}>{t('ask_input_label')}</Text>
           <TextInput
             style={styles.textArea}
             multiline
             numberOfLines={4}
-            placeholder="Ex: Quelles sont les conditions d'un licenciement pour motif grave ?"
+            placeholder={t('ask_placeholder')}
             placeholderTextColor={colors.textMuted}
             value={question}
-            onChangeText={(t) => { setQuestion(t); resetFade(); }}
+            onChangeText={(val) => { setQuestion(val); resetFade(); }}
             textAlignVertical="top"
-            accessibilityLabel="Question juridique"
+            accessibilityLabel={t('ask_input_label')}
           />
 
           {/* Filtres source */}
@@ -144,14 +139,14 @@ export default function AskScreen() {
             accessibilityLabel={showFilters ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
           >
             <Text style={styles.filterToggleText}>
-              {showFilters ? '▲' : '▼'} Filtres avancés
+              {showFilters ? '▲' : '▼'} {t('ask_filters_show')}
               {sourceFilter ? ` — ${sourceFilter}` : ''}
             </Text>
           </TouchableOpacity>
 
           {showFilters && (
             <View style={styles.filtersPanel}>
-              <Text style={styles.filterLabel}>Filtrer par source :</Text>
+              <Text style={styles.filterLabel}>{t('ask_filter_by_source')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
                 {SOURCES.slice(0, 8).map((s) => (
                   <TouchableOpacity activeOpacity={0.75}
@@ -178,16 +173,16 @@ export default function AskScreen() {
             </View>
           )}
 
-          <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="Joindre un document" />
+          <PhotoPicker photos={photos} onPhotosChange={setPhotos} label={t('ask_attach')} />
 
           {quota && quota.questions_limit > 0 && (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 8 }}>
               <Text style={{ fontSize: 11, color: '#64748B' }}>
-                {quota.questions_used}/{quota.questions_limit} questions ce mois
+                {quota.questions_used}/{quota.questions_limit} {t('ask_quota_month')}
               </Text>
               {quota.questions_used >= quota.questions_limit && (
-                <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('Subscription')} accessible={true} accessibilityRole="link" accessibilityLabel="Passer au plan Pro">
-                  <Text style={{ fontSize: 11, color: colors.brand, fontWeight: '700' }}>Passer au Pro →</Text>
+                <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('Subscription')} accessible={true} accessibilityRole="link" accessibilityLabel={t('ask_upgrade_pro')}>
+                  <Text style={{ fontSize: 11, color: colors.brand, fontWeight: '700' }}>{t('ask_upgrade_pro')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -204,7 +199,7 @@ export default function AskScreen() {
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.submitText}>Analyser ma question</Text>
+              : <Text style={styles.submitText}>{t('ask_submit')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -212,28 +207,31 @@ export default function AskScreen() {
         {/* Suggestions */}
         {!answer && !loading && (
           <View style={styles.suggestSection}>
-            <Text style={styles.suggestTitle}>Questions fréquentes</Text>
-            {SUGGESTED_QUESTIONS.map((q, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.suggestItem}
-                onPress={() => { setQuestion(q); submit(q); }}
-                activeOpacity={0.7}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={`Question suggérée : ${q}`}
-              >
-                <Text style={styles.suggestArrow}>›</Text>
-                <Text style={styles.suggestText}>{q}</Text>
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.suggestTitle}>{t('ask_suggested_title')}</Text>
+            {SUGGESTED_KEYS.map((qk) => {
+              const q = t(qk);
+              return (
+                <TouchableOpacity
+                  key={qk}
+                  style={styles.suggestItem}
+                  onPress={() => { setQuestion(q); submit(q); }}
+                  activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={q}
+                >
+                  <Text style={styles.suggestArrow}>›</Text>
+                  <Text style={styles.suggestText}>{q}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
         {/* Erreur */}
         {error && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>⚠️ Erreur</Text>
+            <Text style={styles.errorTitle}>{t('ask_error_title')}</Text>
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -242,7 +240,10 @@ export default function AskScreen() {
         {answer && (
           <Animated.View style={[styles.answerCard, { opacity: fadeAnim }]}>
             <View style={styles.answerHeader}>
-              <Text style={styles.answerHeaderText}>⚖️ Réponse juridique</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="scale-outline" size={16} color="#1F2937" />
+                <Text style={styles.answerHeaderText}>{t('ask_answer_header')}</Text>
+              </View>
             </View>
 
             <View style={styles.markdownContainer}>
@@ -253,7 +254,7 @@ export default function AskScreen() {
             {sources.length > 0 && (
               <View style={styles.sourcesSection}>
                 <Text style={styles.sourcesTitle}>
-                  📎 {sources.length} source{sources.length > 1 ? 's' : ''} citée{sources.length > 1 ? 's' : ''}
+                  {sources.length} {sources.length > 1 ? t('ask_sources_many') : t('ask_sources_one')}
                 </Text>
                 {sources.map((s, i) => (
                   <SourceCitation key={i} source={s} index={i + 1} />

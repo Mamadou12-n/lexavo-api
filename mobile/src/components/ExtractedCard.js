@@ -1,10 +1,21 @@
-/**
- * ExtractedCard — Affiche les données extraites d'un PV/amende par OCR
- * Props: extracted{}, confidence(0-1), onEdit(field, value)
- */
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme/designSystem';
+
+/**
+ * @typedef {Object} ExtractedData
+ * @property {string} [montant] - Montant en euros.
+ * @property {string} [date_infraction] - Date de l'infraction.
+ * @property {string} [heure] - Heure de l'infraction.
+ * @property {string} [lieu] - Lieu de l'infraction.
+ * @property {string} [plaque] - Plaque d'immatriculation.
+ * @property {string} [code_infraction] - Code de l'infraction.
+ *
+ * @typedef {Object} ExtractedCardProps
+ * @property {ExtractedData} extracted - Données extraites par OCR.
+ * @property {number} [confidence] - Score de confiance OCR (0-1).
+ * @property {(field: string, value: string) => void} [onEdit] - Callback de modification d'un champ.
+ */
 
 const FIELDS = [
   { key: 'montant',           label: 'Montant (€)',        type: 'number' },

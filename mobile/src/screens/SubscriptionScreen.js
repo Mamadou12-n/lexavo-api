@@ -296,7 +296,7 @@ export default function SubscriptionScreen() {
       {/* Beta banner — date volontairement cachee, notification par email J-30 */}
       {isBeta && (
         <View style={styles.betaBanner}>
-          <Text style={styles.betaTitle}>🎉 Acces complet offert</Text>
+          <Text style={styles.betaTitle}>Acces complet offert</Text>
           <Text style={styles.betaText}>
             Profitez de toutes les fonctionnalites Lexavo gratuitement.{'\n'}
             Pas de carte bancaire requise.
@@ -473,10 +473,10 @@ export default function SubscriptionScreen() {
       {/* Legal */}
       <View style={styles.legalBox}>
         <Text style={styles.legalText}>
-          💳 Paiements securises via Stripe (PCI-DSS){'\n'}
-          📄 Facture TVA belge disponible{'\n'}
+          Paiements securises via Stripe (PCI-DSS){'\n'}
+          Facture TVA belge disponible{'\n'}
           ↩️ Droit de retractation 14 jours (Art. VI.47 CDE){'\n'}
-          🔁 Renouvellement automatique — annulation a tout moment
+          Renouvellement automatique — annulation a tout moment
         </Text>
       </View>
 

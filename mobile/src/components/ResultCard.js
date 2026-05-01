@@ -4,8 +4,25 @@ import { colors } from '../theme/colors';
 import SourceBadge from './SourceBadge';
 
 /**
- * Carte d'un résultat de recherche vectorielle.
+ * @typedef {Object} SearchResultItem
+ * @property {string} source - Source juridique (JUSTEL, HUDOC, EUR-Lex, etc.).
+ * @property {string} [title] - Titre du document.
+ * @property {string} [date] - Date du document (ISO).
+ * @property {string} [text] - Extrait textuel.
+ * @property {string} [url] - URL externe du document officiel.
+ * @property {number} [similarity] - Score de similarité (0-1).
+ *
+ * @typedef {Object} ResultCardProps
+ * @property {SearchResultItem} item - Élément de résultat à afficher.
+ * @property {(item: SearchResultItem) => void} [onPress] - Callback au clic sur la carte.
+ */
+
+/**
+ * ResultCard — Carte d'un résultat de recherche vectorielle.
  * Affiche : source, titre, date, extrait du texte, similarité, lien URL.
+ *
+ * @param {ResultCardProps} props
+ * @returns {React.ReactElement}
  */
 export default function ResultCard({ item, onPress }) {
   const similarity = item.similarity != null

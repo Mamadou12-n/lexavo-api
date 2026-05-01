@@ -1,12 +1,29 @@
-/**
- * ChecklistStep — Questionnaire guidé de vices de forme
- * Props: questions[], answers{}, onAnswer(id, bool), score(0-100), level
- */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../theme/designSystem';
 import ScoreGauge from './ScoreGauge';
 
+/**
+ * @typedef {Object} ChecklistQuestion
+ * @property {string} id - Identifiant unique de la question.
+ * @property {string} text - Énoncé de la question (oui/non).
+ * @property {string} [hint] - Indication facultative pour aider l'utilisateur.
+ *
+ * @typedef {Object} ChecklistStepProps
+ * @property {ChecklistQuestion[]} questions - Liste des questions du checklist.
+ * @property {Object<string, boolean>} answers - Mapping id question → réponse booléenne.
+ * @property {(id: string, value: boolean) => void} onAnswer - Callback appelé sur réponse.
+ * @property {number} [score=0] - Score de contestabilité courant (0-100).
+ * @property {'forte'|'moyenne'|'faible'} [level='faible'] - Niveau qualitatif du score.
+ */
+
+/**
+ * ChecklistStep — Questionnaire guidé de détection des vices de forme.
+ * Met à jour le score en temps réel via la jauge ScoreGauge.
+ *
+ * @param {ChecklistStepProps} props
+ * @returns {React.ReactElement}
+ */
 export default function ChecklistStep({ questions = [], answers = {}, onAnswer, score = 0, level = 'faible' }) {
   const answered = Object.keys(answers).length;
 

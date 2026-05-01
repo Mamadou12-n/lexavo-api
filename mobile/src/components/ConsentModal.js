@@ -7,11 +7,28 @@ import { colors } from '../theme/designSystem';
 
 export const CONSENT_KEY = 'lexavo_consent_v1';
 
+/**
+ * Vérifie si l'utilisateur a déjà accepté les CGU/RGPD.
+ * @returns {Promise<boolean>}
+ */
 export async function hasConsent() {
   const v = await AsyncStorage.getItem(CONSENT_KEY);
   return v === 'accepted';
 }
 
+/**
+ * @typedef {Object} ConsentModalProps
+ * @property {boolean} visible - Affiche ou masque la modale.
+ * @property {() => void} onAccept - Callback appelé après acceptation des CGU.
+ */
+
+/**
+ * ConsentModal — Modale plein écran exigeant l'acceptation explicite
+ * des CGU et de la politique RGPD avant utilisation de Lexavo.
+ *
+ * @param {ConsentModalProps} props
+ * @returns {React.ReactElement}
+ */
 export default function ConsentModal({ visible, onAccept }) {
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
 

@@ -8,17 +8,19 @@ import { REGION_KEY, logout } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext';
 
 const LEXAVO_ORANGE = colors.brand;
 const LEXAVO_NAVY   = colors.brandNavy;
 
-const REGIONS = [
-  { id: 'bruxelles', flag: '🏙️', label: 'Bruxelles-Capitale' },
-  { id: 'wallonie',  flag: '🌿', label: 'Wallonie'  },
-  { id: 'flandre',   flag: '🦁', label: 'Flandre'   },
+const REGION_DEFS = [
+  { id: 'bruxelles', flag: '🏙️', labelKey: 'region_bxl_long' },
+  { id: 'wallonie',  flag: '🌿', labelKey: 'region_wal' },
+  { id: 'flandre',   flag: '🦁', labelKey: 'region_fla' },
 ];
 
 export default function SettingsScreen({ navigation }) {
+  const { t } = useLanguage();
   const [region, setRegion] = useState('bruxelles');
 
   useEffect(() => {
@@ -31,9 +33,9 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const handleLogout = () => {
-    Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Déconnexion', style: 'destructive', onPress: () => logout() },
+    Alert.alert(t('set_logout_confirm_title'), t('set_logout_confirm_msg'), [
+      { text: t('common_cancel'), style: 'cancel' },
+      { text: t('set_logout'), style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -42,104 +44,101 @@ export default function SettingsScreen({ navigation }) {
 
       <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
         <Ionicons name="settings-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
-        <Text style={styles.heroTitle}>Paramètres</Text>
-        <Text style={styles.heroSub}>Configurez votre expérience Lexavo</Text>
+        <Text style={styles.heroTitle}>{t('set_title')}</Text>
+        <Text style={styles.heroSub}>{t('set_sub')}</Text>
       </LinearGradient>
 
       {/* ═══ RÉGION ═══ */}
-      <Section title="📍 Votre région">
-        <Text style={styles.hint}>
-          Lexavo adapte ses réponses au droit régional applicable.
-        </Text>
-        {REGIONS.map((r) => (
-          <TouchableOpacity activeOpacity={0.75}
-            key={r.id}
-            style={[styles.regionBtn, region === r.id && styles.regionBtnActive]}
-            onPress={() => handleRegionChange(r.id)}
-            activeOpacity={0.8}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`Choisir la région ${r.label}`}
-            accessibilityState={{ selected: region === r.id }}
-          >
-            <Text style={styles.regionFlag}>{r.flag}</Text>
-            <Text style={[styles.regionLabel, region === r.id && styles.regionLabelActive]}>
-              {r.label}
-            </Text>
-            {region === r.id && <Text style={styles.regionCheck}>✓</Text>}
-          </TouchableOpacity>
-        ))}
+      <Section title={t('set_section_region')}>
+        <Text style={styles.hint}>{t('set_region_hint')}</Text>
+        {REGION_DEFS.map((r) => {
+          const label = t(r.labelKey);
+          return (
+            <TouchableOpacity activeOpacity={0.75}
+              key={r.id}
+              style={[styles.regionBtn, region === r.id && styles.regionBtnActive]}
+              onPress={() => handleRegionChange(r.id)}
+              activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: region === r.id }}
+            >
+              <Text style={styles.regionFlag}>{r.flag}</Text>
+              <Text style={[styles.regionLabel, region === r.id && styles.regionLabelActive]}>
+                {label}
+              </Text>
+              {region === r.id && <Text style={styles.regionCheck}>✓</Text>}
+            </TouchableOpacity>
+          );
+        })}
       </Section>
 
       {/* ═══ ABONNEMENT ═══ */}
-      <Section title="⭐ Mon abonnement">
+      <Section title={t('set_section_sub')}>
         <MenuItem
-          label="Gérer mon abonnement"
-          sub="Voir les plans · Changer de formule"
+          label={t('set_manage_sub')}
+          sub={t('set_manage_sub_hint')}
           onPress={() => navigation.navigate('Subscription')}
         />
       </Section>
 
       {/* ═══ NOTIFICATIONS ═══ */}
-      <Section title="🔔 Notifications">
+      <Section title={t('set_section_notif')}>
         <MenuItem
-          label="Gérer les notifications"
-          sub="Alertes légales · Rappels délais"
+          label={t('set_manage_notif')}
+          sub={t('set_manage_notif_hint')}
           onPress={() => navigation.navigate('Notifications')}
         />
       </Section>
 
       {/* ═══ HISTORIQUE ═══ */}
-      <Section title="📜 Historique">
+      <Section title={t('set_section_history')}>
         <MenuItem
-          label="Mes conversations"
-          sub="Retrouver vos questions précédentes"
+          label={t('set_history')}
+          sub={t('set_history_hint')}
           onPress={() => navigation.navigate('History')}
         />
       </Section>
 
       {/* ═══ ANNUAIRE ═══ */}
-      <Section title="👨‍⚖️ Avocats">
+      <Section title={t('set_section_lawyers')}>
         <MenuItem
-          label="Annuaire des avocats"
-          sub="Trouver un avocat spécialisé"
+          label={t('set_lawyers')}
+          sub={t('set_lawyers_hint')}
           onPress={() => navigation.navigate('Lawyers')}
         />
       </Section>
 
       {/* ═══ LÉGAL ═══ */}
-      <Section title="⚖️ Légal & Conformité">
+      <Section title={t('set_section_legal')}>
         <MenuItem
-          label="📋 Conditions générales (CGU)"
+          label={t('set_cgu')}
           onPress={() => navigation.navigate('CGU')}
         />
         <MenuItem
-          label="🔒 Politique de confidentialité"
+          label={t('set_privacy')}
           onPress={() => navigation.navigate('Privacy')}
         />
         <MenuItem
-          label="ℹ️ Mentions légales"
+          label={t('set_mentions')}
           onPress={() => navigation.navigate('MentionsLegales')}
           last
         />
-        <Text style={styles.rgpdNote}>
-          🇧🇪 Conforme RGPD · Droit belge · APD enregistré
-        </Text>
+        <Text style={styles.rgpdNote}>{t('set_rgpd_note')}</Text>
       </Section>
 
       {/* ═══ DISCLAIMER ═══ */}
       <View style={styles.disclaimerCard}>
-        <Text style={styles.disclaimerText}>
-          ⚖️ Lexavo est un outil d'information juridique. Il ne remplace pas un avocat ni un conseiller juridique professionnel. En cas de litige complexe, consultez un professionnel du droit.
-        </Text>
+        <Text style={styles.disclaimerText}>{t('disclaimer_long')}</Text>
       </View>
 
       {/* ═══ DÉCONNEXION ═══ */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Se déconnecter">
-        <Text style={styles.logoutText}>Se déconnecter</Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel={t('set_logout')}>
+        <Text style={styles.logoutText}>{t('set_logout')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.footer}>Lexavo SRL — Le droit pour tous</Text>
+      <Text style={styles.footer}>{t('set_footer')}</Text>
     </ScrollView>
   );
 }
