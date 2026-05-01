@@ -7,6 +7,7 @@ import { getEmergencyCategories, createEmergencyRequest } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const EMERGENCY_RED = '#E74C3C';
 
@@ -59,7 +60,7 @@ export default function EmergencyScreen() {
 
         {/* Warning banner */}
         <LinearGradient colors={['#7C1D1D', '#E74C3C']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>🚨</Text>
+          <Ionicons name="warning-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
           <Text style={styles.heroTitle}>Service d'urgence juridique</Text>
           <Text style={styles.heroSub}>Réponse garantie dans les 24 heures — 49€</Text>
         </LinearGradient>
@@ -71,8 +72,11 @@ export default function EmergencyScreen() {
               key={c.id}
               style={[styles.catBtn, category?.id === c.id && styles.catBtnActive]}
               onPress={() => setCategory(c)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Catégorie d'urgence ${c.name}${c.description ? ` — ${c.description}` : ''}`}
             >
-              <Text style={styles.catEmoji}>{c.emoji ?? '⚠️'}</Text>
+              <Ionicons name="warning-outline" size={20} color={category?.id === c.id ? EMERGENCY_RED : colors.textSecondary} accessibilityElementsHidden />
               <View style={styles.catInfo}>
                 <Text style={[styles.catName, category?.id === c.id && styles.catNameActive]}>
                   {c.name}
@@ -126,10 +130,13 @@ export default function EmergencyScreen() {
             style={[styles.btn, (!category || !description.trim() || !email.trim() || loading) && styles.btnDisabled]}
             onPress={submit}
             disabled={!category || !description.trim() || !email.trim() || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Envoyer la demande d'urgence pour 49 euros"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>🚨  Envoyer l'urgence — 49€</Text>
+              : <Text style={styles.btnText}>Envoyer l'urgence — 49€</Text>
             }
           </TouchableOpacity>
         </View>
@@ -150,8 +157,11 @@ export default function EmergencyScreen() {
               <TouchableOpacity activeOpacity={0.75}
                 style={styles.payBtn}
                 onPress={() => Linking.openURL(result.checkout_url)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Payer 49 euros et confirmer la demande"
               >
-                <Text style={styles.payBtnText}>💳 Payer 49€ et confirmer</Text>
+                <Text style={styles.payBtnText}>Payer 49€ et confirmer</Text>
               </TouchableOpacity>
             )}
 

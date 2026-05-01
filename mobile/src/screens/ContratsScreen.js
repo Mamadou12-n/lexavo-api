@@ -7,6 +7,7 @@ import { listContractTemplates, generateContract } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const CONTRACT_BLUE = '#2980B9';
 
@@ -68,7 +69,7 @@ export default function ContratsScreen() {
 
         {/* Template selector */}
         <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>📝</Text>
+          <Ionicons name="document-text-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
           <Text style={styles.heroTitle}>Contrats — Génération PDF</Text>
           <Text style={styles.heroSub}>Choisissez un modèle de contrat</Text>
         </LinearGradient>
@@ -79,9 +80,12 @@ export default function ContratsScreen() {
               key={t.id}
               style={[styles.templateBtn, selected?.id === t.id && styles.templateBtnActive]}
               onPress={() => selectTemplate(t)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Modèle de contrat ${t.name}${t.description ? ` — ${t.description}` : ''}`}
             >
               <View style={styles.templateRow}>
-                <Text style={styles.templateEmoji}>{t.emoji ?? '📄'}</Text>
+                <Ionicons name="document-outline" size={20} color={selected?.id === t.id ? CONTRACT_BLUE : colors.textSecondary} accessibilityElementsHidden />
                 <View style={styles.templateInfo}>
                   <Text style={[styles.templateName, selected?.id === t.id && styles.templateNameActive]}>
                     {t.name}
@@ -119,10 +123,13 @@ export default function ContratsScreen() {
               style={[styles.btn, loading && styles.btnDisabled]}
               onPress={generate}
               disabled={loading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Générer le contrat"
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={styles.btnText}>📝  Générer le contrat</Text>
+                : <Text style={styles.btnText}>Générer le contrat</Text>
               }
             </TouchableOpacity>
           </View>
@@ -133,10 +140,13 @@ export default function ContratsScreen() {
             style={[styles.btn, loading && styles.btnDisabled]}
             onPress={generate}
             disabled={loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Générer le contrat"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>📝  Générer le contrat</Text>
+              : <Text style={styles.btnText}>Générer le contrat</Text>
             }
           </TouchableOpacity>
         )}

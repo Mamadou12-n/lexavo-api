@@ -137,6 +137,9 @@ export default function AskScreen() {
           <TouchableOpacity activeOpacity={0.75}
             style={styles.filterToggle}
             onPress={() => setShowFilters(!showFilters)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={showFilters ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
           >
             <Text style={styles.filterToggleText}>
               {showFilters ? '▲' : '▼'} Filtres avancés
@@ -156,6 +159,10 @@ export default function AskScreen() {
                       sourceFilter === s.key && styles.filterChipActive,
                     ]}
                     onPress={() => setSourceFilter(s.key)}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Filtrer par source ${s.label}`}
+                    accessibilityState={{ selected: sourceFilter === s.key }}
                   >
                     <Text style={[
                       styles.filterChipText,
@@ -169,7 +176,7 @@ export default function AskScreen() {
             </View>
           )}
 
-          <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="📷 Joindre un document" />
+          <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="Joindre un document" />
 
           {quota && quota.questions_limit > 0 && (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 8 }}>
@@ -177,7 +184,7 @@ export default function AskScreen() {
                 {quota.questions_used}/{quota.questions_limit} questions ce mois
               </Text>
               {quota.questions_used >= quota.questions_limit && (
-                <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('Subscription')}>
+                <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('Subscription')} accessible={true} accessibilityRole="link" accessibilityLabel="Passer au plan Pro">
                   <Text style={{ fontSize: 11, color: colors.brand, fontWeight: '700' }}>Passer au Pro →</Text>
                 </TouchableOpacity>
               )}
@@ -189,6 +196,9 @@ export default function AskScreen() {
             onPress={() => submit()}
             disabled={!question.trim() || loading}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Analyser ma question juridique"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
@@ -207,6 +217,9 @@ export default function AskScreen() {
                 style={styles.suggestItem}
                 onPress={() => { setQuestion(q); submit(q); }}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Question suggérée : ${q}`}
               >
                 <Text style={styles.suggestArrow}>›</Text>
                 <Text style={styles.suggestText}>{q}</Text>
@@ -292,7 +305,7 @@ function SourceCitation({ source, index }) {
         <Text style={styles.citationDate}>{source.date.slice(0, 10)}</Text>
       ) : null}
       {source.url ? (
-        <TouchableOpacity activeOpacity={0.75} onPress={handleUrl}>
+        <TouchableOpacity activeOpacity={0.75} onPress={handleUrl} accessible={true} accessibilityRole="link" accessibilityLabel={`Ouvrir la source ${source.url}`}>
           <Text style={styles.citationUrl} numberOfLines={1}>{source.url}</Text>
         </TouchableOpacity>
       ) : null}

@@ -13,6 +13,7 @@ import { getComplianceQuestions, runComplianceAudit, getAuditQuestions, generate
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const COMPLIANCE_TEAL = '#16A085';
 
@@ -145,7 +146,7 @@ export default function ComplianceScreen() {
 
       {/* Header + Toggle */}
       <LinearGradient colors={['#004D40', '#16A085']} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>🏢</Text>
+        <Ionicons name="business-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
         <Text style={styles.heroTitle}>Audit Entreprise</Text>
         <Text style={styles.heroSub}>
           {mode === MODE_RAPIDE ? '15 questions · 6 domaines' : '30 questions · 8 domaines'}
@@ -157,17 +158,23 @@ export default function ComplianceScreen() {
           <TouchableOpacity activeOpacity={0.75}
             style={[styles.toggleBtn, mode === MODE_RAPIDE && styles.toggleBtnActive]}
             onPress={() => setMode(MODE_RAPIDE)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Mode audit rapide"
           >
             <Text style={[styles.toggleText, mode === MODE_RAPIDE && styles.toggleTextActive]}>
-              ⚡ Rapide
+              Rapide
             </Text>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.75}
             style={[styles.toggleBtn, mode === MODE_APPROFONDI && styles.toggleBtnActive]}
             onPress={() => setMode(MODE_APPROFONDI)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Mode audit approfondi"
           >
             <Text style={[styles.toggleText, mode === MODE_APPROFONDI && styles.toggleTextActive]}>
-              🔎 Approfondi
+              Approfondi
             </Text>
           </TouchableOpacity>
         </View>
@@ -184,6 +191,9 @@ export default function ComplianceScreen() {
                   key={t.id}
                   style={[styles.typeBtn, compCompanyType === t.id && styles.typeBtnActive]}
                   onPress={() => setCompCompanyType(t.id)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Type ${t.label}`}
                 >
                   <Text style={[styles.typeLabel, compCompanyType === t.id && styles.typeLabelActive]}>
                     {t.label}
@@ -216,6 +226,9 @@ export default function ComplianceScreen() {
                         key={opt.id}
                         style={[styles.answerBtn, compAnswers[q.id ?? i] === opt.id && { backgroundColor: opt.color }]}
                         onPress={() => setCompAnswer(q.id ?? i, opt.id)}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Répondre ${opt.label}`}
                       >
                         <Text style={[styles.answerBtnText, { color: compAnswers[q.id ?? i] === opt.id ? '#FFF' : colors.textMuted }]}>
                           {opt.label}
@@ -234,10 +247,13 @@ export default function ComplianceScreen() {
             style={[styles.btn, compLoading && styles.btnDisabled]}
             onPress={runCompliance}
             disabled={compLoading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Générer l'audit rapide de conformité"
           >
             {compLoading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>✅  Generer l'audit rapide</Text>
+              : <Text style={styles.btnText}>Generer l'audit rapide</Text>
             }
           </TouchableOpacity>
 
@@ -289,6 +305,9 @@ export default function ComplianceScreen() {
                 key={ct.key}
                 style={[styles.chip, auditCompanyType === ct.key && styles.chipActive]}
                 onPress={() => setAuditCompanyType(ct.key)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Type d'entreprise ${ct.label}`}
               >
                 <Text style={[styles.chipText, auditCompanyType === ct.key && styles.chipTextActive]}>
                   {ct.label}
@@ -300,6 +319,9 @@ export default function ComplianceScreen() {
             style={[styles.btn, auditLoading && styles.btnDisabled]}
             onPress={loadAuditQuestions}
             disabled={auditLoading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Démarrer l'audit approfondi"
           >
             {auditLoading
               ? <ActivityIndicator color="#FFF" />
@@ -336,6 +358,9 @@ export default function ComplianceScreen() {
                         key={opt.key}
                         style={[styles.auditAnswerBtn, auditAnswers[q.id] === opt.key && { backgroundColor: opt.color }]}
                         onPress={() => setAuditAnswers((prev) => ({ ...prev, [q.id]: opt.key }))}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Répondre ${opt.label}`}
                       >
                         <Text style={[styles.auditAnswerBtnText, auditAnswers[q.id] === opt.key && { color: '#FFF' }]}>
                           {opt.label}
@@ -358,6 +383,9 @@ export default function ComplianceScreen() {
             style={[styles.btn, (auditLoading || auditAnsweredCount === 0) && styles.btnDisabled]}
             onPress={submitAudit}
             disabled={auditLoading || auditAnsweredCount === 0}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Lancer l'audit approfondi"
           >
             {auditLoading
               ? <ActivityIndicator color="#FFF" />
@@ -365,7 +393,11 @@ export default function ComplianceScreen() {
             }
           </TouchableOpacity>
 
-          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => setAuditStep('form')}>
+          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => setAuditStep('form')}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Retour au formulaire"
+          >
             <Text style={styles.linkBtnText}>Retour</Text>
           </TouchableOpacity>
         </>
@@ -434,7 +466,11 @@ export default function ComplianceScreen() {
 
             <Text style={styles.disclaimer}>Cet audit est un outil d'orientation. Il ne remplace pas un conseil juridique professionnel.</Text>
 
-            <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => { setAuditStep('form'); setAuditResult(null); }}>
+            <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => { setAuditStep('form'); setAuditResult(null); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Démarrer un nouvel audit"
+            >
               <Text style={styles.linkBtnText}>Nouvel audit</Text>
             </TouchableOpacity>
           </>

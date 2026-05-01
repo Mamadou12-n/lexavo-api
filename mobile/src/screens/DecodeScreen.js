@@ -7,6 +7,7 @@ import { decodeDocument } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
+import { Ionicons } from '@expo/vector-icons';
 
 const URGENCY_COLOR = { critical: '#E74C3C', high: '#E67E22', medium: '#F39C12', low: '#27AE60' };
 const URGENCY_LABEL = { critical: '🚨 Critique', high: '⚠️ Urgent', medium: '📋 Modéré', low: 'ℹ️ Information' };
@@ -43,7 +44,7 @@ export default function DecodeScreen() {
 
         <View style={styles.card}>
           <View style={styles.featureHeader}>
-            <Text style={styles.featureEmoji}>🔍</Text>
+            <Ionicons name="search-outline" size={28} color={colors.primary} accessibilityElementsHidden />
             <View>
               <Text style={styles.featureTitle}>Decode — Déchiffrer un document</Text>
               <Text style={styles.featureSub}>Collez le texte de votre lettre ou document juridique</Text>
@@ -66,10 +67,13 @@ export default function DecodeScreen() {
             style={[styles.btn, (!docText.trim() || loading) && styles.btnDisabled]}
             onPress={decode}
             disabled={!docText.trim() || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Décoder ce document"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>🔍  Décoder ce document</Text>
+              : <Text style={styles.btnText}>Décoder ce document</Text>
             }
           </TouchableOpacity>
         </View>

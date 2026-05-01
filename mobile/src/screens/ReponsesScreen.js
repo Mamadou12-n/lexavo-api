@@ -8,6 +8,7 @@ import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const REPONSE_PURPLE = '#8E44AD';
 const TONES = [
@@ -47,7 +48,7 @@ export default function ReponsesScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#4A1D96', '#8E44AD']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>✉️</Text>
+          <Ionicons name="mail-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
           <Text style={styles.heroTitle}>Réponses — Lettre juridique</Text>
           <Text style={styles.heroSub}>Générez une réponse formelle en droit belge</Text>
         </LinearGradient>
@@ -86,6 +87,9 @@ export default function ReponsesScreen() {
                 key={t.id}
                 style={[styles.toneBtn, tone === t.id && styles.toneBtnActive]}
                 onPress={() => setTone(t.id)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Ton ${t.label} : ${t.sub}`}
               >
                 <Text style={[styles.toneLabel, tone === t.id && styles.toneLabelActive]}>{t.label}</Text>
                 <Text style={styles.toneSub}>{t.sub}</Text>
@@ -99,10 +103,18 @@ export default function ReponsesScreen() {
             style={[styles.btn, (!situation.trim() || !desiredOutcome.trim() || loading) && styles.btnDisabled]}
             onPress={generate}
             disabled={!situation.trim() || !desiredOutcome.trim() || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Générer la lettre juridique"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>✉️  Générer la réponse</Text>
+              : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="mail-outline" size={16} color="#FFF" accessibilityElementsHidden />
+                  <Text style={styles.btnText}>Générer la réponse</Text>
+                </View>
+              )
             }
           </TouchableOpacity>
         </View>

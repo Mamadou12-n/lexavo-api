@@ -7,6 +7,7 @@ import { startLitigation } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const LITIGE_RED = '#B22222';
 const STAGE_COLOR = ['#E74C3C', '#E67E22', '#C0392B', '#8B0000'];
@@ -52,7 +53,7 @@ export default function LitigesScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#5B1A1A', '#B22222']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>⚖️</Text>
+          <Ionicons name="scale-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
           <Text style={styles.heroTitle}>Litiges — Recouvrement</Text>
           <Text style={styles.heroSub}>Procédure amiable → IOS en 4 étapes</Text>
         </LinearGradient>
@@ -85,10 +86,18 @@ export default function LitigesScreen() {
             style={[styles.btn, (!creditorName || !debtorName || !amount || loading) && styles.btnDisabled]}
             onPress={start}
             disabled={!creditorName || !debtorName || !amount || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Démarrer la procédure de recouvrement"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>⚖️  Démarrer la procédure</Text>
+              : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="scale-outline" size={16} color="#FFF" accessibilityElementsHidden />
+                  <Text style={styles.btnText}>Démarrer la procédure</Text>
+                </View>
+              )
             }
           </TouchableOpacity>
         </View>

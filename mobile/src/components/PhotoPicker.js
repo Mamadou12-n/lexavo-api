@@ -65,7 +65,14 @@ export default function PhotoPicker({ photos = [], onPhotosChange = () => {}, ma
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.addBtn} onPress={showOptions} activeOpacity={0.75}>
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={showOptions}
+        activeOpacity={0.75}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}, ${photos.length} sur ${maxPhotos} ajoutées`}
+      >
         <Text style={styles.addBtnText}>{label}</Text>
         <Text style={styles.addBtnCount}>{photos.length}/{maxPhotos}</Text>
       </TouchableOpacity>
@@ -75,7 +82,14 @@ export default function PhotoPicker({ photos = [], onPhotosChange = () => {}, ma
           {photos.map((photo, i) => (
             <View key={i} style={styles.photoWrapper}>
               <Image source={{ uri: photo.uri }} style={styles.photoThumb} />
-              <TouchableOpacity activeOpacity={0.75} style={styles.removeBtn} onPress={() => removePhoto(i)}>
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={styles.removeBtn}
+                onPress={() => removePhoto(i)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Supprimer la photo ${i + 1}`}
+              >
                 <Text style={styles.removeBtnText}>✕</Text>
               </TouchableOpacity>
             </View>

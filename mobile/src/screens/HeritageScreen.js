@@ -8,6 +8,7 @@ import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const HERITAGE_BROWN = '#8B4513';
 
@@ -56,7 +57,7 @@ export default function HeritageScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#3D1F00', '#8B4513']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>🏛️</Text>
+          <Ionicons name="business-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
           <Text style={styles.heroTitle}>Héritage — Guide successoral</Text>
           <Text style={styles.heroSub}>Droits de succession belges par région</Text>
         </LinearGradient>
@@ -68,6 +69,9 @@ export default function HeritageScreen() {
               key={r.id}
               style={[styles.regionBtn, region === r.id && styles.regionBtnActive]}
               onPress={() => setRegion(r.id)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Sélectionner la région ${r.label}`}
             >
               <Text style={styles.regionEmoji}>{r.label.split(' ')[0]}</Text>
               <View style={styles.regionInfo}>
@@ -98,6 +102,9 @@ export default function HeritageScreen() {
                 key={h}
                 style={[styles.heirChip, heirType === h && styles.heirChipActive]}
                 onPress={() => setHeirType(h)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Type d'héritier : ${h.replace('_', ' ')}`}
               >
                 <Text style={[styles.heirLabel, heirType === h && styles.heirLabelActive]}>
                   {h.replace('_', ' ')}
@@ -123,10 +130,18 @@ export default function HeritageScreen() {
             style={[styles.btn, (!estateValue || loading) && styles.btnDisabled]}
             onPress={generate}
             disabled={!estateValue || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Générer le guide successoral"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>🏛️  Générer le guide successoral</Text>
+              : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="business-outline" size={16} color="#FFF" accessibilityElementsHidden />
+                  <Text style={styles.btnText}>Générer le guide successoral</Text>
+                </View>
+              )
             }
           </TouchableOpacity>
         </View>

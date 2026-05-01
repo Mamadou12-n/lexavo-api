@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { getAuditQuestions, generateAudit } from '../api/client';
 import { colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
 
 const VERDICT_COLOR = { green: '#27AE60', orange: '#F39C12', red: '#E74C3C' };
 const VERDICT_LABEL = {
@@ -101,7 +102,7 @@ export default function AuditScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
             <View style={styles.featureHeader}>
-              <Text style={styles.featureEmoji}>📋</Text>
+              <Ionicons name="clipboard-outline" size={28} color={colors.primary} accessibilityElementsHidden />
               <View>
                 <Text style={styles.featureTitle}>Audit de conformite</Text>
                 <Text style={styles.featureSub}>30 questions, 8 domaines du droit belge</Text>
@@ -126,6 +127,9 @@ export default function AuditScreen() {
                   key={ct.key}
                   style={[styles.chip, companyType === ct.key && styles.chipActive]}
                   onPress={() => setCompanyType(ct.key)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Type d'entreprise ${ct.label}`}
                 >
                   <Text style={[styles.chipText, companyType === ct.key && styles.chipTextActive]}>
                     {ct.label}
@@ -138,6 +142,9 @@ export default function AuditScreen() {
               style={[styles.btn, loading && styles.btnDisabled]}
               onPress={loadQuestions}
               disabled={loading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Démarrer l'audit"
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
@@ -187,6 +194,9 @@ export default function AuditScreen() {
                           answers[q.id] === opt.key && { backgroundColor: opt.color },
                         ]}
                         onPress={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.key }))}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Répondre ${opt.label}`}
                       >
                         <Text
                           style={[
@@ -215,6 +225,9 @@ export default function AuditScreen() {
             style={[styles.btn, (loading || answeredCount === 0) && styles.btnDisabled]}
             onPress={submitAudit}
             disabled={loading || answeredCount === 0}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Lancer l'audit de conformité"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
@@ -223,7 +236,11 @@ export default function AuditScreen() {
           </TouchableOpacity>
 
           {/* Back */}
-          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => setStep('form')}>
+          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => setStep('form')}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Retour au formulaire"
+          >
             <Text style={styles.linkBtnText}>Retour</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -314,7 +331,11 @@ export default function AuditScreen() {
           </View>
 
           {/* Restart */}
-          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => { setStep('form'); setResult(null); }}>
+          <TouchableOpacity activeOpacity={0.75} style={styles.linkBtn} onPress={() => { setStep('form'); setResult(null); }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Démarrer un nouvel audit"
+          >
             <Text style={styles.linkBtnText}>Nouvel audit</Text>
           </TouchableOpacity>
         </ScrollView>

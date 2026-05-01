@@ -8,6 +8,7 @@ import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const FISCAL_DARK = '#34495E';
 
@@ -52,7 +53,7 @@ export default function FiscalScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#0F1A2E', '#34495E']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>💰</Text>
+          <Ionicons name="cash-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
           <Text style={styles.heroTitle}>Fiscal — Questions fiscales</Text>
           <Text style={styles.heroSub}>IPP, ISOC, TVA · Droit fiscal belge</Text>
         </LinearGradient>
@@ -74,6 +75,9 @@ export default function FiscalScreen() {
           <TouchableOpacity activeOpacity={0.75}
             style={styles.ctxToggle}
             onPress={() => setShowCtx(!showCtx)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={showCtx ? 'Masquer le contexte supplémentaire' : 'Afficher le contexte supplémentaire'}
           >
             <Text style={styles.ctxToggleText}>
               {showCtx ? '▲' : '▼'} Contexte supplémentaire
@@ -99,10 +103,13 @@ export default function FiscalScreen() {
             style={[styles.btn, (!question.trim() || loading) && styles.btnDisabled]}
             onPress={() => ask()}
             disabled={!question.trim() || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Analyser ma question fiscale"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>💰  Analyser</Text>
+              : <Text style={styles.btnText}>Analyser</Text>
             }
           </TouchableOpacity>
         </View>
@@ -116,6 +123,9 @@ export default function FiscalScreen() {
                 key={i}
                 style={styles.quickItem}
                 onPress={() => { setQuestion(q); ask(q); }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Poser la question : ${q}`}
               >
                 <Text style={styles.quickArrow}>›</Text>
                 <Text style={styles.quickText}>{q}</Text>

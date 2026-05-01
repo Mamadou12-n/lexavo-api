@@ -7,6 +7,7 @@ import { findMatchingLawyers } from '../api/client';
 import { colors } from '../theme/colors';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const MATCH_BLUE = '#0050A0';
 
@@ -44,7 +45,7 @@ export default function MatchScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#003366', '#0050A0']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>🤝</Text>
+          <Ionicons name="people-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
           <Text style={styles.heroTitle}>Match — Trouver un avocat</Text>
           <Text style={styles.heroSub}>Mis en relation avec l'avocat idéal</Text>
         </LinearGradient>
@@ -70,6 +71,9 @@ export default function MatchScreen() {
                 key={c}
                 style={[styles.cityChip, city === c && styles.cityChipActive]}
                 onPress={() => setCity(c)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={c === '' ? 'Toutes les villes' : `Ville : ${c}`}
               >
                 <Text style={[styles.cityLabel, city === c && styles.cityLabelActive]}>
                   {c === '' ? '📍 Toutes' : c}
@@ -82,10 +86,18 @@ export default function MatchScreen() {
             style={[styles.btn, (!situation.trim() || loading) && styles.btnDisabled]}
             onPress={find}
             disabled={!situation.trim() || loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Trouver un avocat correspondant"
           >
             {loading
               ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.btnText}>🤝  Trouver un avocat</Text>
+              : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="people-outline" size={16} color="#FFF" accessibilityElementsHidden />
+                  <Text style={styles.btnText}>Trouver un avocat</Text>
+                </View>
+              )
             }
           </TouchableOpacity>
         </View>
@@ -142,8 +154,14 @@ export default function MatchScreen() {
                         if (lawyer.phone) Linking.openURL('tel:' + lawyer.phone);
                         else if (lawyer.email) Linking.openURL('mailto:' + lawyer.email);
                       }}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Contacter ${lawyer.name || 'cet avocat'}`}
                     >
-                      <Text style={styles.contactBtnText}>📞 Contacter</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="call-outline" size={14} color="#FFF" accessibilityElementsHidden />
+                        <Text style={styles.contactBtnText}>Contacter</Text>
+                      </View>
                     </TouchableOpacity>
                     {lawyer.first_consultation === 'free' && (
                       <View style={styles.freePill}>

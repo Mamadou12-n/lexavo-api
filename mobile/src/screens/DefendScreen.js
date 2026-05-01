@@ -362,7 +362,13 @@ export default function DefendScreen() {
             ══════════════════════════════════════════════════════════════════ */}
         {step === 2 && (
           <>
-            <TouchableOpacity onPress={reset} style={s.backBtn}>
+            <TouchableOpacity
+              onPress={reset}
+              style={s.backBtn}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Changer de catégorie"
+            >
               <Text style={s.backText}>← Changer de catégorie</Text>
             </TouchableOpacity>
 
@@ -380,7 +386,15 @@ export default function DefendScreen() {
                 <Text style={s.scanSub}>Photographiez votre amende/lettre — l'IA extrait les données automatiquement</Text>
                 <PhotoPicker photos={photos} onPhotosChange={setPhotos} label="Ajouter la photo" />
                 {photos.length > 0 && !scanResult && (
-                  <TouchableOpacity style={s.scanBtn} onPress={handleScan} disabled={scanLoading}>
+                  <TouchableOpacity
+                    style={s.scanBtn}
+                    onPress={handleScan}
+                    disabled={scanLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Analyser le document scanné"
+                    accessibilityState={{ disabled: scanLoading, busy: scanLoading }}
+                  >
                     {scanLoading
                       ? <ActivityIndicator color="#FFF" />
                       : <Text style={s.scanBtnText}>🔍 Analyser le document</Text>
@@ -443,6 +457,10 @@ export default function DefendScreen() {
                   key={r.id}
                   style={[s.regionChip, region === r.id && s.regionChipActive]}
                   onPress={() => setRegion(region === r.id ? null : r.id)}
+                  accessible={true}
+                  accessibilityRole="tab"
+                  accessibilityLabel={`Région ${r.label}`}
+                  accessibilityState={{ selected: region === r.id }}
                 >
                   <Text style={[s.regionText, region === r.id && s.regionTextActive]}>{r.label}</Text>
                 </TouchableOpacity>
@@ -459,6 +477,10 @@ export default function DefendScreen() {
                   activeOpacity={0.8}
                   style={[s.toneChip, letterTone === t.id && s.toneChipActive]}
                   onPress={() => setLetterTone(t.id)}
+                  accessible={true}
+                  accessibilityRole="tab"
+                  accessibilityLabel={`Ton ${t.label} — ${t.desc}`}
+                  accessibilityState={{ selected: letterTone === t.id }}
                 >
                   <Text style={[s.toneLabel, letterTone === t.id && s.toneLabelActive]}>{t.label}</Text>
                   <Text style={[s.toneDesc, letterTone === t.id && s.toneDescActive]}>{t.desc}</Text>
@@ -473,6 +495,10 @@ export default function DefendScreen() {
               style={[s.analyzeBtn, loading && s.analyzeBtnDisabled]}
               onPress={analyze}
               disabled={loading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Analyser ma situation"
+              accessibilityState={{ disabled: loading, busy: loading }}
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
@@ -487,7 +513,13 @@ export default function DefendScreen() {
             ══════════════════════════════════════════════════════════════════ */}
         {step === 3 && result && (
           <>
-            <TouchableOpacity onPress={() => setStep(2)} style={s.backBtn}>
+            <TouchableOpacity
+              onPress={() => setStep(2)}
+              style={s.backBtn}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Modifier mes réponses"
+            >
               <Text style={s.backText}>← Modifier mes réponses</Text>
             </TouchableOpacity>
 
@@ -575,6 +607,10 @@ export default function DefendScreen() {
                       activeOpacity={0.8}
                       style={[s.toneChip, letterTone === t.id && s.toneChipActive]}
                       onPress={() => setLetterTone(t.id)}
+                      accessible={true}
+                      accessibilityRole="tab"
+                      accessibilityLabel={`Ton ${t.label} — ${t.desc}`}
+                      accessibilityState={{ selected: letterTone === t.id }}
                     >
                       <Text style={[s.toneLabel, letterTone === t.id && s.toneLabelActive]}>{t.label}</Text>
                       <Text style={[s.toneDesc, letterTone === t.id && s.toneDescActive]}>{t.desc}</Text>
@@ -584,7 +620,16 @@ export default function DefendScreen() {
 
                 {/* Bouton générer / régénérer */}
                 {!showLetter ? (
-                  <TouchableOpacity style={s.generateLetterBtn} activeOpacity={0.85} onPress={handleGenerateLetter} disabled={letterLoading}>
+                  <TouchableOpacity
+                    style={s.generateLetterBtn}
+                    activeOpacity={0.85}
+                    onPress={handleGenerateLetter}
+                    disabled={letterLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Générer ma lettre de contestation"
+                    accessibilityState={{ disabled: letterLoading, busy: letterLoading }}
+                  >
                     {letterLoading
                       ? <ActivityIndicator color="#FFF" />
                       : <Text style={s.generateLetterBtnText}>📄 Générer ma lettre de contestation</Text>
@@ -601,7 +646,13 @@ export default function DefendScreen() {
                           <Text style={s.letterText}>{letterText}</Text>
                         </View>
                       )}
-                      <TouchableOpacity style={s.shareBtn} onPress={shareResult}>
+                      <TouchableOpacity
+                        style={s.shareBtn}
+                        onPress={shareResult}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel="Partager ou copier la lettre"
+                      >
                         <Text style={s.shareBtnText}>📤 Partager / Copier la lettre</Text>
                       </TouchableOpacity>
                     </View>
@@ -611,6 +662,10 @@ export default function DefendScreen() {
                       activeOpacity={0.85}
                       onPress={() => handleRegenerateLetter(letterTone)}
                       disabled={letterLoading}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Régénérer la lettre avec ce ton"
+                      accessibilityState={{ disabled: letterLoading, busy: letterLoading }}
                     >
                       {letterLoading
                         ? <ActivityIndicator color="#FFF" />
@@ -627,7 +682,13 @@ export default function DefendScreen() {
               <Text style={s.disclaimerText}>⚖️ {result.disclaimer || 'Lexavo est un outil d\'information juridique. Il ne remplace pas un avocat.'}</Text>
             </View>
 
-            <TouchableOpacity style={s.resetBtn} onPress={reset}>
+            <TouchableOpacity
+              style={s.resetBtn}
+              onPress={reset}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Démarrer une nouvelle situation"
+            >
               <Text style={s.resetBtnText}>⚡ Nouvelle situation</Text>
             </TouchableOpacity>
           </>

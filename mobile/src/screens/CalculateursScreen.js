@@ -6,6 +6,7 @@ import {
 import { listCalculators, runCalculator } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const CALC_COLOR = '#27AE60';
 
@@ -91,7 +92,7 @@ export default function CalculateursScreen() {
 
         {/* Selector */}
         <LinearGradient colors={['#0A3D5C', '#1A6B8A']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>🧮</Text>
+          <Ionicons name="calculator-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
           <Text style={styles.heroTitle}>Calculateurs juridiques</Text>
           <Text style={styles.heroSub}>Sélectionnez un calcul</Text>
         </LinearGradient>
@@ -103,9 +104,12 @@ export default function CalculateursScreen() {
                 key={c.id}
                 style={[styles.calcChip, selected?.id === c.id && styles.calcChipActive]}
                 onPress={() => selectCalc(c)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Calculateur ${c.name}`}
               >
                 <Text style={[styles.calcChipText, selected?.id === c.id && styles.calcChipTextActive]}>
-                  {c.emoji ?? '📐'} {c.name}
+                  {c.name}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -136,10 +140,13 @@ export default function CalculateursScreen() {
               style={[styles.btn, loading && styles.btnDisabled]}
               onPress={calculate}
               disabled={loading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Lancer le calcul"
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={styles.btnText}>🧮  Calculer</Text>
+                : <Text style={styles.btnText}>Calculer</Text>
               }
             </TouchableOpacity>
           </View>

@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography, spacing } from '../theme/designSystem';
 import { t, getDeviceLanguage } from '../i18n/translations';
 import { REGION_KEY } from '../api/client';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -140,7 +141,7 @@ export default function OnboardingScreen({ navigation }) {
                 />
               </View>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Commencer l'onboarding">
               <Text style={styles.primaryBtnText}>Commencer</Text>
             </TouchableOpacity>
           </View>
@@ -150,7 +151,7 @@ export default function OnboardingScreen({ navigation }) {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.stepContent}>
-              <Text style={styles.stepIcon}>&#x1F310;</Text>
+              <Ionicons name="globe-outline" size={50} color={colors.brand} style={{ marginBottom: 16 }} accessibilityElementsHidden />
               <Text style={styles.stepTitle}>
                 {t('language', selectedLang)}
               </Text>
@@ -167,6 +168,10 @@ export default function OnboardingScreen({ navigation }) {
                     ]}
                     onPress={() => handleLanguageSelect(lang.code)}
                     activeOpacity={0.8}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Choisir la langue ${lang.label}`}
+                    accessibilityState={{ selected: selectedLang === lang.code }}
                   >
                     <Text style={styles.languageFlag}>{lang.flag}</Text>
                     <Text
@@ -186,7 +191,7 @@ export default function OnboardingScreen({ navigation }) {
                 ))}
               </View>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Continuer">
               <Text style={styles.primaryBtnText}>Continuer</Text>
             </TouchableOpacity>
           </View>
@@ -211,6 +216,10 @@ export default function OnboardingScreen({ navigation }) {
                     ]}
                     onPress={() => handleRegionSelect(r.id)}
                     activeOpacity={0.8}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Choisir la région ${r.label}`}
+                    accessibilityState={{ selected: selectedRegion === r.id }}
                   >
                     <Text style={styles.languageFlag}>{r.flag}</Text>
                     <View style={{ flex: 1 }}>
@@ -231,7 +240,7 @@ export default function OnboardingScreen({ navigation }) {
                 Vous pourrez modifier votre région à tout moment dans les paramètres.
               </Text>
             </View>
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Continuer">
               <Text style={styles.primaryBtnText}>Continuer</Text>
             </TouchableOpacity>
           </View>
@@ -263,6 +272,9 @@ export default function OnboardingScreen({ navigation }) {
               style={styles.primaryBtn}
               onPress={handleComplete}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="J'ai compris, terminer l'onboarding"
             >
               <Text style={styles.primaryBtnText}>J'ai compris</Text>
             </TouchableOpacity>
@@ -315,6 +327,9 @@ export default function OnboardingScreen({ navigation }) {
           style={styles.skipBtn}
           onPress={() => goToStep(2)}
           activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Passer l'onboarding"
         >
           <Text style={styles.skipText}>Passer</Text>
         </TouchableOpacity>

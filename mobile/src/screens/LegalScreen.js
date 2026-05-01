@@ -155,11 +155,15 @@ export default function LegalScreen() {
       {/* Tab bar */}
       <View style={styles.tabBar}>
         {TABS.map((tab) => (
-          <TouchableOpacity activeOpacity={0.75}
+          <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="tab"
+            accessibilityLabel={`Onglet ${tab.label}`}
+            accessibilityState={{ selected: activeTab === tab.key }}
           >
             <Text
               style={[

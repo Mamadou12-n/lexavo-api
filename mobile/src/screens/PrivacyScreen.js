@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
 
 const RIGHTS = [
   { icon: '👁️', right: 'Accès', desc: 'Obtenir une copie de vos données personnelles traitées par Lexavo.' },
@@ -23,7 +24,7 @@ export default function PrivacyScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       <View style={styles.heroBox}>
-        <Text style={styles.heroIcon}>🔒</Text>
+        <Ionicons name="lock-closed-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
         <Text style={styles.heroTitle}>Politique de confidentialité</Text>
         <Text style={styles.heroSub}>Conforme RGPD (Règlement UE 2016/679){'\n'}Loi belge du 30 juillet 2018</Text>
       </View>
@@ -119,8 +120,11 @@ export default function PrivacyScreen() {
         <TouchableOpacity activeOpacity={0.75}
           style={styles.apdBtn}
           onPress={() => Linking.openURL('https://www.autoriteprotectiondonnees.be')}
+          accessible={true}
+          accessibilityRole="link"
+          accessibilityLabel="Ouvrir le site de l'Autorité de Protection des Données"
         >
-          <Text style={styles.apdBtnText}>🔗 www.autoriteprotectiondonnees.be</Text>
+          <Text style={styles.apdBtnText}>www.autoriteprotectiondonnees.be</Text>
         </TouchableOpacity>
         <Text style={styles.body}>Rue de la Presse 35 · 1000 Bruxelles · +32 2 274 48 00</Text>
       </View>

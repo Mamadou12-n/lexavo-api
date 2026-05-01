@@ -18,6 +18,7 @@ import {
 import { registerPushToken, updateNotificationPreferences } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const NAVY   = colors.brandNavy;
 const ORANGE = colors.brand;
@@ -180,7 +181,7 @@ export default function NotificationsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>🔔</Text>
+        <Ionicons name="notifications-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
         <Text style={styles.heroTitle}>Notifications</Text>
         <Text style={styles.heroSub}>Gérez vos alertes juridiques</Text>
       </LinearGradient>
@@ -210,6 +211,9 @@ export default function NotificationsScreen() {
             style={styles.enableBtn}
             onPress={requestPermission}
             disabled={registering}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Activer les notifications"
           >
             {registering
               ? <ActivityIndicator color="#FFF" size="small" />
@@ -253,7 +257,7 @@ export default function NotificationsScreen() {
         <View style={styles.card}>
           <View style={styles.scheduledHeader}>
             <Text style={styles.cardTitle}>⏱ Rappels planifiés ({scheduled.length})</Text>
-            <TouchableOpacity activeOpacity={0.75} onPress={handleCancelAll}>
+            <TouchableOpacity activeOpacity={0.75} onPress={handleCancelAll} accessible={true} accessibilityRole="button" accessibilityLabel="Annuler tous les rappels planifiés">
               <Text style={styles.clearAllText}>Tout annuler</Text>
             </TouchableOpacity>
           </View>
@@ -273,6 +277,9 @@ export default function NotificationsScreen() {
                 <TouchableOpacity activeOpacity={0.75}
                   style={styles.cancelNotifBtn}
                   onPress={() => handleCancelScheduled(n.identifier)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annuler ce rappel"
                 >
                   <Text style={styles.cancelNotifText}>✕</Text>
                 </TouchableOpacity>
@@ -292,10 +299,18 @@ export default function NotificationsScreen() {
           style={[styles.testBtn, permStatus !== 'granted' && styles.testBtnDisabled]}
           onPress={handleTest}
           disabled={testing || permStatus !== 'granted'}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Envoyer une notification de test"
         >
           {testing
             ? <ActivityIndicator color="#FFF" size="small" />
-            : <Text style={styles.testBtnText}>📲 Envoyer une notification test</Text>
+            : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="notifications-outline" size={14} color="#FFF" accessibilityElementsHidden />
+                <Text style={styles.testBtnText}>Envoyer une notification test</Text>
+              </View>
+            )
           }
         </TouchableOpacity>
       </View>

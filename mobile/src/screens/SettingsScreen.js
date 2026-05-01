@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { REGION_KEY, logout } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const LEXAVO_ORANGE = colors.brand;
 const LEXAVO_NAVY   = colors.brandNavy;
@@ -40,7 +41,7 @@ export default function SettingsScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>&#x2699;&#xFE0F;</Text>
+        <Ionicons name="settings-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
         <Text style={styles.heroTitle}>Paramètres</Text>
         <Text style={styles.heroSub}>Configurez votre expérience Lexavo</Text>
       </LinearGradient>
@@ -56,6 +57,10 @@ export default function SettingsScreen({ navigation }) {
             style={[styles.regionBtn, region === r.id && styles.regionBtnActive]}
             onPress={() => handleRegionChange(r.id)}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={`Choisir la région ${r.label}`}
+            accessibilityState={{ selected: region === r.id }}
           >
             <Text style={styles.regionFlag}>{r.flag}</Text>
             <Text style={[styles.regionLabel, region === r.id && styles.regionLabelActive]}>
@@ -130,8 +135,8 @@ export default function SettingsScreen({ navigation }) {
       </View>
 
       {/* ═══ DÉCONNEXION ═══ */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-        <Text style={styles.logoutText}>🚪 Se déconnecter</Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Se déconnecter">
+        <Text style={styles.logoutText}>Se déconnecter</Text>
       </TouchableOpacity>
 
       <Text style={styles.footer}>Lexavo SRL — Le droit pour tous</Text>
@@ -154,6 +159,10 @@ function MenuItem({ label, sub, onPress, last }) {
       style={[styles.menuItem, !last && styles.menuItemBorder]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={typeof label === 'string' ? label : 'Élément de menu'}
+      accessibilityHint={sub}
     >
       <View style={{ flex: 1 }}>
         <Text style={styles.menuLabel}>{label}</Text>

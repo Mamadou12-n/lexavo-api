@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getConversations, getConversationMessages } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HistoryScreen({ navigation }) {
   const [conversations, setConversations] = useState([]);
@@ -96,6 +97,9 @@ export default function HistoryScreen({ navigation }) {
       style={styles.card}
       onPress={() => handlePress(item)}
       activeOpacity={0.85}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`Ouvrir la conversation ${item.title || 'sans titre'}`}
     >
       <View style={styles.cardHeader}>
         <View style={styles.cardIcon}>
@@ -120,7 +124,7 @@ export default function HistoryScreen({ navigation }) {
 
       {/* Header */}
       <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>📜</Text>
+        <Ionicons name="document-text-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
         <Text style={styles.heroTitle}>Historique</Text>
         <Text style={styles.heroSub}>
           {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
@@ -137,6 +141,9 @@ export default function HistoryScreen({ navigation }) {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity activeOpacity={0.75}
             style={styles.retryBtn}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Réessayer le chargement de l'historique"
             onPress={() => {
               setLoading(true);
               setError(null);
@@ -171,6 +178,9 @@ export default function HistoryScreen({ navigation }) {
                 style={styles.emptyBtn}
                 onPress={() => navigation.navigate('Ask')}
                 activeOpacity={0.8}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Poser une nouvelle question juridique"
               >
                 <Text style={styles.emptyBtnText}>Poser une question</Text>
               </TouchableOpacity>

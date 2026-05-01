@@ -7,6 +7,7 @@ import { searchDocuments, SOURCES } from '../api/client';
 import { colors } from '../theme/colors';
 import ResultCard from '../components/ResultCard';
 import SourceBadge from '../components/SourceBadge';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SearchScreen({ navigation }) {
   const [query, setQuery]           = useState('');
@@ -70,11 +71,14 @@ export default function SearchScreen({ navigation }) {
           style={[styles.searchBtn, (!query.trim() || loading) && styles.searchBtnDisabled]}
           onPress={() => search()}
           disabled={!query.trim() || loading}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Lancer la recherche"
         >
           {loading ? (
             <ActivityIndicator color="#FFF" size="small" />
           ) : (
-            <Text style={styles.searchBtnText}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color="#FFF" accessibilityElementsHidden />
           )}
         </TouchableOpacity>
       </View>
@@ -91,6 +95,10 @@ export default function SearchScreen({ navigation }) {
             key={s.key ?? 'all'}
             style={[styles.chip, sourceFilter === s.key && styles.chipActive]}
             onPress={() => setSourceFilter(s.key)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={`Filtrer par ${s.key ?? 'toutes les sources'}`}
+            accessibilityState={{ selected: sourceFilter === s.key }}
           >
             <Text style={[styles.chipText, sourceFilter === s.key && styles.chipTextActive]}>
               {s.emoji} {s.key ?? 'Tout'}
@@ -106,7 +114,7 @@ export default function SearchScreen({ navigation }) {
             {total} résultat{total > 1 ? 's' : ''}
             {sourceFilter ? ` · ${sourceFilter}` : ''}
           </Text>
-          <TouchableOpacity activeOpacity={0.75} onPress={() => setTopK(topK === 10 ? 20 : 10)}>
+          <TouchableOpacity activeOpacity={0.75} onPress={() => setTopK(topK === 10 ? 20 : 10)} accessible={true} accessibilityRole="button" accessibilityLabel={`Afficher Top ${topK === 10 ? 20 : 10} résultats`}>
             <Text style={styles.topKToggle}>Top {topK} ▼</Text>
           </TouchableOpacity>
         </View>
@@ -130,7 +138,7 @@ export default function SearchScreen({ navigation }) {
         ListEmptyComponent={
           !loading && query ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🔍</Text>
+              <Ionicons name="search-outline" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} accessibilityElementsHidden />
               <Text style={styles.emptyText}>Aucun résultat pour "{query}"</Text>
             </View>
           ) : null
@@ -157,7 +165,7 @@ function DocumentDetail({ doc, onClose }) {
       {/* Header */}
       <View style={styles.modalHeader}>
         <SourceBadge source={doc.source || ''} />
-        <TouchableOpacity activeOpacity={0.75} onPress={onClose} style={styles.closeBtn}>
+        <TouchableOpacity activeOpacity={0.75} onPress={onClose} style={styles.closeBtn} accessible={true} accessibilityRole="button" accessibilityLabel="Fermer le document">
           <Text style={styles.closeBtnText}>✕</Text>
         </TouchableOpacity>
       </View>

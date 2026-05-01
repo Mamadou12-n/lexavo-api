@@ -21,6 +21,10 @@ export default function ResultCard({ item, onPress }) {
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.85}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={item.title || item.ecli || 'Résultat de recherche'}
+      accessibilityHint="Ouvre le détail du résultat"
     >
       {/* Header : source + date + similarité */}
       <View style={styles.header}>
@@ -56,7 +60,14 @@ export default function ResultCard({ item, onPress }) {
 
       {/* Footer : URL */}
       {item.url ? (
-        <TouchableOpacity activeOpacity={0.75} onPress={handleUrl} style={styles.urlRow}>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={handleUrl}
+          style={styles.urlRow}
+          accessible={true}
+          accessibilityRole="link"
+          accessibilityLabel={`Ouvrir le lien externe ${item.url}`}
+        >
           <Text style={styles.urlText} numberOfLines={1}>{item.url}</Text>
         </TouchableOpacity>
       ) : null}

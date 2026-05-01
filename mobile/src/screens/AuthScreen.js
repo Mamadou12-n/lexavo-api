@@ -13,6 +13,7 @@ import {
 import { login, register, forgotPassword } from '../api/client';
 import { colors } from '../theme/colors';
 import { typography, spacing, radius } from '../theme/designSystem';
+import { Ionicons } from '@expo/vector-icons';
 
 // Tokens — utiliser colors.brand / colors.brandNavy partout
 const LEXAVO_NAVY   = colors.brandNavy;
@@ -89,7 +90,10 @@ export default function AuthScreen({ onAuthSuccess }) {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>⚖️  Lexavo</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="scale-outline" size={28} color="#FFF" accessibilityElementsHidden />
+          <Text style={styles.logo}>Lexavo</Text>
+        </View>
         <Text style={styles.tagline}>Droit belge — RAG + IA</Text>
       </View>
 
@@ -107,6 +111,10 @@ export default function AuthScreen({ onAuthSuccess }) {
             <TouchableOpacity activeOpacity={0.75}
               style={[styles.tab, isLogin && styles.tabActive]}
               onPress={() => { setMode('login'); setError(null); }}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityLabel="Onglet connexion"
+              accessibilityState={{ selected: isLogin }}
             >
               <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>
                 Connexion
@@ -115,6 +123,10 @@ export default function AuthScreen({ onAuthSuccess }) {
             <TouchableOpacity activeOpacity={0.75}
               style={[styles.tab, !isLogin && styles.tabActive]}
               onPress={() => { setMode('register'); setError(null); }}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityLabel="Onglet inscription"
+              accessibilityState={{ selected: !isLogin }}
             >
               <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>
                 Inscription
@@ -186,19 +198,25 @@ export default function AuthScreen({ onAuthSuccess }) {
             style={[styles.btn, loading && styles.btnDisabled]}
             onPress={submit}
             disabled={loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={isLogin ? 'Se connecter' : 'Créer mon compte'}
           >
             {loading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.btnText}>
-                {isLogin ? '🔐 Se connecter' : '✨ Créer mon compte'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={isLogin ? 'lock-closed-outline' : 'sparkles-outline'} size={18} color="#FFF" accessibilityElementsHidden />
+                <Text style={styles.btnText}>
+                  {isLogin ? 'Se connecter' : 'Créer mon compte'}
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
 
           {/* Lien mot de passe oublié */}
           {isLogin && !isForgot && (
-            <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('forgot'); setError(null); setForgotSent(false); }}>
+            <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('forgot'); setError(null); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel="Mot de passe oublié">
               <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
             </TouchableOpacity>
           )}
@@ -212,7 +230,7 @@ export default function AuthScreen({ onAuthSuccess }) {
                   <Text style={styles.forgotText}>
                     Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.
                   </Text>
-                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setForgotSent(false); }}>
+                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setForgotSent(false); }} accessible={true} accessibilityRole="link" accessibilityLabel="Retour à la connexion">
                     <Text style={styles.forgotLink}>← Retour à la connexion</Text>
                   </TouchableOpacity>
                 </>
@@ -237,10 +255,13 @@ export default function AuthScreen({ onAuthSuccess }) {
                     style={[styles.btn, loading && styles.btnDisabled]}
                     onPress={submitForgot}
                     disabled={loading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Envoyer le lien de réinitialisation"
                   >
                     {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>Envoyer le lien</Text>}
                   </TouchableOpacity>
-                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setError(null); }}>
+                  <TouchableOpacity activeOpacity={0.75} onPress={() => { setMode('login'); setError(null); }} accessible={true} accessibilityRole="link" accessibilityLabel="Retour à la connexion">
                     <Text style={styles.forgotLink}>← Retour à la connexion</Text>
                   </TouchableOpacity>
                 </>

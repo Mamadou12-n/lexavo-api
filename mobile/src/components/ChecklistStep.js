@@ -29,18 +29,30 @@ export default function ChecklistStep({ questions = [], answers = {}, onAnswer, 
               <TouchableOpacity
                 style={[s.btn, val === true && s.btnOui]}
                 onPress={() => onAnswer(q.id, true)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Répondre Oui"
+                accessibilityState={{ selected: val === true }}
               >
                 <Text style={[s.btnText, val === true && s.btnTextActive]}>✓ Oui</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.btn, val === false && s.btnNon]}
                 onPress={() => onAnswer(q.id, false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Répondre Non"
+                accessibilityState={{ selected: val === false }}
               >
                 <Text style={[s.btnText, val === false && s.btnTextActive]}>✗ Non</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.btn, val === null && s.btnNsp]}
                 onPress={() => onAnswer(q.id, null)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Ne sait pas"
+                accessibilityState={{ selected: val === null }}
               >
                 <Text style={[s.btnText, val === null && { color: '#6B7280', fontWeight: '700' }]}>— NSP</Text>
               </TouchableOpacity>

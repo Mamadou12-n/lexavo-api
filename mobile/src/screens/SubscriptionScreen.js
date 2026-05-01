@@ -309,6 +309,10 @@ export default function SubscriptionScreen() {
         <TouchableOpacity activeOpacity={0.75}
           style={[styles.togglePill, billing === 'monthly' && styles.togglePillActive]}
           onPress={() => setBilling('monthly')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityLabel="Facturation mensuelle"
+          accessibilityState={{ selected: billing === 'monthly' }}
         >
           <Text style={[styles.toggleText, billing === 'monthly' && styles.toggleTextActive]}>
             Mensuel
@@ -317,6 +321,10 @@ export default function SubscriptionScreen() {
         <TouchableOpacity activeOpacity={0.75}
           style={[styles.togglePill, billing === 'annual' && styles.togglePillActive]}
           onPress={() => setBilling('annual')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityLabel="Facturation annuelle, économie 17%"
+          accessibilityState={{ selected: billing === 'annual' }}
         >
           <Text style={[styles.toggleText, billing === 'annual' && styles.toggleTextActive]}>
             Annuel
@@ -417,6 +425,9 @@ export default function SubscriptionScreen() {
               <TouchableOpacity activeOpacity={0.75}
                 onPress={() => subscribe(plan.id)}
                 disabled={!!actionPlan}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Souscrire au plan ${plan.name}`}
               >
                 {isLoading
                   ? <View style={styles.subscribeBtnFallback}><ActivityIndicator color="#FFF" /></View>
@@ -430,7 +441,7 @@ export default function SubscriptionScreen() {
             )}
 
             {isCurrent && plan.id !== 'free' && (
-              <TouchableOpacity activeOpacity={0.75} style={styles.cancelBtn} onPress={handleCancel}>
+              <TouchableOpacity activeOpacity={0.75} style={styles.cancelBtn} onPress={handleCancel} accessible={true} accessibilityRole="button" accessibilityLabel="Gérer ou annuler l'abonnement">
                 <Text style={styles.cancelBtnText}>Gerer / Annuler l'abonnement</Text>
               </TouchableOpacity>
             )}
@@ -469,7 +480,7 @@ export default function SubscriptionScreen() {
         </Text>
       </View>
 
-      <TouchableOpacity activeOpacity={0.75} style={styles.restoreBtn} onPress={handleRestore}>
+      <TouchableOpacity activeOpacity={0.75} style={styles.restoreBtn} onPress={handleRestore} accessible={true} accessibilityRole="button" accessibilityLabel="Restaurer un abonnement existant">
         <Text style={styles.restoreBtnText}>Restaurer un abonnement existant</Text>
       </TouchableOpacity>
 

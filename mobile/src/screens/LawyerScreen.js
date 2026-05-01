@@ -6,6 +6,7 @@ import {
 import { colors } from '../theme/colors';
 import api from '../api/client';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const SPECIALTIES = [
   { key: null, label: 'Toutes les specialites' },
@@ -103,6 +104,9 @@ export default function LawyerScreen() {
         style={styles.card}
         onPress={() => openProfile(item)}
         activeOpacity={0.85}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`Voir le profil de ${item.name || item.nom || 'cet avocat'}`}
       >
         {/* Avatar */}
         <View style={styles.cardRow}>
@@ -157,7 +161,7 @@ export default function LawyerScreen() {
 
       {/* Header */}
       <LinearGradient colors={[colors.brandNavy, colors.brandNavyLight]} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>{'\uD83D\uDC68\u200D\u2696\uFE0F'}</Text>
+        <Ionicons name="briefcase-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
         <Text style={styles.heroTitle}>Annuaire des avocats</Text>
         <Text style={styles.heroSub}>
           {filtered.length} avocat{filtered.length !== 1 ? 's' : ''}
@@ -169,6 +173,9 @@ export default function LawyerScreen() {
         style={styles.filterBar}
         onPress={() => setShowFilter(true)}
         activeOpacity={0.8}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Ouvrir le filtre par spécialité"
       >
         <Text style={styles.filterLabel}>Specialite :</Text>
         <Text style={styles.filterValue}>{currentFilterLabel}</Text>
@@ -185,7 +192,7 @@ export default function LawyerScreen() {
         <View style={styles.centerContent}>
           <Text style={styles.errorIcon}>{'\u26A0\uFE0F'}</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchLawyers} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchLawyers} activeOpacity={0.8} accessible={true} accessibilityRole="button" accessibilityLabel="Réessayer le chargement des avocats">
             <Text style={styles.retryBtnText}>Reessayer</Text>
           </TouchableOpacity>
         </View>
@@ -217,7 +224,7 @@ export default function LawyerScreen() {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Filtrer par specialite</Text>
-            <TouchableOpacity activeOpacity={0.75} onPress={() => setShowFilter(false)} style={styles.modalClose}>
+            <TouchableOpacity activeOpacity={0.75} onPress={() => setShowFilter(false)} style={styles.modalClose} accessible={true} accessibilityRole="button" accessibilityLabel="Fermer le filtre">
               <Text style={styles.modalCloseText}>{'\u2715'}</Text>
             </TouchableOpacity>
           </View>
@@ -234,6 +241,9 @@ export default function LawyerScreen() {
                   setShowFilter(false);
                 }}
                 activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrer par ${spec.label}`}
               >
                 <Text
                   style={[
@@ -282,7 +292,7 @@ function LawyerProfile({ lawyer, onClose, onCall, onEmail }) {
   return (
     <View style={styles.profileContainer}>
       <View style={styles.profileHeader}>
-        <TouchableOpacity activeOpacity={0.75} onPress={onClose} style={styles.modalClose}>
+        <TouchableOpacity activeOpacity={0.75} onPress={onClose} style={styles.modalClose} accessible={true} accessibilityRole="button" accessibilityLabel="Fermer le profil de l'avocat">
           <Text style={styles.modalCloseText}>{'\u2715'}</Text>
         </TouchableOpacity>
       </View>
@@ -350,8 +360,11 @@ function LawyerProfile({ lawyer, onClose, onCall, onEmail }) {
               style={styles.contactBtn}
               onPress={() => onCall(lawyer.phone || lawyer.telephone)}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Appeler l'avocat"
             >
-              <Text style={styles.contactBtnIcon}>{'\uD83D\uDCDE'}</Text>
+              <Ionicons name="call-outline" size={18} color="#FFF" accessibilityElementsHidden />
               <Text style={styles.contactBtnText}>Appeler</Text>
             </TouchableOpacity>
           )}
@@ -360,8 +373,11 @@ function LawyerProfile({ lawyer, onClose, onCall, onEmail }) {
               style={[styles.contactBtn, styles.contactBtnEmail]}
               onPress={() => onEmail(lawyer.email)}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Envoyer un email \u00E0 l'avocat"
             >
-              <Text style={styles.contactBtnIcon}>{'\u2709\uFE0F'}</Text>
+              <Ionicons name="mail-outline" size={18} color={colors.brand} accessibilityElementsHidden />
               <Text style={[styles.contactBtnText, styles.contactBtnEmailText]}>
                 Envoyer un email
               </Text>

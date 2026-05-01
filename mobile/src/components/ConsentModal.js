@@ -95,6 +95,10 @@ export default function ConsentModal({ visible, onAccept }) {
             style={[styles.acceptBtn, !scrolledToBottom && styles.acceptBtnDisabled]}
             onPress={handleAccept}
             disabled={!scrolledToBottom}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={scrolledToBottom ? "J'accepte les conditions d'utilisation" : "Faites défiler jusqu'en bas pour accepter"}
+            accessibilityState={{ disabled: !scrolledToBottom }}
           >
             <Text style={styles.acceptBtnText}>
               {scrolledToBottom ? '✅  J\'accepte les conditions' : 'Lisez jusqu\'en bas pour continuer'}

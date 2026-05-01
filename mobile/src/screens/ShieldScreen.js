@@ -15,6 +15,7 @@ import { shieldAnalyze, decodeDocument, REGION_KEY } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 // ── Shield config ────────────────────────────────────────────────────────────
 const VERDICT_CONFIG = {
@@ -150,7 +151,7 @@ export default function ShieldScreen() {
         <LinearGradient colors={['#8B1A1A', '#C0392B']} style={styles.heroHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={styles.heroEmoji}>📄</Text>
+              <Ionicons name="document-text-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
               <Text style={styles.heroTitle}>Analyseur de documents</Text>
               <Text style={styles.heroSub}>
                 {mode === MODE_CONTRACT
@@ -159,8 +160,11 @@ export default function ShieldScreen() {
               </Text>
             </View>
             {mode === MODE_CONTRACT && (
-              <TouchableOpacity activeOpacity={0.75} onPress={() => setShowHistory(!showHistory)} style={{ position: 'absolute', right: 0, top: 0 }}>
-                <Text style={styles.historyBtn}>📋 {history.length}</Text>
+              <TouchableOpacity activeOpacity={0.75} onPress={() => setShowHistory(!showHistory)} style={{ position: 'absolute', right: 0, top: 0 }} accessible={true} accessibilityRole="button" accessibilityLabel={`Voir l'historique des analyses (${history.length})`}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="document-text-outline" size={14} color="#FFF" accessibilityElementsHidden />
+                  <Text style={styles.historyBtn}>{history.length}</Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -171,18 +175,32 @@ export default function ShieldScreen() {
           <TouchableOpacity activeOpacity={0.75}
             style={[styles.toggleBtn, mode === MODE_CONTRACT && styles.toggleBtnActive]}
             onPress={() => switchMode(MODE_CONTRACT)}
+            accessible={true}
+            accessibilityRole="tab"
+            accessibilityLabel="Mode analyse de contrat"
+            accessibilityState={{ selected: mode === MODE_CONTRACT }}
           >
-            <Text style={[styles.toggleText, mode === MODE_CONTRACT && styles.toggleTextActive]}>
-              🛡️  Contrat
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="shield-checkmark-outline" size={14} color={mode === MODE_CONTRACT ? '#FFF' : colors.textSecondary} accessibilityElementsHidden />
+              <Text style={[styles.toggleText, mode === MODE_CONTRACT && styles.toggleTextActive]}>
+                Contrat
+              </Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.75}
             style={[styles.toggleBtn, mode === MODE_DOCUMENT && styles.toggleBtnActiveDoc]}
             onPress={() => switchMode(MODE_DOCUMENT)}
+            accessible={true}
+            accessibilityRole="tab"
+            accessibilityLabel="Mode décodage de document administratif"
+            accessibilityState={{ selected: mode === MODE_DOCUMENT }}
           >
-            <Text style={[styles.toggleText, mode === MODE_DOCUMENT && styles.toggleTextActive]}>
-              🔍  Document admin
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="search-outline" size={14} color={mode === MODE_DOCUMENT ? '#FFF' : colors.textSecondary} accessibilityElementsHidden />
+              <Text style={[styles.toggleText, mode === MODE_DOCUMENT && styles.toggleTextActive]}>
+                Document admin
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -210,6 +228,10 @@ export default function ShieldScreen() {
                 key={t.id || 'auto'}
                 style={[styles.typeChip, contractType === t.id && styles.typeChipActive]}
                 onPress={() => setContractType(t.id)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Type de contrat : ${t.label}`}
+                accessibilityState={{ selected: contractType === t.id }}
               >
                 <Text style={[styles.typeChipText, contractType === t.id && styles.typeChipTextActive]}>
                   {t.label}
@@ -255,12 +277,20 @@ export default function ShieldScreen() {
           ]}
           onPress={handleAnalyze}
           disabled={isDisabled}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={mode === MODE_CONTRACT ? 'Analyser le contrat' : 'Décoder ce document'}
         >
           {loading
             ? <ActivityIndicator color="#FFF" />
-            : <Text style={styles.analyzeBtnText}>
-                {mode === MODE_CONTRACT ? '🛡️  Analyser le contrat' : '🔍  Decoder ce document'}
-              </Text>
+            : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={mode === MODE_CONTRACT ? 'shield-checkmark-outline' : 'search-outline'} size={18} color="#FFF" accessibilityElementsHidden />
+                <Text style={styles.analyzeBtnText}>
+                  {mode === MODE_CONTRACT ? 'Analyser le contrat' : 'Decoder ce document'}
+                </Text>
+              </View>
+            )
           }
         </TouchableOpacity>
 

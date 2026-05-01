@@ -53,7 +53,14 @@ export default function ExtractedCard({ extracted = {}, confidence = 0.5, onEdit
       <Text style={s.hint}>Touche un champ pour le corriger</Text>
 
       {visibleFields.map(f => (
-        <TouchableOpacity key={f.key} style={s.row} onPress={() => startEdit(f.key)}>
+        <TouchableOpacity
+          key={f.key}
+          style={s.row}
+          onPress={() => startEdit(f.key)}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Modifier le champ ${f.label}`}
+        >
           <Text style={s.fieldLabel}>{f.label}</Text>
           {editing === f.key ? (
             <View style={s.editRow}>
@@ -64,7 +71,13 @@ export default function ExtractedCard({ extracted = {}, confidence = 0.5, onEdit
                 autoFocus
                 keyboardType={f.type === 'number' ? 'numeric' : 'default'}
               />
-              <TouchableOpacity onPress={() => confirmEdit(f.key)} style={s.okBtn}>
+              <TouchableOpacity
+                onPress={() => confirmEdit(f.key)}
+                style={s.okBtn}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Valider la modification"
+              >
                 <Text style={s.okText}>✓</Text>
               </TouchableOpacity>
             </View>

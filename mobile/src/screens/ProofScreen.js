@@ -7,6 +7,7 @@ import { createProofCase, addProofEntry } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const PROOF_GREEN = '#1A6B3A';
 const ENTRY_TYPES = [
@@ -74,7 +75,7 @@ export default function ProofScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <LinearGradient colors={['#0A3D1A', '#1A6B3A']} style={styles.heroHeader}>
-          <Text style={styles.heroEmoji}>🗂️</Text>
+          <Ionicons name="folder-outline" size={32} color="#FFF" accessibilityElementsHidden style={{ marginBottom: 8 }} />
           <Text style={styles.heroTitle}>Proof — Dossier de preuves</Text>
           <Text style={styles.heroSub}>Constituez votre dossier juridique</Text>
         </LinearGradient>
@@ -109,10 +110,18 @@ export default function ProofScreen() {
               style={[styles.btn, (!caseTitle.trim() || loading) && styles.btnDisabled]}
               onPress={createCase}
               disabled={!caseTitle.trim() || loading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Créer le dossier de preuves"
             >
               {loading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={styles.btnText}>🗂️  Créer le dossier</Text>
+                : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="folder-outline" size={16} color="#FFF" accessibilityElementsHidden />
+                    <Text style={styles.btnText}>Créer le dossier</Text>
+                  </View>
+                )
               }
             </TouchableOpacity>
           </View>
@@ -135,6 +144,9 @@ export default function ProofScreen() {
                     key={t.id}
                     style={[styles.typeChip, entryType === t.id && { borderColor: t.color, backgroundColor: `${t.color}15` }]}
                     onPress={() => setEntryType(t.id)}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Type de preuve : ${t.label}`}
                   >
                     <Text style={[styles.typeLabel, entryType === t.id && { color: t.color, fontWeight: '700' }]}>
                       {t.label}
@@ -170,6 +182,9 @@ export default function ProofScreen() {
                 style={[styles.btn, (!entryDesc.trim() || loading) && styles.btnDisabled]}
                 onPress={addEntry}
                 disabled={!entryDesc.trim() || loading}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter cette pièce au dossier"
               >
                 {loading
                   ? <ActivityIndicator color="#FFF" />

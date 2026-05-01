@@ -6,6 +6,7 @@ import {
 import { getAlertDomains, getAlertFeed, saveAlertPreferences } from '../api/client';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const ALERT_DARK = '#D4A017';
 
@@ -83,7 +84,7 @@ export default function AlertesScreen() {
     >
       {/* Domain selector */}
       <LinearGradient colors={['#5C3D00', '#D4A017']} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>🔔</Text>
+        <Ionicons name="notifications-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
         <Text style={styles.heroTitle}>Alertes — Veille législative</Text>
         <Text style={styles.heroSub}>Choisissez vos domaines juridiques</Text>
       </LinearGradient>
@@ -95,8 +96,11 @@ export default function AlertesScreen() {
               key={d.id}
               style={[styles.domainChip, selected.includes(d.id) && styles.domainChipActive]}
               onPress={() => toggleDomain(d.id)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.includes(d.id) ? 'Désactiver' : 'Activer'} le domaine ${d.label}`}
             >
-              <Text style={styles.domainEmoji}>{d.emoji ?? '📋'}</Text>
+              <Ionicons name="clipboard-outline" size={14} color={selected.includes(d.id) ? ALERT_DARK : colors.textSecondary} accessibilityElementsHidden />
               <Text style={[styles.domainLabel, selected.includes(d.id) && styles.domainLabelActive]}>
                 {d.label}
               </Text>
@@ -108,10 +112,13 @@ export default function AlertesScreen() {
           style={[styles.btn, saving && styles.btnDisabled]}
           onPress={save}
           disabled={saving}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Voir mes alertes pour ${selected.length} domaines sélectionnés`}
         >
           {saving
             ? <ActivityIndicator color="#FFF" />
-            : <Text style={styles.btnText}>🔔  Voir mes alertes ({selected.length} domaines)</Text>
+            : <Text style={styles.btnText}>Voir mes alertes ({selected.length} domaines)</Text>
           }
         </TouchableOpacity>
       </View>
@@ -162,7 +169,7 @@ export default function AlertesScreen() {
 
       {feed.length === 0 && !loadingFeed && !error && (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyEmoji}>🔔</Text>
+          <Ionicons name="notifications-outline" size={36} color={colors.textMuted} style={{ marginBottom: 10 }} accessibilityElementsHidden />
           <Text style={styles.emptyText}>Sélectionnez vos domaines et appuyez sur "Voir mes alertes"</Text>
         </View>
       )}

@@ -696,7 +696,13 @@ export default function StudentScreen() {
   const XPNotif = () => {
     if (!xpEarned && !newBadges.length) return null;
     return (
-      <TouchableOpacity style={s.xpNotif} onPress={() => { setXpEarned(null); setNewBadges([]); }}>
+      <TouchableOpacity
+        style={s.xpNotif}
+        onPress={() => { setXpEarned(null); setNewBadges([]); }}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Fermer la notification XP"
+      >
         {xpEarned > 0 && <Text style={s.xpNotifText}>+{xpEarned} XP</Text>}
         {newBadges.map(b => (
           <Text key={b.badge_id} style={s.xpNotifBadge}>{b.badge_emoji} {b.badge_name}</Text>
@@ -766,7 +772,13 @@ export default function StudentScreen() {
                   {uploadedDoc.filename && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.neon1 + '20', borderRadius: 8, borderWidth: 1, borderColor: T.neon1 + '50', paddingHorizontal: 10, paddingVertical: 5, marginRight: 8 }}>
                       <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '600', maxWidth: 150 }} numberOfLines={1}>📄 {uploadedDoc.filename}</Text>
-                      <TouchableOpacity onPress={() => setUploadedDoc({ text: '', filename: '' })} style={{ marginLeft: 6 }}>
+                      <TouchableOpacity
+                        onPress={() => setUploadedDoc({ text: '', filename: '' })}
+                        style={{ marginLeft: 6 }}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel="Retirer le fichier importé"
+                      >
                         <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>✕</Text>
                       </TouchableOpacity>
                     </View>
@@ -776,7 +788,11 @@ export default function StudentScreen() {
                     <View key={i} style={{ position: 'relative', marginRight: 8 }}>
                       <Image source={{ uri: ph.uri }} style={{ width: 48, height: 48, borderRadius: 8 }} />
                       <TouchableOpacity onPress={() => setPhotos(p => p.filter((_, j) => j !== i))}
-                        style={{ position: 'absolute', top: -5, right: -5, backgroundColor: T.neon3, borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+                        style={{ position: 'absolute', top: -5, right: -5, backgroundColor: T.neon3, borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Supprimer la photo ${i + 1}`}
+                      >
                         <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>✕</Text>
                       </TouchableOpacity>
                     </View>
@@ -791,6 +807,10 @@ export default function StudentScreen() {
                   onPress={handlePickDocForStudy}
                   disabled={uploadLoading}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: uploadedDoc.text ? T.neon1 + '20' : T.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={uploadedDoc.text ? 'Fichier chargé, en remplacer' : 'Joindre un fichier'}
+                  accessibilityState={{ disabled: uploadLoading, busy: uploadLoading }}
                 >
                   {uploadLoading
                     ? <ActivityIndicator color={T.neon2} size="small" style={{ width: 16, height: 16 }} />
@@ -805,6 +825,9 @@ export default function StudentScreen() {
                 <TouchableOpacity
                   onPress={handlePickPhoto}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: photos.length > 0 ? T.neon4 + '20' : T.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={photos.length > 0 ? `${photos.length} photo${photos.length > 1 ? 's' : ''} ajoutée${photos.length > 1 ? 's' : ''}, en ajouter` : 'Ajouter une photo'}
                 >
                   <Text style={{ fontSize: 14 }}>📷</Text>
                   <Text style={{ color: photos.length > 0 ? T.neon4 : T.muted, fontSize: 12, fontWeight: '600' }}>
@@ -818,6 +841,10 @@ export default function StudentScreen() {
                     onPress={() => handleOpenNotebookLM(uploadedDoc.text, topic || branch || 'Notes')}
                     disabled={nlmLoading}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#1A2A1A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto' }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Ouvrir dans NotebookLM"
+                    accessibilityState={{ disabled: nlmLoading, busy: nlmLoading }}
                   >
                     {nlmLoading ? <ActivityIndicator color="#4CAF50" size="small" style={{ width: 14, height: 14 }} /> : <Text style={{ fontSize: 14 }}>📓</Text>}
                     <Text style={{ color: '#4CAF50', fontSize: 12, fontWeight: '600' }}>NotebookLM</Text>
@@ -833,7 +860,15 @@ export default function StudentScreen() {
               <Text style={s.secLabel}>DIFFICULTÉ</Text>
               <View style={s.rowCentered}>
                 {['facile', 'moyen', 'difficile'].map(d => (
-                  <TouchableOpacity key={d} style={[s.diffChip, caseDifficulty === d && s.diffActive]} onPress={() => setCaseDifficulty(d)}>
+                  <TouchableOpacity
+                    key={d}
+                    style={[s.diffChip, caseDifficulty === d && s.diffActive]}
+                    onPress={() => setCaseDifficulty(d)}
+                    accessible={true}
+                    accessibilityRole="tab"
+                    accessibilityLabel={`Difficulté ${d}`}
+                    accessibilityState={{ selected: caseDifficulty === d }}
+                  >
                     <Text style={[s.diffText, caseDifficulty === d && { color: T.neon1 }]}>{d}</Text>
                   </TouchableOpacity>
                 ))}
@@ -843,7 +878,16 @@ export default function StudentScreen() {
 
           {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
 
-          <TouchableOpacity activeOpacity={0.85} style={s.genWrap} onPress={ctaAction[activeMode?.id] || generate} disabled={loading}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={s.genWrap}
+            onPress={ctaAction[activeMode?.id] || generate}
+            disabled={loading}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={ctaLabels[activeMode?.id] || 'Générer'}
+            accessibilityState={{ disabled: loading, busy: loading }}
+          >
             <LinearGradient colors={activeMode?.gradient || [T.neon1, T.neon2]} style={[s.genBtn, (!topic.trim() && photos.length === 0 && !uploadedDoc.text) && { opacity: 0.5 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               {loading ? <ActivityIndicator color="#FFF" /> : (
                 <Text style={s.genBtnText}>{ctaLabels[activeMode?.id] || 'Générer'}</Text>
@@ -869,13 +913,29 @@ export default function StudentScreen() {
                 <View key={q.id} style={s.quizCard}>
                   <Text style={s.quizQ}>{i + 1}. {q.question}</Text>
                   {q.options?.map(o => (
-                    <TouchableOpacity key={o} style={[s.optBtn, selectedAnswers[q.id] === o && s.optSelected]} onPress={() => setSelected(p => ({ ...p, [q.id]: o }))}>
+                    <TouchableOpacity
+                      key={o}
+                      style={[s.optBtn, selectedAnswers[q.id] === o && s.optSelected]}
+                      onPress={() => setSelected(p => ({ ...p, [q.id]: o }))}
+                      accessible={true}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Réponse ${o}`}
+                      accessibilityState={{ selected: selectedAnswers[q.id] === o, checked: selectedAnswers[q.id] === o }}
+                    >
                       <Text style={[s.optText, selectedAnswers[q.id] === o && { color: T.neon1 }]}>{o}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ))}
-              <TouchableOpacity style={s.genWrap} onPress={submitQuiz} disabled={Object.keys(selectedAnswers).length === 0}>
+              <TouchableOpacity
+                style={s.genWrap}
+                onPress={submitQuiz}
+                disabled={Object.keys(selectedAnswers).length === 0}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Vérifier mes réponses"
+                accessibilityState={{ disabled: Object.keys(selectedAnswers).length === 0 }}
+              >
                 <LinearGradient colors={['#4A1D96', '#8B5CF6']} style={s.genBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                   <Text style={s.genBtnText}>Vérifier mes réponses</Text>
                 </LinearGradient>
@@ -917,7 +977,15 @@ export default function StudentScreen() {
           <Text style={s.modeTitle}>🃏 Flashcards — {branch}</Text>
           <Text style={[s.muted, { textAlign: 'center', marginBottom: 16 }]}>Touche pour retourner la carte</Text>
           {result.cards?.map((c, i) => (
-            <TouchableOpacity key={c.id || i} activeOpacity={0.85} style={[s.flashCard, flippedCards[c.id] && s.flashCardFlipped]} onPress={() => setFlipped(p => ({ ...p, [c.id]: !p[c.id] }))}>
+            <TouchableOpacity
+              key={c.id || i}
+              activeOpacity={0.85}
+              style={[s.flashCard, flippedCards[c.id] && s.flashCardFlipped]}
+              onPress={() => setFlipped(p => ({ ...p, [c.id]: !p[c.id] }))}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Flashcard ${i + 1} — ${flippedCards[c.id] ? 'définition affichée, toucher pour cacher' : 'concept affiché, toucher pour révéler la définition'}`}
+            >
               <LinearGradient colors={flippedCards[c.id] ? ['#004D40', '#00D4AA'] : ['#004D8F', '#4DA6FF']} style={s.flashCardInner}>
                 <Text style={s.flashLabel}>{flippedCards[c.id] ? 'Définition' : 'Concept'}</Text>
                 <Text style={s.flashText}>{flippedCards[c.id] ? c.back : c.front}</Text>
@@ -968,6 +1036,10 @@ export default function StudentScreen() {
             disabled={audioLoading}
             activeOpacity={0.85}
             style={{ marginHorizontal: 16, marginBottom: 16 }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={audioLoading ? 'Génération de l\'audio en cours' : (audioPlaying ? 'Mettre en pause le podcast' : 'Écouter le podcast')}
+            accessibilityState={{ disabled: audioLoading, busy: audioLoading }}
           >
             <LinearGradient
               colors={audioPlaying ? [colors.brand, colors.brandLight] : [colors.brandDark, colors.warning]}
@@ -1064,7 +1136,13 @@ export default function StudentScreen() {
           </ScrollView>
           <View style={s.chatBar}>
             <TextInput style={s.chatInput} placeholder="Pose ta question..." placeholderTextColor={T.dimmed} value={chatInput} onChangeText={setChatInput} multiline />
-            <TouchableOpacity onPress={sendChat} style={s.chatSend}>
+            <TouchableOpacity
+              onPress={sendChat}
+              style={s.chatSend}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Envoyer le message au tuteur IA"
+            >
               <LinearGradient colors={[T.neon1, T.neon2]} style={s.chatSendGrad}>
                 <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>→</Text>
               </LinearGradient>
@@ -1100,7 +1178,15 @@ export default function StudentScreen() {
                 placeholderTextColor={T.dimmed} value={caseAnswer} onChangeText={setCaseAnswer}
               />
               {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={submitCaseStudy} disabled={loading}>
+              <TouchableOpacity
+                style={s.genWrap}
+                onPress={submitCaseStudy}
+                disabled={loading}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Soumettre ma réponse au cas pratique"
+                accessibilityState={{ disabled: loading, busy: loading }}
+              >
                 <LinearGradient colors={['#1A4731', '#2DD4BF']} style={s.genBtn}>
                   {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>Soumettre ma réponse</Text>}
                 </LinearGradient>
@@ -1146,13 +1232,27 @@ export default function StudentScreen() {
                 <View key={q.id || i} style={s.quizCard}>
                   <Text style={s.quizQ}>{i + 1}. {q.question}</Text>
                   {q.options?.map(o => (
-                    <TouchableOpacity key={o} style={[s.optBtn, examAnswers[q.id] === o && s.optSelected]} onPress={() => setExamAnswers(p => ({ ...p, [q.id]: o }))}>
+                    <TouchableOpacity
+                      key={o}
+                      style={[s.optBtn, examAnswers[q.id] === o && s.optSelected]}
+                      onPress={() => setExamAnswers(p => ({ ...p, [q.id]: o }))}
+                      accessible={true}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Réponse ${o}`}
+                      accessibilityState={{ selected: examAnswers[q.id] === o, checked: examAnswers[q.id] === o }}
+                    >
                       <Text style={[s.optText, examAnswers[q.id] === o && { color: T.neon1 }]}>{o}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ))}
-              <TouchableOpacity style={s.genWrap} onPress={() => Alert.alert('Soumettre ?', 'Tu vas soumettre ton examen.', [{ text: 'Annuler' }, { text: 'Soumettre', onPress: submitExam }])}>
+              <TouchableOpacity
+                style={s.genWrap}
+                onPress={() => Alert.alert('Soumettre ?', 'Tu vas soumettre ton examen.', [{ text: 'Annuler' }, { text: 'Soumettre', onPress: submitExam }])}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Soumettre l'examen"
+              >
                 <LinearGradient colors={['#4A1A1A', '#E53E3E']} style={s.genBtn}>
                   {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>Soumettre l'examen</Text>}
                 </LinearGradient>
@@ -1194,13 +1294,27 @@ export default function StudentScreen() {
                   <Text style={[s.muted, { fontSize: 11, marginBottom: 4 }]}>{q.branch}</Text>
                   <Text style={s.quizQ}>{i + 1}. {q.question}</Text>
                   {q.options?.map(o => (
-                    <TouchableOpacity key={o} style={[s.optBtn, mixAnswers[q.id] === o && s.optSelected]} onPress={() => setMixAnswers(p => ({ ...p, [q.id]: o }))}>
+                    <TouchableOpacity
+                      key={o}
+                      style={[s.optBtn, mixAnswers[q.id] === o && s.optSelected]}
+                      onPress={() => setMixAnswers(p => ({ ...p, [q.id]: o }))}
+                      accessible={true}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Réponse ${o}`}
+                      accessibilityState={{ selected: mixAnswers[q.id] === o, checked: mixAnswers[q.id] === o }}
+                    >
                       <Text style={[s.optText, mixAnswers[q.id] === o && { color: T.neon1 }]}>{o}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ))}
-              <TouchableOpacity style={s.genWrap} onPress={submitInterleaved}>
+              <TouchableOpacity
+                style={s.genWrap}
+                onPress={submitInterleaved}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Vérifier les réponses de la révision mixte"
+              >
                 <LinearGradient colors={['#1A1A4A', '#6366F1']} style={s.genBtn}>
                   <Text style={s.genBtnText}>Vérifier les réponses</Text>
                 </LinearGradient>
@@ -1254,7 +1368,15 @@ export default function StudentScreen() {
                 placeholderTextColor={T.dimmed} value={recallAnswer} onChangeText={setRecallAnswer}
               />
               {error && <View style={s.errorBox}><Text style={s.errorText}>⚠️ {error}</Text></View>}
-              <TouchableOpacity style={s.genWrap} onPress={submitFreeRecall} disabled={loading}>
+              <TouchableOpacity
+                style={s.genWrap}
+                onPress={submitFreeRecall}
+                disabled={loading}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Soumettre ma réponse libre"
+                accessibilityState={{ disabled: loading, busy: loading }}
+              >
                 <LinearGradient colors={['#2D1A4A', '#A855F7']} style={s.genBtn}>
                   {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>Soumettre</Text>}
                 </LinearGradient>
@@ -1320,7 +1442,14 @@ export default function StudentScreen() {
           <View style={s.section}>
             <Text style={s.secLabel}>RÉVISION DU JOUR</Text>
             {weakBranches.slice(0, 2).map(wb => (
-              <TouchableOpacity key={wb.branch} style={s.weakCard} onPress={() => { setBranch(wb.branch); setTopic(wb.branch); setActiveMode(MODES[0]); setView('topic_input'); }}>
+              <TouchableOpacity
+                key={wb.branch}
+                style={s.weakCard}
+                onPress={() => { setBranch(wb.branch); setTopic(wb.branch); setActiveMode(MODES[0]); setView('topic_input'); }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Réviser ${wb.branch}, meilleur score ${wb.best_score || 0}%`}
+              >
                 <View>
                   <Text style={s.weakTitle}>Tu as du retard en {wb.branch}</Text>
                   <Text style={s.weakSub}>Meilleur score : {wb.best_score || 0}% — Révise maintenant</Text>
@@ -1336,7 +1465,15 @@ export default function StudentScreen() {
           <Text style={s.secLabel}>TES OUTILS D'APPRENTISSAGE</Text>
           <Text style={s.secTitle}>9 modes scientifiquement prouvés</Text>
           {MODES.map(m => (
-            <TouchableOpacity key={m.id} activeOpacity={m.disabled ? 1 : 0.85} onPress={() => goMode(m)}>
+            <TouchableOpacity
+              key={m.id}
+              activeOpacity={m.disabled ? 1 : 0.85}
+              onPress={() => goMode(m)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`${m.label} — ${m.sub} — ${m.badge}`}
+              accessibilityState={{ disabled: !!m.disabled }}
+            >
               <View style={[s.modeGlowWrap, { shadowColor: m.glowColor, opacity: m.disabled ? 0.6 : 1 }]}>
                 <LinearGradient colors={m.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.modeCard}>
                   <View style={s.modeRow}>
@@ -1361,6 +1498,10 @@ export default function StudentScreen() {
             onPress={() => handleOpenNotebookLM(uploadedDoc.text, 'Notes Lexavo')}
             disabled={nlmLoading}
             activeOpacity={0.85}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Ouvrir dans Google NotebookLM"
+            accessibilityState={{ disabled: nlmLoading, busy: nlmLoading }}
           >
             <View style={{ backgroundColor: '#0A1F0A', borderRadius: 16, padding: 18, borderWidth: 1.5, borderColor: '#2D7A2D', marginTop: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -1412,13 +1553,24 @@ export default function StudentScreen() {
           <View style={s.rowBetween}>
             <Text style={s.secLabel}>MES COURS</Text>
             {lmsConnected && (
-              <TouchableOpacity onPress={() => { setLmsModal(true); loadLMSCourses(); }}>
+              <TouchableOpacity
+                onPress={() => { setLmsModal(true); loadLMSCourses(); }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Voir tous les cours"
+              >
                 <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Voir tout →</Text>
               </TouchableOpacity>
             )}
           </View>
           {!lmsConnected ? (
-            <TouchableOpacity style={s.lmsConnectCard} onPress={() => { setLmsModal(true); setLmsTab('connect'); getLMSUniversities().then(d => setLmsUniversities(d?.universities || [])).catch(() => {}); }}>
+            <TouchableOpacity
+              style={s.lmsConnectCard}
+              onPress={() => { setLmsModal(true); setLmsTab('connect'); getLMSUniversities().then(d => setLmsUniversities(d?.universities || [])).catch(() => {}); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Connecter mon école"
+            >
               <LinearGradient colors={['#1A2440', '#0F1629']} style={s.lmsConnectInner}>
                 <Text style={{ fontSize: 32 }}>🎓</Text>
                 <Text style={{ color: T.white, fontSize: 15, fontWeight: '800', marginTop: 8 }}>Connecter mon école</Text>
@@ -1438,7 +1590,14 @@ export default function StudentScreen() {
                 </View>
               </View>
               {lmsCourses.slice(0, 3).map(c => (
-                <TouchableOpacity key={c.id} style={s.lmsCourseChip} onPress={() => { setTopic(c.name); setBranch(c.name); setActiveMode(MODES[0]); setView('topic_input'); }}>
+                <TouchableOpacity
+                  key={c.id}
+                  style={s.lmsCourseChip}
+                  onPress={() => { setTopic(c.name); setBranch(c.name); setActiveMode(MODES[0]); setView('topic_input'); }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Réviser le cours ${c.shortname || c.name}`}
+                >
                   <Text style={{ color: T.white, fontSize: 13, fontWeight: '600', flex: 1 }}>{c.shortname || c.name}</Text>
                   <Text style={{ color: T.neon1, fontSize: 12 }}>Réviser →</Text>
                 </TouchableOpacity>
@@ -1451,12 +1610,23 @@ export default function StudentScreen() {
         <View style={s.section}>
           <View style={s.rowBetween}>
             <Text style={s.secLabel}>MES GROUPES</Text>
-            <TouchableOpacity onPress={() => { setGroupModal(true); loadGroups(); }}>
+            <TouchableOpacity
+              onPress={() => { setGroupModal(true); loadGroups(); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Gérer mes groupes"
+            >
               <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Gérer →</Text>
             </TouchableOpacity>
           </View>
           {groups.length === 0 ? (
-            <TouchableOpacity style={s.groupEmptyCard} onPress={() => { setGroupModal(true); setGroupTab('create'); loadGroups(); }}>
+            <TouchableOpacity
+              style={s.groupEmptyCard}
+              onPress={() => { setGroupModal(true); setGroupTab('create'); loadGroups(); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Créer un groupe d'étude"
+            >
               <Text style={{ color: T.neon1, fontSize: 24 }}>👥</Text>
               <Text style={{ color: T.white, fontSize: 14, fontWeight: '700', marginTop: 8 }}>Créer un groupe d'étude</Text>
               <Text style={s.muted}>Étudie avec ta promo</Text>
@@ -1473,13 +1643,21 @@ export default function StudentScreen() {
         <View style={s.section}>
           <View style={s.rowBetween}>
             <Text style={s.secLabel}>NOTES PARTAGÉES</Text>
-            <TouchableOpacity onPress={() => { setNotesModal(true); setNotesTab('browse'); loadNotes(); }}>
+            <TouchableOpacity
+              onPress={() => { setNotesModal(true); setNotesTab('browse'); loadNotes(); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Voir toutes les notes partagées"
+            >
               <Text style={{ color: T.neon1, fontSize: 12, fontWeight: '700' }}>Voir tout →</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
             style={[s.lmsConnectCard]}
             onPress={() => { setNotesModal(true); setNotesTab('share'); }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Partager une note avec la communauté"
           >
             <LinearGradient colors={['#1A2440', '#0F1629']} style={s.lmsConnectInner}>
               <Text style={{ fontSize: 32 }}>📚</Text>
@@ -1493,7 +1671,14 @@ export default function StudentScreen() {
             </LinearGradient>
           </TouchableOpacity>
           {notesList.slice(0, 3).map(n => (
-            <TouchableOpacity key={n.id} style={s.lmsCourseChip} onPress={() => { setNotesModal(true); openNote(n.id); }}>
+            <TouchableOpacity
+              key={n.id}
+              style={s.lmsCourseChip}
+              onPress={() => { setNotesModal(true); openNote(n.id); }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Lire la note ${n.title}`}
+            >
               <View style={{ flex: 1 }}>
                 <Text style={{ color: T.white, fontSize: 13, fontWeight: '600' }}>{n.title}</Text>
                 <Text style={[s.muted, { fontSize: 10 }]}>{n.author_name} • {n.subject?.replace('droit_', '').replace('_', ' ')} • ❤️ {n.likes}</Text>
@@ -1507,11 +1692,26 @@ export default function StudentScreen() {
         <View style={s.section}>
           <Text style={s.secLabel}>CLASSEMENT</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.lbToggle}>
-            <TouchableOpacity style={[s.lbTab, lbScope === 'global' && s.lbTabActive]} onPress={() => setLbScope('global')}>
+            <TouchableOpacity
+              style={[s.lbTab, lbScope === 'global' && s.lbTabActive]}
+              onPress={() => setLbScope('global')}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityLabel="Classement global"
+              accessibilityState={{ selected: lbScope === 'global' }}
+            >
               <Text style={[s.lbTabText, lbScope === 'global' && { color: T.neon1 }]}>🌍 Global</Text>
             </TouchableOpacity>
             {groups.map(g => (
-              <TouchableOpacity key={g.id} style={[s.lbTab, lbScope === String(g.id) && s.lbTabActive]} onPress={() => setLbScope(String(g.id))}>
+              <TouchableOpacity
+                key={g.id}
+                style={[s.lbTab, lbScope === String(g.id) && s.lbTabActive]}
+                onPress={() => setLbScope(String(g.id))}
+                accessible={true}
+                accessibilityRole="tab"
+                accessibilityLabel={`Classement du groupe ${g.name}`}
+                accessibilityState={{ selected: lbScope === String(g.id) }}
+              >
                 <Text style={[s.lbTabText, lbScope === String(g.id) && { color: T.neon1 }]}>👥 {g.name}</Text>
               </TouchableOpacity>
             ))}
@@ -1537,7 +1737,12 @@ export default function StudentScreen() {
           <View style={s.modalBox}>
             <View style={s.rowBetween}>
               <Text style={s.secTitle}>📚 Notes partagées</Text>
-              <TouchableOpacity onPress={() => { setNotesModal(false); setNotesTab('browse'); setActiveNote(null); }}>
+              <TouchableOpacity
+                onPress={() => { setNotesModal(false); setNotesTab('browse'); setActiveNote(null); }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Fermer"
+              >
                 <Text style={{ color: T.muted, fontSize: 20 }}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -1545,7 +1750,15 @@ export default function StudentScreen() {
             {/* Tabs */}
             <View style={[s.lbToggle, { marginVertical: 10 }]}>
               {[{ id: 'browse', label: 'Explorer' }, { id: 'share', label: 'Partager' }].map(tab => (
-                <TouchableOpacity key={tab.id} style={[s.lbTab, notesTab === tab.id && s.lbTabActive]} onPress={() => setNotesTab(tab.id)}>
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[s.lbTab, notesTab === tab.id && s.lbTabActive]}
+                  onPress={() => setNotesTab(tab.id)}
+                  accessible={true}
+                  accessibilityRole="tab"
+                  accessibilityLabel={`Onglet ${tab.label}`}
+                  accessibilityState={{ selected: notesTab === tab.id }}
+                >
                   <Text style={[s.lbTabText, notesTab === tab.id && { color: T.neon1 }]}>{tab.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -1564,12 +1777,24 @@ export default function StudentScreen() {
                 <>
                   {/* Filtres matière */}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
-                    <TouchableOpacity style={[s.branchChip, !notesSubjectFilter && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]} onPress={() => { setNotesSubjectFilter(null); loadNotes(); }}>
+                    <TouchableOpacity
+                      style={[s.branchChip, !notesSubjectFilter && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}
+                      onPress={() => { setNotesSubjectFilter(null); loadNotes(); }}
+                      accessible={true}
+                      accessibilityRole="tab"
+                      accessibilityLabel="Toutes les matières"
+                      accessibilityState={{ selected: !notesSubjectFilter }}
+                    >
                       <Text style={{ color: !notesSubjectFilter ? T.neon1 : T.muted, fontSize: 11, fontWeight: '700' }}>Tout</Text>
                     </TouchableOpacity>
                     {['droit_penal', 'droit_civil', 'droit_constitutionnel', 'droit_commercial', 'droit_travail', 'droit_fiscal'].map(subj => (
                       <TouchableOpacity key={subj} style={[s.branchChip, notesSubjectFilter === subj && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}
-                        onPress={() => { setNotesSubjectFilter(subj); loadNotes(subj); }}>
+                        onPress={() => { setNotesSubjectFilter(subj); loadNotes(subj); }}
+                        accessible={true}
+                        accessibilityRole="tab"
+                        accessibilityLabel={`Filtrer par ${subj.replace('droit_', '').replace('_', ' ')}`}
+                        accessibilityState={{ selected: notesSubjectFilter === subj }}
+                      >
                         <Text style={{ color: notesSubjectFilter === subj ? T.neon1 : T.muted, fontSize: 11, fontWeight: '700' }}>{subj.replace('droit_', '').replace('_', ' ')}</Text>
                       </TouchableOpacity>
                     ))}
@@ -1582,7 +1807,14 @@ export default function StudentScreen() {
                   )}
 
                   {notesList.map(n => (
-                    <TouchableOpacity key={n.id} style={[s.lmsCourseChip, { marginBottom: 8 }]} onPress={() => openNote(n.id)}>
+                    <TouchableOpacity
+                      key={n.id}
+                      style={[s.lmsCourseChip, { marginBottom: 8 }]}
+                      onPress={() => openNote(n.id)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Lire la note ${n.title}`}
+                    >
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{n.title}</Text>
                         <Text style={[s.muted, { fontSize: 10, marginTop: 2 }]}>
@@ -1601,7 +1833,13 @@ export default function StudentScreen() {
               {/* ── TAB: VUE NOTE ── */}
               {notesTab === 'view' && activeNote && (
                 <>
-                  <TouchableOpacity onPress={() => { setNotesTab('browse'); setActiveNote(null); }} style={{ marginBottom: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => { setNotesTab('browse'); setActiveNote(null); }}
+                    style={{ marginBottom: 10 }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Retour à la liste des notes"
+                  >
                     <Text style={{ color: T.neon1, fontWeight: '700' }}>← Retour</Text>
                   </TouchableOpacity>
                   <Text style={{ color: T.white, fontSize: 17, fontWeight: '900', marginBottom: 4 }}>{activeNote.title}</Text>
@@ -1615,6 +1853,9 @@ export default function StudentScreen() {
                   <TouchableOpacity
                     style={{ backgroundColor: T.neon3 + '20', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 12 }}
                     onPress={async () => { try { await likeSharedNote(activeNote.id); setActiveNote(prev => ({ ...prev, likes: (prev.likes || 0) + 1 })); } catch (_) { Alert.alert('Erreur', 'Impossible de liker cette note'); } }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="J'aime cette note"
                   >
                     <Text style={{ color: T.neon3, fontWeight: '700' }}>❤️ J'aime cette note</Text>
                   </TouchableOpacity>
@@ -1631,12 +1872,20 @@ export default function StudentScreen() {
                     <TouchableOpacity
                       style={[s.branchChip, shareForm.anonymous && { borderColor: T.neon1, backgroundColor: T.neon1 + '15' }]}
                       onPress={() => setShareForm(p => ({ ...p, anonymous: true }))}
+                      accessible={true}
+                      accessibilityRole="tab"
+                      accessibilityLabel="Partager anonymement"
+                      accessibilityState={{ selected: shareForm.anonymous }}
                     >
                       <Text style={{ color: shareForm.anonymous ? T.neon1 : T.muted, fontSize: 12, fontWeight: '700' }}>🙈 Anonyme</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[s.branchChip, !shareForm.anonymous && { borderColor: T.neon4, backgroundColor: T.neon4 + '15' }]}
                       onPress={() => setShareForm(p => ({ ...p, anonymous: false }))}
+                      accessible={true}
+                      accessibilityRole="tab"
+                      accessibilityLabel="Partager avec mon nom"
+                      accessibilityState={{ selected: !shareForm.anonymous }}
                     >
                       <Text style={{ color: !shareForm.anonymous ? T.neon4 : T.muted, fontSize: 12, fontWeight: '700' }}>✍️ Mon nom</Text>
                     </TouchableOpacity>
@@ -1655,7 +1904,12 @@ export default function StudentScreen() {
                     {['droit_civil', 'droit_penal', 'droit_constitutionnel', 'droit_commercial', 'droit_travail', 'droit_fiscal', 'droit_familial', 'procedure_civile', 'introduction_droit', 'autre'].map(subj => (
                       <TouchableOpacity key={subj}
                         style={[s.branchChip, shareForm.subject === subj && { borderColor: T.neon2, backgroundColor: T.neon2 + '15' }]}
-                        onPress={() => setShareForm(p => ({ ...p, subject: subj }))}>
+                        onPress={() => setShareForm(p => ({ ...p, subject: subj }))}
+                        accessible={true}
+                        accessibilityRole="tab"
+                        accessibilityLabel={`Matière ${subj.replace('droit_', '').replace('_', ' ')}`}
+                        accessibilityState={{ selected: shareForm.subject === subj }}
+                      >
                         <Text style={{ color: shareForm.subject === subj ? T.neon2 : T.muted, fontSize: 11, fontWeight: '600' }}>
                           {subj.replace('droit_', '').replace('_', ' ')}
                         </Text>
@@ -1674,6 +1928,10 @@ export default function StudentScreen() {
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: T.neon2, borderRadius: 12, borderStyle: 'dashed', padding: 14, marginBottom: 10 }}
                     onPress={handlePickFile}
                     disabled={uploadLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Importer un fichier PDF, DOCX ou TXT"
+                    accessibilityState={{ disabled: uploadLoading, busy: uploadLoading }}
                   >
                     {uploadLoading
                       ? <ActivityIndicator color={T.neon2} size="small" />
@@ -1687,7 +1945,13 @@ export default function StudentScreen() {
                     placeholder="Colle ta synthèse / tes notes ici..." placeholderTextColor={T.muted}
                     value={shareForm.content} onChangeText={v => setShareForm(p => ({ ...p, content: v }))} />
 
-                  <TouchableOpacity style={{ backgroundColor: T.neon1, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10 }} onPress={handleShareNote}>
+                  <TouchableOpacity
+                    style={{ backgroundColor: T.neon1, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10 }}
+                    onPress={handleShareNote}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Partager la note avec la communauté"
+                  >
                     <Text style={{ color: '#000', fontWeight: '800', fontSize: 15 }}>📤 Partager avec la communauté</Text>
                   </TouchableOpacity>
                 </>
@@ -1703,11 +1967,24 @@ export default function StudentScreen() {
           <View style={s.modalBox}>
             <View style={s.rowBetween}>
               <Text style={s.secTitle}>Groupes d'étude</Text>
-              <TouchableOpacity onPress={() => setGroupModal(false)}><Text style={{ color: T.muted, fontSize: 20 }}>✕</Text></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setGroupModal(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Fermer"
+              ><Text style={{ color: T.muted, fontSize: 20 }}>✕</Text></TouchableOpacity>
             </View>
             <View style={{ flexDirection: 'row', marginVertical: 12 }}>
               {['list', 'create', 'join'].map(t => (
-                <TouchableOpacity key={t} style={[s.lbTab, groupTab === t && s.lbTabActive, { flex: 1 }]} onPress={() => setGroupTab(t)}>
+                <TouchableOpacity
+                  key={t}
+                  style={[s.lbTab, groupTab === t && s.lbTabActive, { flex: 1 }]}
+                  onPress={() => setGroupTab(t)}
+                  accessible={true}
+                  accessibilityRole="tab"
+                  accessibilityLabel={t === 'list' ? 'Mes groupes' : t === 'create' ? 'Créer un groupe' : 'Rejoindre un groupe'}
+                  accessibilityState={{ selected: groupTab === t }}
+                >
                   <Text style={[s.lbTabText, groupTab === t && { color: T.neon1 }, { textAlign: 'center' }]}>
                     {t === 'list' ? 'Mes groupes' : t === 'create' ? 'Créer' : 'Rejoindre'}
                   </Text>
@@ -1729,7 +2006,13 @@ export default function StudentScreen() {
             {groupTab === 'create' && (
               <>
                 <TextInput style={s.input} placeholder="Nom du groupe (ex: Promo 2025)" placeholderTextColor={T.dimmed} value={groupName} onChangeText={setGroupName} />
-                <TouchableOpacity style={s.genWrap} onPress={handleCreateGroup}>
+                <TouchableOpacity
+                  style={s.genWrap}
+                  onPress={handleCreateGroup}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Créer le groupe"
+                >
                   <LinearGradient colors={[T.neon1, T.neon2]} style={s.genBtn}>
                     <Text style={s.genBtnText}>Créer le groupe</Text>
                   </LinearGradient>
@@ -1740,7 +2023,13 @@ export default function StudentScreen() {
             {groupTab === 'join' && (
               <>
                 <TextInput style={s.input} placeholder="Code d'invitation (ex: LAW-25)" placeholderTextColor={T.dimmed} value={joinCode} onChangeText={setJoinCode} autoCapitalize="characters" />
-                <TouchableOpacity style={s.genWrap} onPress={handleJoinGroup}>
+                <TouchableOpacity
+                  style={s.genWrap}
+                  onPress={handleJoinGroup}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre le groupe"
+                >
                   <LinearGradient colors={[T.neon2, T.neon1]} style={s.genBtn}>
                     <Text style={s.genBtnText}>Rejoindre</Text>
                   </LinearGradient>
@@ -1757,7 +2046,12 @@ export default function StudentScreen() {
           <View style={[s.modalBox, { maxHeight: '85%' }]}>
             <View style={s.rowBetween}>
               <Text style={s.secTitle}>🎓 Mon école</Text>
-              <TouchableOpacity onPress={() => setLmsModal(false)}><Text style={{ color: T.muted, fontSize: 20 }}>✕</Text></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setLmsModal(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Fermer"
+              ><Text style={{ color: T.muted, fontSize: 20 }}>✕</Text></TouchableOpacity>
             </View>
 
             <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
@@ -1774,7 +2068,12 @@ export default function StudentScreen() {
                       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {lmsUniversities.map(u => (
                           <TouchableOpacity key={u.url} style={[s.branchChip, lmsUrl === u.url && s.branchActive, { marginRight: 8 }]}
-                            onPress={() => setLmsUrl(u.url)}>
+                            onPress={() => setLmsUrl(u.url)}
+                            accessible={true}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Sélectionner ${u.name}`}
+                            accessibilityState={{ selected: lmsUrl === u.url }}
+                          >
                             <Text style={[s.branchText, lmsUrl === u.url && s.branchTextActive]}>{u.name}</Text>
                           </TouchableOpacity>
                         ))}
@@ -1798,7 +2097,15 @@ export default function StudentScreen() {
 
                   {lmsError ? <View style={s.errorBox}><Text style={s.errorText}>⚠️ {lmsError}</Text></View> : null}
 
-                  <TouchableOpacity style={s.genWrap} onPress={handleLMSConnect} disabled={lmsLoading}>
+                  <TouchableOpacity
+                    style={s.genWrap}
+                    onPress={handleLMSConnect}
+                    disabled={lmsLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Se connecter à Moodle"
+                    accessibilityState={{ disabled: lmsLoading, busy: lmsLoading }}
+                  >
                     <LinearGradient colors={[T.neon1, T.neon2]} style={s.genBtn}>
                       {lmsLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.genBtnText}>Se connecter</Text>}
                     </LinearGradient>
@@ -1815,7 +2122,12 @@ export default function StudentScreen() {
                       <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{lmsSiteName}</Text>
                       <Text style={s.muted}>{lmsFullname}</Text>
                     </View>
-                    <TouchableOpacity onPress={handleLMSDisconnect}>
+                    <TouchableOpacity
+                      onPress={handleLMSDisconnect}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Déconnecter mon compte Moodle"
+                    >
                       <Text style={{ color: T.neon3, fontSize: 11, fontWeight: '700' }}>Déconnecter</Text>
                     </TouchableOpacity>
                   </View>
@@ -1823,7 +2135,14 @@ export default function StudentScreen() {
                   {lmsLoading && <ActivityIndicator color={T.neon1} style={{ margin: 16 }} />}
 
                   {lmsCourses.map(c => (
-                    <TouchableOpacity key={c.id} style={s.lmsCourseChip} onPress={() => openCourseContent(c)}>
+                    <TouchableOpacity
+                      key={c.id}
+                      style={s.lmsCourseChip}
+                      onPress={() => openCourseContent(c)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ouvrir le contenu du cours ${c.name}`}
+                    >
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: T.white, fontSize: 13, fontWeight: '700' }}>{c.name}</Text>
                         {c.shortname ? <Text style={s.muted}>{c.shortname}</Text> : null}
@@ -1841,7 +2160,12 @@ export default function StudentScreen() {
               {/* Contenu d'un cours */}
               {lmsTab === 'content' && lmsActiveCourse && (
                 <>
-                  <TouchableOpacity onPress={() => setLmsTab('courses')}>
+                  <TouchableOpacity
+                    onPress={() => setLmsTab('courses')}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Retour à la liste des cours"
+                  >
                     <Text style={{ color: T.neon1, fontSize: 13, fontWeight: '700', marginBottom: 12 }}>← Retour aux cours</Text>
                   </TouchableOpacity>
                   <Text style={{ color: T.white, fontSize: 15, fontWeight: '800', marginBottom: 12 }}>{lmsActiveCourse.name}</Text>
@@ -1858,13 +2182,21 @@ export default function StudentScreen() {
                           </Text>
                           {mod.contents?.map((file, fi) => (
                             <TouchableOpacity key={fi} style={s.lmsImportBtn}
-                              onPress={() => handleImportFile(file.fileurl, lmsActiveCourse.name, lmsActiveCourse.id)}>
+                              onPress={() => handleImportFile(file.fileurl, lmsActiveCourse.name, lmsActiveCourse.id)}
+                              accessible={true}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Importer le fichier ${file.filename || mod.name}`}
+                            >
                               <Text style={{ color: T.neon1, fontSize: 11, fontWeight: '700' }}>Importer</Text>
                             </TouchableOpacity>
                           ))}
                           {!mod.contents?.length && mod.description ? (
                             <TouchableOpacity style={s.lmsImportBtn}
-                              onPress={() => { setTopic(mod.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}>
+                              onPress={() => { setTopic(mod.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}
+                              accessible={true}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Réviser ${mod.name}`}
+                            >
                               <Text style={{ color: T.neon1, fontSize: 11, fontWeight: '700' }}>Réviser</Text>
                             </TouchableOpacity>
                           ) : null}
@@ -1878,7 +2210,13 @@ export default function StudentScreen() {
                   )}
 
                   {/* CTA : réviser ce cours */}
-                  <TouchableOpacity style={s.genWrap} onPress={() => { setTopic(lmsActiveCourse.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}>
+                  <TouchableOpacity
+                    style={s.genWrap}
+                    onPress={() => { setTopic(lmsActiveCourse.name); setBranch(lmsActiveCourse.name); setActiveMode(MODES[0]); setLmsModal(false); setView('topic_input'); }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Réviser le cours complet ${lmsActiveCourse.name}`}
+                  >
                     <LinearGradient colors={[T.neon1, T.neon2]} style={s.genBtn}>
                       <Text style={s.genBtnText}>⚡ Réviser ce cours</Text>
                     </LinearGradient>
@@ -1897,7 +2235,13 @@ export default function StudentScreen() {
 
 // ─── Petits composants internes ──────────────────────────────────────────────
 const BackBtn = ({ onPress }) => (
-  <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+  <TouchableOpacity
+    activeOpacity={0.75}
+    onPress={onPress}
+    accessible={true}
+    accessibilityRole="button"
+    accessibilityLabel="Retour au dashboard"
+  >
     <Text style={{ color: T.neon1, fontSize: 14, margin: 16, fontWeight: '700' }}>← Retour au dashboard</Text>
   </TouchableOpacity>
 );
@@ -1910,6 +2254,10 @@ const ActionRow = ({ onShare, onBack, onNotebookLM, nlmLoading }) => (
         onPress={onNotebookLM}
         disabled={nlmLoading}
         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1A2A1A', borderRadius: 12, padding: 13, borderWidth: 1, borderColor: '#2D7A2D' }}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Ouvrir dans NotebookLM — podcast, quiz, mind map"
+        accessibilityState={{ disabled: nlmLoading, busy: nlmLoading }}
       >
         {nlmLoading
           ? <ActivityIndicator color="#4CAF50" size="small" />
@@ -1918,12 +2266,24 @@ const ActionRow = ({ onShare, onBack, onNotebookLM, nlmLoading }) => (
       </TouchableOpacity>
     )}
     <View style={{ flexDirection: 'row', gap: 12 }}>
-      <TouchableOpacity style={{ flex: 1 }} onPress={onShare}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onPress={onShare}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Partager le résultat"
+      >
         <LinearGradient colors={[T.neon2, T.neon1]} style={[s.genBtn, { marginHorizontal: 0 }]}>
           <Text style={s.genBtnText}>Partager</Text>
         </LinearGradient>
       </TouchableOpacity>
-      <TouchableOpacity style={{ flex: 1 }} onPress={onBack}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onPress={onBack}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Retour au dashboard"
+      >
         <View style={[s.genBtn, { marginHorizontal: 0, backgroundColor: T.elevated, borderColor: T.borderLit, borderWidth: 1 }]}>
           <Text style={[s.genBtnText, { color: T.white }]}>Dashboard</Text>
         </View>

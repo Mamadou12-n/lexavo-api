@@ -6,6 +6,7 @@ import { getScoreQuestions, evaluateScore } from '../api/client';
 import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const SCORE_YELLOW = '#F39C12';
 const ANSWER_OPTIONS = [
@@ -62,7 +63,7 @@ export default function ScoreScreen() {
 
       {/* Header */}
       <LinearGradient colors={['#7C4D00', '#F39C12']} style={styles.heroHeader}>
-        <Text style={styles.heroEmoji}>📊</Text>
+        <Ionicons name="bar-chart-outline" size={32} color="#FFF" style={{ marginBottom: 8 }} accessibilityElementsHidden />
         <Text style={styles.heroTitle}>Score juridique</Text>
         <Text style={styles.heroSub}>
           {answeredCount}/{questions.length} réponses · Santé juridique sur 100
@@ -97,6 +98,9 @@ export default function ScoreScreen() {
                     answers[q.id ?? i] === opt.id && { borderColor: opt.color },
                   ]}
                   onPress={() => setAnswer(q.id ?? i, opt.id)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Réponse ${opt.label}`}
                 >
                   <Text style={[
                     styles.answerBtnText,
@@ -118,10 +122,18 @@ export default function ScoreScreen() {
         style={[styles.btn, (!canSubmit || loading) && styles.btnDisabled]}
         onPress={evaluate}
         disabled={!canSubmit || loading}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Calculer mon score juridique"
       >
         {loading
           ? <ActivityIndicator color="#FFF" />
-          : <Text style={styles.btnText}>📊  Calculer mon score</Text>
+          : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="bar-chart-outline" size={18} color="#FFF" accessibilityElementsHidden />
+              <Text style={styles.btnText}>Calculer mon score</Text>
+            </View>
+          )
         }
       </TouchableOpacity>
       {!canSubmit && (

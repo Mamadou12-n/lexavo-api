@@ -91,7 +91,7 @@ export default function MentionsLegalesScreen() {
             <Text style={styles.techName}>{t.name}</Text>
             <Text style={styles.techDesc}>{t.desc}</Text>
             {t.link && (
-              <TouchableOpacity activeOpacity={0.75} onPress={() => Linking.openURL(t.link)}>
+              <TouchableOpacity activeOpacity={0.75} onPress={() => Linking.openURL(t.link)} accessible={true} accessibilityRole="link" accessibilityLabel={`Ouvrir ${t.link}`}>
                 <Text style={styles.techLink}>{t.link}</Text>
               </TouchableOpacity>
             )}
@@ -128,6 +128,9 @@ export default function MentionsLegalesScreen() {
             key={type}
             style={styles.contactRow}
             onPress={() => Linking.openURL(`mailto:${email}`)}
+            accessible={true}
+            accessibilityRole="link"
+            accessibilityLabel={`Contacter par email : ${type} - ${email}`}
           >
             <Text style={styles.contactType}>{type}</Text>
             <Text style={styles.contactEmail}>{email}</Text>

@@ -13,6 +13,7 @@ import { colors } from '../theme/colors';
 import PhotoPicker from '../components/PhotoPicker';
 import ModelBadge from '../components/ModelBadge';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const DIAG_ORANGE = colors.brand;
 
@@ -135,7 +136,11 @@ export default function DiagnosticScreen() {
         { id: 'score',      label: '📊 Score' },
         { id: 'succession', label: '🏛️ Succession' },
       ].map((m) => (
-        <TouchableOpacity key={m.id} style={[s.toggleBtn, mode === m.id && s.toggleBtnActive]} onPress={() => switchMode(m.id)}>
+        <TouchableOpacity key={m.id} style={[s.toggleBtn, mode === m.id && s.toggleBtnActive]} onPress={() => switchMode(m.id)}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Mode ${m.label}`}
+        >
           <Text style={[s.toggleText, mode === m.id && s.toggleTextActive]}>{m.label}</Text>
         </TouchableOpacity>
       ))}
@@ -155,7 +160,13 @@ export default function DiagnosticScreen() {
           colors={[colors.brandNavy, colors.brandNavyLight]}
           style={s.heroHeader}
         >
-          <Text style={s.heroEmoji}>{mode === 'score' ? '📊' : mode === 'succession' ? '🏛️' : '🔬'}</Text>
+          <Ionicons
+            name={mode === 'score' ? 'bar-chart-outline' : mode === 'succession' ? 'business-outline' : 'search-outline'}
+            size={32}
+            color="#FFF"
+            style={{ marginBottom: 8 }}
+            accessibilityElementsHidden
+          />
           <Text style={s.heroTitle}>{mode === 'score' ? 'Score juridique' : mode === 'succession' ? 'Guide successoral' : 'Diagnostic juridique'}</Text>
           <Text style={s.heroSub}>{mode === 'score' ? 'Santé juridique sur 100' : mode === 'succession' ? 'Droits de succession belges' : 'Analyse multi-branches du droit belge'}</Text>
         </LinearGradient>
@@ -174,6 +185,9 @@ export default function DiagnosticScreen() {
                   <TouchableOpacity activeOpacity={0.75} key={t.id}
                     style={[s.typeBtn, userType === t.id && s.typeBtnActive]}
                     onPress={() => setUserType(t.id)}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Profil ${t.label}`}
                   >
                     <Text style={[s.typeLabel, userType === t.id && s.typeLabelActive]}>{t.label}</Text>
                   </TouchableOpacity>
@@ -192,8 +206,11 @@ export default function DiagnosticScreen() {
               <TouchableOpacity activeOpacity={0.75}
                 style={[s.btn, (!problem.trim() || loading) && s.btnDisabled]}
                 onPress={analyzeDiag} disabled={!problem.trim() || loading}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Lancer le diagnostic juridique"
               >
-                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>🔬  Lancer le diagnostic</Text>}
+                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>Lancer le diagnostic</Text>}
               </TouchableOpacity>
             </View>
 
@@ -284,6 +301,9 @@ export default function DiagnosticScreen() {
                           <TouchableOpacity activeOpacity={0.75} key={opt.id}
                             style={[s.answerBtn, { backgroundColor: answers[q.id ?? i] === opt.id ? opt.bg : colors.background }, answers[q.id ?? i] === opt.id && { borderColor: opt.color }]}
                             onPress={() => setAnswer(q.id ?? i, opt.id)}
+                            accessible={true}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Répondre ${opt.label}`}
                           >
                             <Text style={[s.answerBtnText, { color: answers[q.id ?? i] === opt.id ? opt.color : colors.textMuted }, answers[q.id ?? i] === opt.id && { fontWeight: '700' }]}>
                               {opt.label}
@@ -298,8 +318,11 @@ export default function DiagnosticScreen() {
                 <TouchableOpacity activeOpacity={0.75}
                   style={[s.btn, (!canSubmit || scoreLoading) && s.btnDisabled]}
                   onPress={evaluateSc} disabled={!canSubmit || scoreLoading}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Calculer mon score juridique"
                 >
-                  {scoreLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>📊  Calculer mon score</Text>}
+                  {scoreLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>Calculer mon score</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -322,7 +345,11 @@ export default function DiagnosticScreen() {
                     ))}
                   </View>
                 )}
-                <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => { setScoreResult(null); setAnswers({}); }}>
+                <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => { setScoreResult(null); setAnswers({}); }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Recommencer le score"
+                >
                   <Text style={s.btnText}>Recommencer</Text>
                 </TouchableOpacity>
               </View>
@@ -340,7 +367,11 @@ export default function DiagnosticScreen() {
                 <Text style={s.fieldLabel}>Région</Text>
                 <View style={s.typeRow}>
                   {REGIONS_H.map((r) => (
-                    <TouchableOpacity key={r.id} style={[s.typeBtn, hRegion === r.id && s.typeBtnActive]} onPress={() => setHRegion(r.id)}>
+                    <TouchableOpacity key={r.id} style={[s.typeBtn, hRegion === r.id && s.typeBtnActive]} onPress={() => setHRegion(r.id)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Région ${r.label}`}
+                    >
                       <Text style={[s.typeLabel, hRegion === r.id && s.typeLabelActive]}>{r.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -357,7 +388,11 @@ export default function DiagnosticScreen() {
                 <Text style={[s.fieldLabel, { marginTop: 14 }]}>Lien familial de l'héritier</Text>
                 <View style={s.chipRow}>
                   {HEIR_TYPES.map((h) => (
-                    <TouchableOpacity key={h.id} style={[s.chip, heirType === h.id && s.chipActive]} onPress={() => setHeirType(h.id)}>
+                    <TouchableOpacity key={h.id} style={[s.chip, heirType === h.id && s.chipActive]} onPress={() => setHeirType(h.id)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Lien familial ${h.label}`}
+                    >
                       <Text style={[s.chipText, heirType === h.id && s.chipTextActive]}>{h.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -366,7 +401,11 @@ export default function DiagnosticScreen() {
                 <Text style={[s.fieldLabel, { marginTop: 14 }]}>Nombre d'héritiers</Text>
                 <View style={s.typeRow}>
                   {['1', '2', '3', '4', '5+'].map((n) => (
-                    <TouchableOpacity key={n} style={[s.typeBtn, numHeirs === n && s.typeBtnActive]} onPress={() => setNumHeirs(n === '5+' ? '5' : n)}>
+                    <TouchableOpacity key={n} style={[s.typeBtn, numHeirs === n && s.typeBtnActive]} onPress={() => setNumHeirs(n === '5+' ? '5' : n)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${n} héritier${n === '1' ? '' : 's'}`}
+                    >
                       <Text style={[s.typeLabel, numHeirs === n && s.typeLabelActive]}>{n}</Text>
                     </TouchableOpacity>
                   ))}
@@ -377,8 +416,11 @@ export default function DiagnosticScreen() {
                 <TouchableOpacity activeOpacity={0.75}
                   style={[s.btn, { marginTop: 16 }, (!estateValue || hLoading) && s.btnDisabled]}
                   onPress={generateHeritage} disabled={!estateValue || hLoading}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Générer le guide successoral"
                 >
-                  {hLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>🏛️  Générer le guide</Text>}
+                  {hLoading ? <ActivityIndicator color="#FFF" /> : <Text style={s.btnText}>Générer le guide</Text>}
                 </TouchableOpacity>
               </View>
             ) : (
@@ -410,7 +452,11 @@ export default function DiagnosticScreen() {
                   </View>
                 )}
                 {hResult.disclaimer && <Text style={s.disclaimer}>{hResult.disclaimer}</Text>}
-                <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => { setHResult(null); setEstate(''); }}>
+                <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => { setHResult(null); setEstate(''); }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Nouvelle simulation successorale"
+                >
                   <Text style={s.btnText}>Nouvelle simulation</Text>
                 </TouchableOpacity>
               </View>
