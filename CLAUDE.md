@@ -153,3 +153,123 @@ cd mobile && npx expo start
 - Stripe live avec 7 plans
 - JWT + refresh tokens
 - 15 branches du droit avec détection automatique
+
+---
+
+## Audit exhaustif multi-angles (2026-05-02)
+
+**6 sous-agents spécialisés ont audité le projet en parallèle.** Score moyen pondéré : **6.6/10** — production-acceptable mais NON release-ready sans correctifs.
+
+### Scores par angle
+
+| Angle | Score | Statut | Auditeur |
+|-------|-------|--------|----------|
+| Sécurité | 7.0/10 | NEEDS-WORK | security-auditor |
+| Performance | 6.5/10 | À optimiser | performance-engineer |
+| Architecture/Code | 6.0/10 | MVP avancé / Beta précoce | architect-reviewer |
+| UX/UI/A11y | 7.2/10 | GOOD | accessibility-tester |
+| Produit/Business | Pre-PMF + early signals | À focaliser | product-manager |
+| RAG/IA | 6.5/10 | Decent | ai-engineer |
+
+### Top 15 risques bloquants (par criticité)
+
+| # | Risque | Sévérité | Effort fix |
+|---|--------|----------|------------|
+| 1 | Secrets `.env` live en clair (Stripe live, Anthropic, JWT) sur disque Windows | CRITICAL CVSS 9.1 | 30 min (rotation + Railway env) |
+| 2 | SSRF via `/student/lms/connect` — site_url non whitelisté (cloud metadata exposable) | HIGH CVSS 8.2 | 1h (validation URL) |
+| 3 | Quota beta = illimité — DoS coût Claude API (1000€/jour possible) | CRITICAL business | 30 min (cap dur 50q/mois free) |
+| 4 | 0 prompt caching Anthropic — perte sèche 30-80€/mois maintenant, scaling linéaire | Important | 2h |
+| 5 | `api/main.py` monolithique 3045 lignes — vélocité chute à mesure que features s'ajoutent | Important | 3-5j (split en routers) |
+| 6 | Aucun test RAG sur les 9 alternatives (cœur métier 673 L) | Critique réputation | 4-5j |
+| 7 | Aucun eval set Q/A juridique — "80% top-1" non mesuré, juste estimé | Risque légal | 2j |
+| 8 | Pas de pool DB PostgreSQL — 50-100ms/requête perdues sur Railway | Perf | 30 min |
+| 9 | Streaming `/ask` absent — UX 12s d'attente muette | UX critique | 1j (SSE) |
+| 10 | Embeddings obsolètes (MiniLM 2021, 384D) vs BGE-M3 (1024D) | Qualité retrieval | 1j + ré-indexation |
+| 11 | `StudentScreen.js` 2451 L — god component, perfs mobile dégradées | UX/Perf | 1 sem |
+| 12 | i18n incomplète — 7 outils écrans en FR hardcodés (Defend, Shield, Diagnostic...) | Marketing 8 langues | 2-3j |
+| 13 | Mobile en JS pur (pas TypeScript) sur 15K LOC | Maintenabilité | 2-3 sem (incrémental) |
+| 14 | 0 observabilité IA (Sentry, Langfuse, Langsmith absents) | Risque légal RGPD | 1j |
+| 15 | 19 features → 3 personas viables réels — message produit dispersé | PMF | Décision stratégique |
+
+### Findings sécurité détaillés
+
+- **API1 BOLA** : OK (pattern `obj.user_id == current_user.id` cohérent)
+- **API2 Auth** : OK avec réserve — password min 6 chars (sous-standard NIST), pas de check HIBP
+- **API4 Rate limiting** : partiel — slowapi par IP mais pas par user_id, quota beta bypassé
+- **API6 SSRF** : KO sur `/student/lms/connect`, exposable à `169.254.169.254` (cloud metadata)
+- **API7 Misconfig** : OK (CORS strict, security headers complets)
+- **API10 Stripe webhook** : OK (signature + idempotence DB)
+
+### Findings performance détaillés
+
+- Latence p50 `/ask` : ~12s, p95 ~22s. Cible : 5s / 10s
+- Hotspots : génération Sonnet (60-80%), Alt.2/3 sériels (300-1200ms), Alt.4 voisins sériels (150-400ms)
+- Dockerfile télécharge 500 MB ChromaDB **inutilisé** (le code utilise Qdrant)
+- 95 routes en `def` sync → saturent threadpool 40 workers global
+- Économies API potentielles avec quick wins : ~50€/mois actuel, scaling linéaire
+
+### Findings architecture détaillés
+
+- `api/main.py` : 3045 L, 112 décorateurs `@app.*`, **0 APIRouter** (sauf seo_router)
+- 14 duplications du pattern `json.loads(json_match.group())` dans 8 features
+- 1 seule migration Alembic (schéma figé)
+- Mobile : god components (StudentScreen 2436 L, Subscription 661, Shield 603)
+- Pas de Sentry, pas de TypeScript, pas de linter/formatter, pas d'ADR
+- 30 fichiers de tests backend mais **0 test RAG**
+
+### Findings UX/A11y détaillés
+
+- WCAG 2.1 AA : 65-70% conforme
+- Critique : SafeAreaProvider importé mais non wrappé → notch overlap
+- Critique : TextInput sans focus ring (Auth + Ask)
+- Caption font 11pt + tabBar 10pt = sous WCAG AA
+- BCE/VAT placeholder `[NUMÉRO BCE À COMPLÉTER]` non remplacé !
+- 7 écrans outils avec strings FR hardcodés (i18n incomplète)
+- Dark mode non supporté
+
+### Findings business/PMF détaillés
+
+- **Verdict : Pre-PMF avec early signals techniques forts**
+- 19 features = dispersion → 3 personas viables (Particulier 9.99€, Indépendant/TPE 29.99€, PME 99€)
+- 7 plans = 4 de trop. Tuer firm_s/firm_m (positionnement avocats faible vs Doctrine)
+- Risque #1 : pas de funnel de conversion beta→paid défini
+- Coût Claude API par user : 0,30-0,80€ (casual) / 2-5€ (moyen) / 8-20€ (power)
+- LTV/CAC tendu : LTV ~300€, CAC Google Ads juridique BE 80-200€
+
+### Findings RAG/IA détaillés
+
+- Embeddings MiniLM-L12-v2 (384D) obsolète pour juridique → migrer BGE-M3 (1024D)
+- Aucun eval set Q/A gold standard, aucun nDCG/MRR/recall@K mesuré
+- `verify_citations` ne vérifie que ECLI + `[n]`, **pas les numéros d'articles ni dates de lois**
+- Détection branche par keyword matching naïf (faux positifs garantis)
+- Doublon massif `indexer.py` (ChromaDB) + `indexer_qdrant.py` (Qdrant) — drift silencieux
+- Humanizer regex fragile sur citations légales (pas de test unitaire dédié)
+- 0 observabilité (Langfuse/Langsmith/Phoenix absents)
+
+### 3 priorités absolues 30 jours
+
+1. **Sécurité + cash control (J1-J2)** : rotation secrets, cap quota beta, SSRF fix
+2. **Observabilité + eval set (J3-J7)** : Sentry + Langfuse + 50 Q/A gold
+3. **Focalisation produit (J8-J30)** : 20 interviews users, 1 persona prioritaire, tuer 8-10 features, simplifier pricing à 5 plans
+
+**Le risque #1 n'est pas technique, c'est la dispersion produit + l'absence de funnel de conversion.**
+
+### Quick wins 1 semaine (cibles 8.0/10)
+
+1. Rotation secrets + suppression `.env` disque (30 min)
+2. Cap quota beta dur (30 min)
+3. SSRF whitelist (1h)
+4. Prompt caching `ephemeral` (2h)
+5. Pool DB PostgreSQL (30 min)
+6. Pre-warm SentenceTransformer + Qdrant (2h)
+7. Streaming SSE sur `/ask` (1j)
+8. Payload index Qdrant + TextIndexParams (2h)
+9. Sentry SDK Python + RN (4h)
+10. Helper `extract_json_from_claude()` (4h)
+11. Fix safe area iOS notch (30 min)
+12. TextInput focus ring (45 min)
+13. Cap quota free + paywall progressif (1j)
+14. CI GitHub Actions bloquante (1j)
+15. Eval set 50 Q/A gold + script `eval.py` (2j)
+
+**Total : 7-8 jours dev concentré → 6.6/10 → 8.0/10 = RELEASE-READY**
