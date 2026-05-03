@@ -6,12 +6,54 @@ et d'importer le contenu de leurs cours pour alimenter les quiz/flashcards/résu
 
 import re
 import logging
+import socket
+import ipaddress
 import requests
 from io import BytesIO
+from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
 MOODLE_SERVICE = 'moodle_mobile_app'
+
+# ─── SSRF protection ─────────────────────────────────────────────────────────
+
+_PRIVATE_NETWORKS = [
+    ipaddress.ip_network('10.0.0.0/8'),
+    ipaddress.ip_network('172.16.0.0/12'),
+    ipaddress.ip_network('192.168.0.0/16'),
+    ipaddress.ip_network('127.0.0.0/8'),
+    ipaddress.ip_network('169.254.0.0/16'),   # link-local / AWS metadata
+    ipaddress.ip_network('0.0.0.0/8'),
+    ipaddress.ip_network('::1/128'),
+    ipaddress.ip_network('fc00::/7'),
+]
+
+
+def _validate_lms_url(url: str) -> None:
+    """Lève ValueError si l'URL pointe vers une IP privée ou cloud metadata."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ('https', 'http'):
+        raise ValueError("L'URL doit commencer par https:// ou http://")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("URL invalide : hôte manquant")
+    # Résoudre le nom de domaine → IP
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        raise ValueError(f"Impossible de résoudre l'hôte : {host}")
+    for info in infos:
+        ip_str = info[4][0]
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue
+        for net in _PRIVATE_NETWORKS:
+            if ip in net:
+                raise ValueError(
+                    f"Connexion refusée : l'URL pointe vers une adresse réseau privée ({ip_str})"
+                )
 
 # ─── Universités belges connues ───────────────────────────────────────────────
 KNOWN_UNIVERSITIES = [
@@ -35,6 +77,7 @@ KNOWN_UNIVERSITIES = [
 
 def moodle_authenticate(site_url: str, username: str, password: str) -> str:
     """Authenticate with Moodle and return a web service token."""
+    _validate_lms_url(site_url)
     url = f"{site_url.rstrip('/')}/login/token.php"
     try:
         r = requests.post(url, data={

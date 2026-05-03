@@ -439,20 +439,49 @@ def _handle_payment_failed(invoice: dict):
 
 # ─── Quota check ─────────────────────────────────────────────────────────────
 
+BETA_FREE_CAP = int(os.getenv("LEXAVO_BETA_FREE_CAP", "50"))
+
+
 def check_quota(user_id: int) -> dict:
     """
     Check if user can ask a question.
     Returns quota info. Raises HTTPException if quota exceeded.
-    Pendant la beta, tout le monde a un acces illimite.
+    Pendant la beta, les plans payants sont illimites mais free est
+    capé à BETA_FREE_CAP req/mois (défaut 50) pour éviter le DoS coût API.
     """
-    # Beta = illimite pour tous
     if is_beta_active():
         sub = get_subscription(user_id)
+        plan = sub.get("plan", "free") if sub else "free"
+        # Plans payants : illimités pendant beta
+        if plan != "free":
+            return {
+                "allowed": True,
+                "plan": plan,
+                "questions_used": sub.get("questions_used", 0) if sub else 0,
+                "questions_limit": -1,
+                "beta": True,
+                "beta_end": BETA_END_DATE,
+            }
+        # Free pendant beta : cap dur
+        questions_used = sub.get("questions_used", 0) if sub else 0
+        if questions_used >= BETA_FREE_CAP:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "Quota beta atteint",
+                    "message": f"Vous avez utilisé vos {BETA_FREE_CAP} questions gratuites ce mois-ci (période beta). Passez au plan Basic (4,99€/mois) pour un accès illimité.",
+                    "plan": plan,
+                    "questions_used": questions_used,
+                    "questions_limit": BETA_FREE_CAP,
+                    "upgrade_url": f"{FRONTEND_URL}/billing/upgrade",
+                },
+            )
         return {
             "allowed": True,
-            "plan": sub.get("plan", "free") if sub else "free",
-            "questions_used": sub.get("questions_used", 0) if sub else 0,
-            "questions_limit": -1,
+            "plan": plan,
+            "questions_used": questions_used,
+            "questions_limit": BETA_FREE_CAP,
+            "questions_remaining": BETA_FREE_CAP - questions_used,
             "beta": True,
             "beta_end": BETA_END_DATE,
         }
