@@ -69,8 +69,8 @@ LEXAVO
 ### Mobile
 | Fichier | Rôle |
 |---------|------|
-| `mobile/App.js` | 6 onglets (Accueil, Defend, Chat, Avocats, Abonnement, Settings) + 16 outils cachés |
-| `mobile/src/api/client.js` | 50+ fonctions API, URL Railway production, intercepteurs 401, expo-secure-store |
+| `mobile/App.js` | 5 onglets (Accueil, Campus, Chat IA, Abonnement, Réglages) + LexavoStack caché (Defend, Shield, Diagnostic, Calculateurs, Match, Emergency, Fiscal) + SettingsStack (Subscription, Notifications, History, Lawyers, CGU, Privacy, MentionsLegales) |
+| `mobile/src/api/client.js` | 936 L, 105 fonctions/exports, URL Railway prod, intercepteurs 401, expo-secure-store |
 | `mobile/src/screens/HomeScreen.js` | Hero LEXAVO + 2 cartes + grille 16 outils + 15 branches + étudiants (HeritageScreen ajouté) |
 | `mobile/src/screens/AskScreen.js` | Chat RAG principal + filtres source + PhotoPicker (pattern mounted) |
 | `mobile/src/screens/StudentScreen.js` | Quiz QCM + Flashcards + Résumé Claude (2451 L — god component, split planifié) |
