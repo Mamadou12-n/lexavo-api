@@ -298,10 +298,11 @@ Question : {question}"""
     messages.append({"role": "user", "content": user_message})
 
     log.info(f"  Appel Claude {model}... ({len(messages)} messages)")
+    system_blocks = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
     message = client.messages.create(
         model=model,
         max_tokens=MAX_TOKENS_OUT,
-        system=system_prompt,
+        system=system_blocks,
         messages=messages,
     )
 
@@ -351,6 +352,126 @@ Question : {question}"""
         "branch_confidence":  branch_confidence,
         "citations_verified": citation_stats,
     }
+
+
+def ask_stream(
+    question: str,
+    top_k: int = TOP_K_CHUNKS,
+    source_filter=None,
+    model: str = DEFAULT_MODEL,
+    anthropic_api_key=None,
+    branch=None,
+    auto_detect_branch: bool = True,
+    region=None,
+    history=None,
+    language=None,
+):
+    """
+    Version streaming du pipeline RAG.
+    Yield des lignes SSE : data: <chunk>\n\n
+    Dernier event : data: [DONE]<json_metadata>\n\n
+    """
+    from rag.retriever import retrieve, format_context
+    from rag.branches import detect_branch, get_branch_config
+    from rag.humanizer import humanize
+    import json
+
+    detected_branch = branch
+    branch_confidence = 1.0 if branch else 0.0
+    branch_label = None
+
+    if not detected_branch and auto_detect_branch:
+        detected_branch, branch_confidence = detect_branch(question)
+
+    if detected_branch and branch_confidence >= 0.3:
+        config = get_branch_config(detected_branch)
+        if config:
+            branch_label = config["label"]
+            if not source_filter:
+                source_filter = config.get("source_filter")
+            if top_k == TOP_K_CHUNKS:
+                top_k = config.get("top_k", TOP_K_CHUNKS)
+
+    chunks = retrieve(query=question, top_k=top_k, source_filter=source_filter)
+    if not chunks:
+        yield 'data: {"error": "Aucun document pertinent trouvé."}\n\n'
+        return
+
+    if detected_branch and branch_confidence >= 0.5:
+        config = get_branch_config(detected_branch)
+        if config:
+            expected_sources = config.get("source_filter", [])
+            if expected_sources:
+                from_right_source = sum(
+                    1 for c in chunks
+                    if c.get("source", "") in expected_sources
+                    or any(s.lower() in c.get("title", "").lower() for s in expected_sources)
+                )
+                if from_right_source < len(chunks) * 0.3:
+                    chunks_retry = retrieve(query=question, top_k=top_k, source_filter=expected_sources)
+                    if chunks_retry:
+                        chunks = chunks_retry
+
+    context = format_context(chunks, max_total_chars=6000)
+    system_prompt = _build_system_prompt(detected_branch, region, language)
+    user_message = f"Contexte juridique :\n\n{context}\n\n---\n\nQuestion : {question}"
+
+    api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("Clé API Anthropic manquante.")
+
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key)
+
+    messages = []
+    if history:
+        recent = history[-20:]
+        total_chars = 0
+        truncated = []
+        for msg in reversed(recent):
+            msg_chars = len(msg.get("content", ""))
+            if total_chars + msg_chars > 24000:
+                break
+            truncated.insert(0, msg)
+            total_chars += msg_chars
+        for msg in truncated:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_message})
+
+    system_blocks = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+    full_text = ""
+    with client.messages.stream(
+        model=model,
+        max_tokens=MAX_TOKENS_OUT,
+        system=system_blocks,
+        messages=messages,
+    ) as stream:
+        for text_chunk in stream.text_stream:
+            full_text += text_chunk
+            safe = text_chunk.replace("\n", "\\n")
+            yield f"data: {safe}\n\n"
+
+    # Post-processing
+    full_text = humanize(full_text)
+    sources_list = []
+    seen_doc_ids = set()
+    for chunk in chunks:
+        doc_id = chunk.get("doc_id", "")
+        if doc_id not in seen_doc_ids:
+            seen_doc_ids.add(doc_id)
+            sources_list.append({
+                "doc_id": doc_id, "source": chunk.get("source", ""),
+                "title": chunk.get("title", ""), "date": chunk.get("date", ""),
+                "ecli": chunk.get("ecli", ""), "url": chunk.get("url", ""),
+                "similarity": chunk.get("similarity", 0),
+            })
+
+    metadata = {
+        "sources": sources_list, "chunks_used": len(chunks), "model": model,
+        "branch": detected_branch, "branch_label": branch_label,
+        "branch_confidence": branch_confidence,
+    }
+    yield f"data: [DONE]{json.dumps(metadata, default=str)}\n\n"
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ except ImportError:
     pass
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Request, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -416,6 +417,97 @@ def ask_endpoint(
         branch_confidence=result.get("branch_confidence", 0.0),
         conversation_id=conversation_id,
     )
+
+
+@app.post("/ask/stream")
+@limiter.limit("10/minute")
+def ask_stream_endpoint(
+    request: Request,
+    body: AskRequest,
+    api_key: str = Depends(get_api_key),
+    current_user: dict = Depends(_get_current_user),
+):
+    """
+    Streaming SSE de la réponse RAG. Même logique que /ask mais en Server-Sent Events.
+    Format : data: <chunk>\\n\\n  |  data: [DONE]{json_metadata}\\n\\n
+    """
+    from rag.pipeline import ask_stream
+    from rag.indexer_qdrant import get_index_stats as _qdrant_stats
+    from api.stripe_billing import check_quota
+    from api.database import (
+        increment_question_count, create_conversation,
+        list_messages, create_message, get_conversation_by_id,
+    )
+
+    _qstats = _qdrant_stats()
+    if _qstats.get("status") != "ok":
+        raise HTTPException(status_code=503, detail=f"Qdrant indisponible: {_qstats.get('error', 'unknown')}")
+
+    check_quota(current_user["id"])
+
+    conversation_id = body.conversation_id
+    history = None
+
+    if conversation_id:
+        conv = get_conversation_by_id(conversation_id)
+        if not conv or conv["user_id"] != current_user["id"]:
+            raise HTTPException(404, "Conversation non trouvee.")
+        prev_messages = list_messages(conversation_id)
+        if prev_messages:
+            history = [{"role": m["role"], "content": m["content"]} for m in prev_messages]
+    else:
+        title = body.question[:60] + ("..." if len(body.question) > 60 else "")
+        conv = create_conversation(current_user["id"], title)
+        conversation_id = conv["id"]
+
+    enriched_question = body.question
+    if body.photos_base64:
+        try:
+            from api.utils.ocr import extract_text_from_base64_list
+            ocr_text = extract_text_from_base64_list(body.photos_base64)
+            if ocr_text:
+                enriched_question = f"{body.question}\n\n[Texte extrait des photos jointes]\n{ocr_text}"
+        except Exception as e:
+            log.warning(f"OCR photos /ask/stream ignoré : {e}")
+
+    full_answer_parts = []
+
+    def event_generator():
+        import json
+        try:
+            for chunk in ask_stream(
+                question=enriched_question,
+                top_k=body.top_k,
+                source_filter=body.source_filter,
+                model=body.model,
+                anthropic_api_key=api_key,
+                branch=body.branch,
+                region=body.region,
+                history=history,
+                language=body.language,
+            ):
+                if chunk.startswith("data: [DONE]"):
+                    metadata_json = chunk[len("data: [DONE]"):-2]
+                    try:
+                        metadata = json.loads(metadata_json)
+                        sources_list = metadata.get("sources", [])
+                        full_answer = "".join(full_answer_parts)
+                        increment_question_count(current_user["id"])
+                        create_message(conversation_id, "user", body.question)
+                        create_message(conversation_id, "assistant", full_answer, json.dumps(sources_list, default=str))
+                        metadata["conversation_id"] = conversation_id
+                    except Exception:
+                        metadata = {"conversation_id": conversation_id}
+                    yield f"data: [DONE]{json.dumps(metadata, default=str)}\n\n"
+                else:
+                    text_part = chunk[6:].replace("\\n", "\n")
+                    full_answer_parts.append(text_part)
+                    yield chunk
+        except Exception as e:
+            log.error(f"Erreur streaming RAG : {e}")
+            yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/branches")
