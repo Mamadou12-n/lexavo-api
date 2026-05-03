@@ -18,7 +18,7 @@ LEXAVO
 ├── Indexer Qdrant    → rag/indexer_qdrant.py (actif en prod)
 ├── Indexer ChromaDB  → rag/indexer.py (legacy, NON utilisé en prod — à archiver)
 ├── Mobile Expo       → mobile/ (React Native 0.81.5, Expo SDK 54, 33 écrans + LexavoHomeScreen, design system ivoire/terracotta/navy)
-├── Scrapers          → scrapers/ (26 scrapers : JUSTEL, HUDOC, EUR-Lex, SPF Finances, SPF Emploi, FSMA, BNB, IBPT, CREG, INAMI, AVOCATS.BE, IRE, doctrine PDF HAL/DIAL/UGENT/ORBI, etc.)
+├── Scrapers          → scrapers/ (27 scrapers : JUSTEL, HUDOC, EUR-Lex, SPF Finances, SPF Emploi, FSMA, BNB, IBPT, CREG, INAMI, AVOCATS.BE, IRE, doctrine PDF HAL/DIAL/UGENT/ORBI, CCT, circulaires SPF, CJUE, Codex Vlaanderen, Wallex, Gallilex, etc.)
 ├── Tests             → tests/ (30 fichiers pytest, 55+ tests) + mobile/__tests__/ (60 jest)
 └── Déploiement       → Railway (Dockerfile multi-stage, PostgreSQL prod, Qdrant cloud)
 ```
@@ -56,7 +56,7 @@ LEXAVO
 | `api/main.py` | 115 endpoints FastAPI (3045 L — monolithique, split planifié) |
 | `api/auth.py` | JWT bcrypt 12 rounds + refresh tokens 30j, 8 langues (fr/nl/en/de/ar/tr/es/pt) |
 | `api/security.py` | HSTS/CSP/headers, account lockout 5 fails/15min, PII masking, CORS strict, upload MIME |
-| `api/database.py` | 27 tables, PostgreSQL prod / SQLite dev |
+| `api/database.py` | 28 tables, PostgreSQL prod / SQLite dev |
 | `api/stripe_billing.py` | 7 plans (free→enterprise), webhooks idempotents, beta mode |
 | `api/utils/model_router.py` | Haiku (simple) / Sonnet (analyse) / Opus (complexe) — IDs Claude 4.5 valides |
 | `rag/pipeline.py` | RAG complet + détection 15 branches + garde-fou Alt.6 (388 L) |
@@ -117,7 +117,7 @@ BadgeGrid, ChecklistStep, ConsentModal, ExtractedCard, ModelBadge, PhotoPicker, 
 | student.py | Haiku/Sonnet | Quiz QCM, Flashcards SRS, groupes, LMS |
 | lms.py | — | Connexion Moodle (SSRF whitelist à implémenter) |
 
-### Tables DB (27 tables)
+### Tables DB (28 tables)
 users, lawyers, conversations, messages, subscriptions, shield_analyses, newsletter_subscribers, refresh_tokens, emergency_requests, alert_preferences, proof_cases, proof_entries, push_tokens, beta_notifications, audit_reports, password_reset_tokens, student_progress, student_badges, student_quiz_history, student_flashcard_srs, student_groups, student_group_members, student_lms_connections, student_lms_courses, student_shared_notes, failed_logins, stripe_webhook_events, admin_audit_log
 
 ## Règles non-négociables
@@ -141,15 +141,15 @@ users, lawyers, conversations, messages, subscriptions, shield_analyses, newslet
 
 ## Stack technique
 
-- **Backend** : FastAPI 0.111, Python 3.11, Anthropic Claude API (claude-haiku-4-5 / claude-sonnet-4-5-20250929 / claude-opus-4-5-20251001)
-- **DB** : PostgreSQL (Railway prod), SQLite (dev local), 27 tables
+- **Backend** : FastAPI 0.111, Python 3.11, Anthropic Claude API (claude-haiku-4-5-20251001 / claude-sonnet-4-5-20250929 / claude-opus-4-5-20251001)
+- **DB** : PostgreSQL (Railway prod), SQLite (dev local), 28 tables
 - **RAG** : Qdrant cloud (3 490 000+ chunks, 34 sources), sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2, 384 dims)
   - Migration BGE-M3 (1024D) planifiée — embeddings 2021 obsolètes pour juridique
 - **Auth** : JWT bcrypt 12 rounds, refresh tokens 30 jours, 8 langues, expo-secure-store mobile, account lockout 5 fails/15min
 - **Sécurité** : api/security.py — HSTS/CSP/X-Frame-DENY/Referrer-Policy/Permissions-Policy, PII masking, CORS strict whitelist, MIME magic bytes upload, admin audit log
 - **Paiement** : Stripe live (7 plans : free/basic/pro/business/firm_s/firm_m/enterprise), webhooks idempotents, beta gratuit jusqu'au 2026-10-01
 - **Mobile** : React Native 0.81.5, Expo SDK ~54.0.34, React Navigation 7.x, expo-secure-store, Ionicons, react-native-reanimated ~4.1.1
-- **i18n** : 680 entrées × 8+1 langues, coverage 70% sur 5 écrans principaux, RTL arabe
+- **i18n** : ~680 clés × 9 langues (fr/nl/en/de/es/it/pt/ar/tr), 1700 L translations.js, coverage 70% sur 5 écrans principaux, RTL arabe
 - **Tests** : pytest 55+ tests backend (conftest.py, asyncio), jest 60 tests mobile (mocks expo-secure-store)
 - **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, Qdrant cloud)
 - **CI** : GitHub Actions (emails beta), auto-deploy Railway sur push main
