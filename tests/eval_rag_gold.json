@@ -1,0 +1,402 @@
+[
+  {
+    "id": "Q001",
+    "branch": "Droit du travail",
+    "question": "Quel est le délai de préavis pour un travailleur ayant 5 ans d'ancienneté en Belgique ?",
+    "ground_truth": "Pour un travailleur ouvrier ou employé avec 5 ans d'ancienneté, le délai de préavis est de 13 semaines selon la loi du 26 décembre 2013 (CCT n°109). La durée est calculée selon l'ancienneté acquise à partir du 1er janvier 2014.",
+    "expected_sources": ["loi_contrats_travail", "cct_109"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q002",
+    "branch": "Droit du travail",
+    "question": "Quelles sont les conditions pour bénéficier du chômage temporaire pour force majeure en Belgique ?",
+    "ground_truth": "Le chômage temporaire pour force majeure est régi par l'article 26 de la loi du 3 juillet 1978 sur les contrats de travail. Il faut que l'événement soit imprévisible, irrésistible et extérieur à l'employeur, rendant l'exécution du contrat temporairement impossible.",
+    "expected_sources": ["loi_contrats_travail"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q003",
+    "branch": "Droit familial",
+    "question": "Comment se calcule la pension alimentaire pour enfants en Belgique selon le barème Renard ?",
+    "ground_truth": "Le barème Renard calcule la pension alimentaire en fonction des revenus des deux parents et du nombre d'enfants. Le montant de base est réparti proportionnellement aux revenus respectifs. Le parent hébergeur principal reçoit la contribution de l'autre parent.",
+    "expected_sources": ["code_civil", "jurisprudence"],
+    "min_context_precision": 0.6
+  },
+  {
+    "id": "Q004",
+    "branch": "Droit familial",
+    "question": "Quelles sont les conditions du divorce par consentement mutuel en Belgique ?",
+    "ground_truth": "Le divorce par consentement mutuel est régi par les articles 1288 à 1295 du Code judiciaire. Les époux doivent être majeurs, présenter un accord réglant les effets du divorce (biens, enfants, aliments), et comparaître deux fois devant le tribunal de la famille avec un intervalle minimum de 3 mois.",
+    "expected_sources": ["code_judiciaire", "code_civil"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q005",
+    "branch": "Droit fiscal",
+    "question": "Quel est le taux de TVA standard applicable en Belgique ?",
+    "ground_truth": "Le taux standard de TVA en Belgique est de 21% conformément à l'article 16 du Code de la TVA (CTVA). Des taux réduits de 6% et 12% s'appliquent à certains biens et services spécifiquement listés dans les tableaux A et B annexés au CTVA.",
+    "expected_sources": ["code_tva"],
+    "min_context_precision": 0.8
+  },
+  {
+    "id": "Q006",
+    "branch": "Droit fiscal",
+    "question": "Quelles sont les conditions pour déduire les frais professionnels réels à l'IPP en Belgique ?",
+    "ground_truth": "Selon l'article 49 du CIR 1992, les frais professionnels réels sont déductibles s'ils ont été faits ou supportés pendant la période imposable pour acquérir ou conserver des revenus imposables, s'ils sont justifiés par des pièces probantes et s'ils ne sont pas excessifs.",
+    "expected_sources": ["cir_1992"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q007",
+    "branch": "Droit pénal",
+    "question": "Quelle est la prescription de l'action publique pour un crime en Belgique ?",
+    "ground_truth": "Selon l'article 21 du titre préliminaire du Code de procédure pénale, le délai de prescription pour les crimes est de 15 ans à partir du jour où le crime a été commis. Pour les crimes imprescriptibles (génocide, crimes contre l'humanité), il n'y a pas de délai.",
+    "expected_sources": ["code_instruction_criminelle"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q008",
+    "branch": "Droit pénal",
+    "question": "Qu'est-ce que la légitime défense en droit pénal belge et quelles en sont les conditions ?",
+    "ground_truth": "La légitime défense est prévue à l'article 416 du Code pénal belge. Elle requiert : une agression injuste et actuelle, une riposte nécessaire et proportionnelle à l'attaque. La défense doit être simultanée à l'agression, non provoquée et proportionnée au danger.",
+    "expected_sources": ["code_penal"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q009",
+    "branch": "Droit civil",
+    "question": "Quels sont les délais de prescription en droit civil belge après la réforme de 2018 ?",
+    "ground_truth": "Depuis la réforme du Code civil (livre 8, entré en vigueur le 1er novembre 2020), le délai de prescription de droit commun est de 10 ans (article 2262bis ancien remplacé). La prescription extinctive courte est de 5 ans pour les créances personnelles (article 8.3 du nouveau Code civil).",
+    "expected_sources": ["code_civil", "nouveau_code_civil"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q010",
+    "branch": "Droit civil",
+    "question": "Qu'est-ce que la responsabilité aquilienne en droit belge et sur quel article est-elle fondée ?",
+    "ground_truth": "La responsabilité aquilienne (extracontractuelle) est fondée sur l'article 1382 de l'ancien Code civil (désormais article 6.3 du nouveau Code civil). Elle requiert trois éléments cumulatifs : une faute (acte ou omission contraire à la norme de comportement), un dommage et un lien causal entre les deux.",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q011",
+    "branch": "Droit immobilier",
+    "question": "Comment se calcule l'indexation du loyer en Région bruxelloise ?",
+    "ground_truth": "En Région de Bruxelles-Capitale, l'indexation du loyer est calculée selon la formule : loyer de base × (indice santé du mois en cours / indice santé du mois de la signature du bail). Elle est régie par l'ordonnance du 27 juillet 2017 relative au bail d'habitation.",
+    "expected_sources": ["wallex", "ordonnances_rbc"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q012",
+    "branch": "Droit immobilier",
+    "question": "Quelle est la durée légale d'un bail de résidence principale en Belgique ?",
+    "ground_truth": "En Belgique, la durée légale standard d'un bail de résidence principale est de 9 ans selon la loi sur les baux de résidence principale (loi du 20 février 1991). Le propriétaire peut mettre fin au bail après 3, 6 ou 9 ans sous certaines conditions. Des baux de courte durée (max 3 ans) sont également possibles.",
+    "expected_sources": ["loi_baux"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q013",
+    "branch": "Droit commercial",
+    "question": "Quelles sont les conditions de validité d'une SPRL/SRL en Belgique depuis le CSA 2019 ?",
+    "ground_truth": "Depuis l'entrée en vigueur du Code des Sociétés et Associations (CSA) le 1er mai 2019, la SRL (ancienne SPRL) peut être constituée par un seul associé. Le capital minimum n'est plus requis mais un capital de départ 'adéquat' est exigé. Les statuts doivent être établis par acte authentique chez un notaire.",
+    "expected_sources": ["csa_2019"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q014",
+    "branch": "Droit commercial",
+    "question": "Qu'est-ce que la procédure de réorganisation judiciaire (PRJ) en droit belge ?",
+    "ground_truth": "La procédure de réorganisation judiciaire est régie par le livre XX du Code de droit économique (CDE). Elle permet à une entreprise en difficulté d'obtenir un sursis de paiement pour se restructurer. Elle peut aboutir à un accord amiable, un accord collectif ou un transfert sous autorité judiciaire.",
+    "expected_sources": ["code_droit_economique"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q015",
+    "branch": "Droit administratif",
+    "question": "Quel est le délai pour introduire un recours en annulation au Conseil d'État en Belgique ?",
+    "ground_truth": "Le délai pour introduire un recours en annulation devant le Conseil d'État est de 60 jours à compter de la notification de l'acte attaqué ou de sa publication au Moniteur belge, selon l'article 14, §1 des lois coordonnées sur le Conseil d'État du 12 janvier 1973.",
+    "expected_sources": ["conseil_etat"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q016",
+    "branch": "Droit administratif",
+    "question": "Qu'est-ce que le principe de standstill en droit administratif belge ?",
+    "ground_truth": "Le principe de standstill interdit au législateur ou à l'autorité administrative de réduire significativement le niveau de protection d'un droit fondamental sans justification légitime. Il a été reconnu par la Cour constitutionnelle belge notamment dans son arrêt n°135/2006 concernant les droits sociaux fondamentaux.",
+    "expected_sources": ["jurisprudence", "cour_constitutionnelle"],
+    "min_context_precision": 0.6
+  },
+  {
+    "id": "Q017",
+    "branch": "Droit des étrangers",
+    "question": "Quelles sont les conditions pour obtenir la protection subsidiaire en Belgique ?",
+    "ground_truth": "La protection subsidiaire est accordée selon l'article 48/4 de la loi du 15 décembre 1980 sur les étrangers. Elle est octroyée à l'étranger qui ne remplit pas les conditions du statut de réfugié mais risque de subir des atteintes graves (peine de mort, torture, violence aveugle dans un conflit armé).",
+    "expected_sources": ["loi_etrangers_1980"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q018",
+    "branch": "Droit des étrangers",
+    "question": "Quel est le délai pour introduire une demande d'asile en Belgique après l'arrivée sur le territoire ?",
+    "ground_truth": "Selon l'article 50 de la loi du 15 décembre 1980, la demande d'asile doit être introduite dans les 8 jours ouvrables suivant l'arrivée sur le territoire ou après la dernière décision administrative. La demande se fait au bureau du CGRA (Commissariat général aux réfugiés et apatrides).",
+    "expected_sources": ["loi_etrangers_1980"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q019",
+    "branch": "Droits fondamentaux",
+    "question": "Quel article de la Constitution belge garantit l'égalité et la non-discrimination ?",
+    "ground_truth": "L'article 10 de la Constitution belge garantit l'égalité de tous les Belges devant la loi. L'article 11 interdit toute discrimination fondée notamment sur l'idéologie, la philosophie, la religion, la race, etc. La Cour constitutionnelle veille au respect de ces principes.",
+    "expected_sources": ["constitution_belge"],
+    "min_context_precision": 0.8
+  },
+  {
+    "id": "Q020",
+    "branch": "Droits fondamentaux",
+    "question": "Qu'est-ce que l'article 6 de la CEDH garantit et comment s'applique-t-il en Belgique ?",
+    "ground_truth": "L'article 6 de la Convention européenne des droits de l'homme garantit le droit à un procès équitable. Il comprend le droit d'accès à un tribunal, le principe du contradictoire, le délai raisonnable, l'indépendance et l'impartialité du tribunal. Il est directement applicable en Belgique et la Cour européenne des droits de l'homme a condamné plusieurs fois la Belgique pour violation de cet article.",
+    "expected_sources": ["hudoc", "cedh"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q021",
+    "branch": "Sécurité sociale",
+    "question": "Comment calcule-t-on les allocations de chômage en Belgique lors de la première période ?",
+    "ground_truth": "Durant la première période de chômage (jusqu'à 3 mois), l'allocation est calculée sur base du salaire brut journalier moyen plafonné. Le taux applicable est de 65% pour les cohabitants chefs de ménage et isolés, et 40% pour les cohabitants. Les montants sont soumis aux barèmes fixés par l'ONEM.",
+    "expected_sources": ["loi_contrats_travail", "securite_sociale"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q022",
+    "branch": "Sécurité sociale",
+    "question": "Quelles cotisations sociales un travailleur salarié paie-t-il en Belgique ?",
+    "ground_truth": "Un travailleur salarié belge paie 13,07% de cotisations personnelles ONSS sur son salaire brut. L'employeur paie environ 25% de cotisations patronales. Ces cotisations financent la sécurité sociale (pension, chômage, maladie-invalidité, accident du travail, allocations familiales).",
+    "expected_sources": ["securite_sociale", "loi_contrats_travail"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q023",
+    "branch": "Droit pénal",
+    "question": "Quels sont les éléments constitutifs de l'escroquerie en droit pénal belge ?",
+    "ground_truth": "L'escroquerie est définie à l'article 496 du Code pénal belge. Ses éléments constitutifs sont : l'usage de manœuvres frauduleuses (faux noms, fausses qualités, abus de confiance, etc.), l'intention de s'approprier la chose d'autrui, et la remise de fonds, valeurs ou meubles par la victime trompée.",
+    "expected_sources": ["code_penal"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q024",
+    "branch": "Droit du travail",
+    "question": "Quelles sont les obligations de l'employeur en matière de bien-être au travail en Belgique ?",
+    "ground_truth": "La loi du 4 août 1996 sur le bien-être des travailleurs lors de l'exécution de leur travail impose à l'employeur une obligation générale de prévention. Il doit mettre en place un système dynamique de gestion des risques (SDGR), disposer d'un SIPPT (service interne de prévention), et élaborer un plan global de prévention quinquennal.",
+    "expected_sources": ["loi_contrats_travail", "bien_etre_travail"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q025",
+    "branch": "Droit commercial",
+    "question": "Quelles sont les conditions de la faillite en droit belge depuis le CDE livre XX ?",
+    "ground_truth": "Depuis la réforme du droit de l'insolvabilité (livre XX CDE, en vigueur depuis le 1er mai 2018), la faillite est ouverte à toute entreprise en état de cessation de paiements et dont le crédit est ébranlé. La notion d'entreprise est plus large que l'ancienne définition du commerçant et inclut les professions libérales et ASBL.",
+    "expected_sources": ["code_droit_economique"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q026",
+    "branch": "Droit civil",
+    "question": "Qu'est-ce que l'abus de droit en droit civil belge et quand est-il sanctionné ?",
+    "ground_truth": "L'abus de droit est un principe général du droit reconnu par la Cour de cassation belge (arrêt du 10 septembre 1971). Un droit est exercé abusivement lorsqu'il l'est d'une manière qui dépasse manifestement les limites de l'exercice normal par une personne prudente et raisonnable. La sanction est la réduction du droit à son usage normal.",
+    "expected_sources": ["code_civil", "jurisprudence"],
+    "min_context_precision": 0.6
+  },
+  {
+    "id": "Q027",
+    "branch": "Droit administratif",
+    "question": "Qu'est-ce que la loi du 29 juillet 1991 sur la motivation formelle des actes administratifs impose ?",
+    "ground_truth": "La loi du 29 juillet 1991 impose que tout acte administratif à portée individuelle soit formellement motivé. La motivation doit être adéquate, c'est-à-dire mentionner les considérations de droit et de fait servant de fondement à la décision. L'absence de motivation entraîne l'annulation de l'acte.",
+    "expected_sources": ["loi_motivation_administrative"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q028",
+    "branch": "Droit fiscal",
+    "question": "Quel est le délai d'investigation de l'administration fiscale en Belgique pour l'IPP ?",
+    "ground_truth": "Selon l'article 333 du CIR 1992, le délai ordinaire d'investigation est de 3 ans à partir du 1er janvier de l'exercice d'imposition. Ce délai est porté à 7 ans en cas d'infraction à la loi fiscale commise avec intention frauduleuse ou dessein de nuire, et à 10 ans en cas de fraude fiscale.",
+    "expected_sources": ["cir_1992"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q029",
+    "branch": "Propriété intellectuelle",
+    "question": "Quelle est la durée de protection du droit d'auteur en Belgique ?",
+    "ground_truth": "En Belgique, le droit d'auteur est protégé pendant 70 ans après la mort de l'auteur conformément à la loi du 30 juin 1994 relative au droit d'auteur et aux droits voisins (harmonisée avec la directive 2006/116/CE). Pour les œuvres anonymes ou pseudonymes, la protection court 70 ans à partir de la divulgation.",
+    "expected_sources": ["droit_auteur"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q030",
+    "branch": "Droit européen",
+    "question": "Qu'est-ce que l'effet direct du droit européen et comment s'applique-t-il en Belgique ?",
+    "ground_truth": "L'effet direct du droit européen a été consacré par l'arrêt Van Gend & Loos (CJCE, 5 février 1963). Il signifie que les normes européennes peuvent être directement invoquées par les particuliers devant les juridictions nationales. En Belgique, la primauté du droit européen a été reconnue par la Cour de cassation dans l'arrêt Le Ski du 27 mai 1971.",
+    "expected_sources": ["droit_europeen", "jurisprudence"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q031",
+    "branch": "Marchés publics",
+    "question": "Quels sont les seuils européens pour les marchés publics de travaux en Belgique en 2024 ?",
+    "ground_truth": "Les seuils européens pour les marchés publics de travaux sont fixés par les règlements européens et révisés tous les deux ans. Pour 2024-2025, le seuil pour les marchés de travaux est de 5 538 000 euros HTVA pour les pouvoirs adjudicateurs publics, conformément à la loi du 17 juin 2016 relative aux marchés publics transposant la directive 2014/24/UE.",
+    "expected_sources": ["marches_publics"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q032",
+    "branch": "Droit familial",
+    "question": "Quelles sont les conditions pour adopter un enfant en Belgique ?",
+    "ground_truth": "L'adoption en Belgique est régie par les articles 343 à 370/78 du Code civil. L'adoptant doit avoir au moins 25 ans et être âgé d'au moins 15 ans de plus que l'adopté. Pour l'adoption conjointe, les époux ou cohabitants légaux peuvent adopter ensemble. Une procédure d'agrément préalable auprès de la Communauté est obligatoire pour l'adoption internationale.",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q033",
+    "branch": "Droit civil",
+    "question": "Qu'est-ce que le droit de préemption et comment fonctionne-t-il en droit belge ?",
+    "ground_truth": "Le droit de préemption permet à son titulaire d'acquérir un bien en priorité si le propriétaire décide de le vendre. En droit belge, il existe des droits de préemption légaux (notamment en droit rural, en droit au logement en Région wallonne) et conventionnels. Le titulaire peut exercer son droit aux mêmes conditions que celles offertes à l'acheteur tiers.",
+    "expected_sources": ["code_civil", "wallex"],
+    "min_context_precision": 0.6
+  },
+  {
+    "id": "Q034",
+    "branch": "Droit du travail",
+    "question": "Quelles sont les règles relatives au travail de nuit en Belgique ?",
+    "ground_truth": "Le travail de nuit en Belgique est régi par la loi du 16 mars 1971 sur le travail et les CCT sectorielles. Est considéré travail de nuit celui effectué entre 20h et 6h. Il nécessite une procédure spéciale (accord de secteur ou d'entreprise). Les travailleurs de nuit bénéficient de garanties spécifiques : surveillance médicale, possibilité de retour au travail diurne, etc.",
+    "expected_sources": ["loi_contrats_travail"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q035",
+    "branch": "Droit pénal",
+    "question": "Quelles sont les peines prévues pour le vol simple en droit pénal belge ?",
+    "ground_truth": "Le vol simple est prévu à l'article 461 du Code pénal belge. La peine est un emprisonnement d'un mois à cinq ans et une amende de 26 à 500 euros. En cas de circonstances aggravantes (violence, arme, effraction, nuit, bande, etc.), les peines sont considérablement alourdies selon les articles 467 à 471 du Code pénal.",
+    "expected_sources": ["code_penal"],
+    "min_context_precision": 0.8
+  },
+  {
+    "id": "Q036",
+    "branch": "Droit civil",
+    "question": "Comment fonctionne le régime de la séparation de biens en droit belge ?",
+    "ground_truth": "Le régime de séparation de biens est prévu aux articles 1466 à 1469 de l'ancien Code civil. Chaque époux conserve la propriété exclusive de ses biens propres et de ses revenus. En cas de désaccord sur la propriété d'un bien, il est présumé appartenir aux deux époux par moitié. Ce régime doit être établi par contrat de mariage devant notaire.",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q037",
+    "branch": "Droit commercial",
+    "question": "Quelles sont les obligations comptables d'une PME en Belgique ?",
+    "ground_truth": "Les PME en Belgique sont soumises à la loi du 17 juillet 1975 relative à la comptabilité des entreprises (intégrée dans le livre III du CDE). Elles doivent tenir une comptabilité en partie double, établir des comptes annuels (bilan + compte de résultats + annexe) et les déposer à la Centrale des bilans de la BNB dans les 7 mois de la clôture de l'exercice.",
+    "expected_sources": ["code_droit_economique"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q038",
+    "branch": "Droit administratif",
+    "question": "Qu'est-ce que le principe de la légalité en droit administratif belge ?",
+    "ground_truth": "Le principe de la légalité, consacré à l'article 159 de la Constitution belge, oblige les tribunaux à refuser l'application des actes administratifs contraires à la loi. Toute action administrative doit être fondée sur une base légale. Le Conseil d'État peut annuler les actes contraires aux lois et aux principes généraux du droit.",
+    "expected_sources": ["constitution_belge", "conseil_etat"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q039",
+    "branch": "Droit des étrangers",
+    "question": "Dans quels cas un étranger peut-il être expulsé du territoire belge ?",
+    "ground_truth": "L'expulsion d'un étranger est régie par la loi du 15 décembre 1980. Elle peut être ordonnée en cas de menace pour l'ordre public ou la sécurité nationale, de séjour illégal, ou de condamnation pénale grave. L'étranger en séjour légal depuis plus de 5 ans bénéficie de garanties renforcées et ne peut être expulsé que dans des cas limités.",
+    "expected_sources": ["loi_etrangers_1980"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q040",
+    "branch": "Droit fiscal",
+    "question": "Qu'est-ce que le précompte mobilier en Belgique et quel est son taux ?",
+    "ground_truth": "Le précompte mobilier est un impôt retenu à la source sur les revenus mobiliers (dividendes, intérêts, revenus de brevets). Le taux général est de 30% conformément à l'article 269 du CIR 1992. Un taux réduit de 15% s'applique aux dividendes des petites sociétés réservés pendant 3 ans (Vvpr bis). Des conventions préventives de double imposition peuvent réduire ce taux.",
+    "expected_sources": ["cir_1992"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q041",
+    "branch": "Droit du travail",
+    "question": "Qu'est-ce que le motif grave justifiant un licenciement immédiat en droit belge ?",
+    "ground_truth": "Le motif grave est défini à l'article 35 de la loi du 3 juillet 1978 comme toute faute grave qui rend impossible toute collaboration professionnelle entre l'employeur et le travailleur. Le licenciement pour motif grave doit intervenir dans les 3 jours ouvrables de la connaissance des faits et être notifié dans les 3 jours suivants avec énonciation précise des motifs.",
+    "expected_sources": ["loi_contrats_travail"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q042",
+    "branch": "Droit civil",
+    "question": "Quels sont les droits successoraux du conjoint survivant en droit belge ?",
+    "ground_truth": "Le conjoint survivant bénéficie d'une réserve héréditaire en usufruit sur la totalité de la succession selon l'article 915bis de l'ancien Code civil. En présence d'enfants, le conjoint reçoit l'usufruit de toute la succession. En l'absence de descendants, il hérite en pleine propriété. La réforme de 2018 a renforcé les droits du cohabitant légal.",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q043",
+    "branch": "Droit commercial",
+    "question": "Quelles sont les pratiques commerciales déloyales interdites par le CDE en Belgique ?",
+    "ground_truth": "Le livre VI du Code de droit économique interdit les pratiques commerciales déloyales envers les consommateurs. Sont notamment interdits : les pratiques trompeuses (informations fausses ou susceptibles d'induire en erreur), les pratiques agressives (harcèlement, contrainte, influence injustifiée), et les 31 pratiques listées en annexe 1 comme étant en toutes circonstances déloyales.",
+    "expected_sources": ["code_droit_economique"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q044",
+    "branch": "Droit du travail",
+    "question": "Quel est le salaire minimum interprofessionnel garanti (SMIG) en Belgique ?",
+    "ground_truth": "Le salaire minimum interprofessionnel garanti (SMIG) en Belgique est fixé par CCT n°43 conclue au sein du Conseil National du Travail. Il est régulièrement adapté par CCT. En 2024, il est de 1 955,63 euros bruts par mois pour un travailleur à temps plein (montant à vérifier car sujet à révision régulière).",
+    "expected_sources": ["cct_cnt"],
+    "min_context_precision": 0.6
+  },
+  {
+    "id": "Q045",
+    "branch": "Droit civil",
+    "question": "Quelles sont les conditions de la force majeure en droit contractuel belge ?",
+    "ground_truth": "La force majeure en droit contractuel belge (article 1148 de l'ancien Code civil, article 5.226 du nouveau Code civil) libère le débiteur de son obligation lorsqu'un événement imprévisible, irrésistible et extérieur à sa volonté l'empêche d'exécuter son obligation. La force majeure temporaire suspend l'exécution ; définitive entraîne la dissolution du contrat.",
+    "expected_sources": ["code_civil", "nouveau_code_civil"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q046",
+    "branch": "Droit pénal",
+    "question": "Qu'est-ce que la tentative punissable en droit pénal belge et quand est-elle réprimée ?",
+    "ground_truth": "La tentative est définie à l'article 51 du Code pénal belge comme le commencement d'exécution d'un crime ou d'un délit, non suivi d'effet par suite de circonstances indépendantes de la volonté de l'auteur. La tentative de crime est toujours punissable. La tentative de délit n'est punissable que si la loi le prévoit expressément. La peine est réduite d'un ou deux degrés.",
+    "expected_sources": ["code_penal"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q047",
+    "branch": "Droit immobilier",
+    "question": "Quelles sont les obligations du vendeur en matière de vices cachés lors d'une vente immobilière ?",
+    "ground_truth": "La garantie des vices cachés est prévue aux articles 1641 à 1649 de l'ancien Code civil (article 6.38 du nouveau Code civil). Le vendeur est tenu de garantir l'acquéreur contre les vices cachés, c'est-à-dire les défauts non apparents qui rendent la chose impropre à l'usage auquel on la destine ou qui diminuent tellement cet usage que l'acheteur ne l'aurait pas acquis à ce prix.",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.75
+  },
+  {
+    "id": "Q048",
+    "branch": "Droits fondamentaux",
+    "question": "Qu'est-ce que le droit à l'aide sociale en Belgique et qui peut en bénéficier ?",
+    "ground_truth": "Le droit à l'aide sociale est garanti par la loi du 8 juillet 1976 organique des centres publics d'action sociale (CPAS). Toute personne qui n'est pas en mesure de subvenir à ses besoins essentiels a droit à l'aide sociale des CPAS. Pour les étrangers, l'aide médicale urgente est accessible même aux personnes en séjour illégal.",
+    "expected_sources": ["loi_aide_sociale"],
+    "min_context_precision": 0.65
+  },
+  {
+    "id": "Q049",
+    "branch": "Droit commercial",
+    "question": "Quelles informations obligatoires doivent figurer sur une facture en Belgique ?",
+    "ground_truth": "Selon l'article 53 du Code de la TVA et les règles comptables, une facture belge doit comporter : date d'émission, numéro séquentiel, numéro BCE/TVA du fournisseur et du client, description des biens/services, quantité, prix unitaire HTVA, taux et montant TVA, total TTC. Pour les factures électroniques B2B, la e-facture structurée devient obligatoire progressivement depuis 2026.",
+    "expected_sources": ["code_tva"],
+    "min_context_precision": 0.7
+  },
+  {
+    "id": "Q050",
+    "branch": "Droit civil",
+    "question": "Quelles sont les conditions de validité d'un testament olographe en Belgique ?",
+    "ground_truth": "Le testament olographe est régi par l'article 970 de l'ancien Code civil (article 4.72 du nouveau Code civil). Pour être valide, il doit être entièrement écrit, daté et signé de la main du testateur. Aucune autre forme n'est requise. Le testament doit être déposé chez un notaire après le décès ou enregistré au Registre central des testaments (CRT).",
+    "expected_sources": ["code_civil"],
+    "min_context_precision": 0.75
+  }
+]
