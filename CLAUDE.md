@@ -12,12 +12,12 @@
 ```
 LEXAVO
 ├── Backend FastAPI   → api/main.py (28 endpoints, 19 features)
-├── RAG Pipeline      → rag/pipeline.py (ChromaDB, 6 430 chunks + 3 400 articles, 28 codes belges)
+├── RAG Pipeline      → rag/pipeline.py (Qdrant prod, 3 490 000+ chunks, 28 codes belges)
 ├── Retriever         → rag/retriever.py (9 alternatives de recherche mutuellement correctives)
 ├── Mobile Expo       → mobile/ (React Native, Expo SDK 54, 33 écrans, 6 composants)
 ├── Scrapers          → scrapers/ (20 scrapers : JUSTEL, HUDOC, EUR-Lex, SPF Finances, SPF Emploi, etc.)
 ├── Prototype HTML    → App Droit/prototype.html
-└── Déploiement       → Railway (Dockerfile multi-stage, PostgreSQL prod, ChromaDB via GitHub Release v2.0)
+└── Déploiement       → Railway (Dockerfile multi-stage, PostgreSQL prod, Qdrant cloud)
 ```
 
 ## Base de données juridique (socle de l'app)
@@ -112,11 +112,11 @@ LEXAVO
 
 - **Backend** : FastAPI 0.111, Python 3.11, Anthropic Claude API (Haiku/Sonnet/Opus automatique)
 - **DB** : PostgreSQL (Railway prod), SQLite (dev local), 15 tables
-- **RAG** : ChromaDB (6 430 chunks + 3 400 articles), sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2, 384 dims)
+- **RAG** : Qdrant (3 490 000+ chunks, 28 codes belges), sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2, 384 dims) — migration BGE-M3 planifiée
 - **Auth** : JWT bcrypt 12 rounds, refresh tokens 30 jours, 8 langues
 - **Paiement** : Stripe live (7 plans : free → enterprise), beta gratuit jusqu'au 2026-10-01
 - **Mobile** : React Native 0.81, Expo SDK 54, React Navigation 7.x
-- **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, ChromaDB via GitHub Release v2.0)
+- **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, Qdrant cloud)
 - **CI** : GitHub Actions (emails beta), auto-deploy Railway sur push main
 
 ## Déploiement
@@ -273,3 +273,37 @@ cd mobile && npx expo start
 15. Eval set 50 Q/A gold + script `eval.py` (2j)
 
 **Total : 7-8 jours dev concentré → 6.6/10 → 8.0/10 = RELEASE-READY**
+
+---
+
+## Historique sessions récentes (2026-05-02 → 2026-05-03)
+
+### Ce qui a été fait
+
+- **Lecture exhaustive** : backend (3045 L main.py, 28 endpoints, 19 features), mobile (33 écrans, 15K LOC), RAG (9 alternatives, 3,49M chunks Qdrant), scrapers (20 sources), Stripe (7 plans).
+- **6 bugs P0 vérifiés** : tous déjà corrigés dans la branche WIP `wip/2026-05-02-avant-fixes-p0` (hash 49db384). Aucun fix supplémentaire nécessaire.
+- **Audit exhaustif 6 angles** : security-auditor, performance-engineer, architect-reviewer, accessibility-tester, product-manager, ai-engineer — score moyen 6.6/10.
+- **CLAUDE.md enrichi** : audit complet ajouté (commit 35bb755), ChromaDB → Qdrant corrigé partout, historique sessions ajouté.
+- **CLAUDE.md global enrichi** : Règle 9 "commit après chaque modif" ajoutée.
+- **Hook Règle 9** : PostToolUse hook ajouté dans `~/.claude/settings.json` — rappel automatique git commit après Edit/Write.
+
+### État Git
+
+- Branche principale : `main`
+- Branche WIP sauvegarde : `wip/2026-05-02-avant-fixes-p0` (138 fichiers modifiés, ~16K lignes)
+- Dernier commit audit : 35bb755 (`docs: audit exhaustif multi-angles 2026-05-02`)
+
+### Vrai DB vectorielle en prod
+
+**Qdrant** (pas ChromaDB). `rag/indexer_qdrant.py` est le fichier actif. `rag/indexer.py` (ChromaDB) = legacy non utilisé → à supprimer ou archiver.
+
+### Prochaines actions prioritaires (dans l'ordre)
+
+1. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars
+2. Cap quota beta dur (50 req/mois free)
+3. SSRF whitelist sur `/student/lms/connect`
+4. Prompt caching `ephemeral` Anthropic (économie 30-80€/mois)
+5. Pool DB PostgreSQL (asyncpg ou `pool_size` SQLAlchemy)
+6. Streaming SSE `/ask` (UX 12s → <3s perceived)
+7. Sentry SDK Python + React Native
+8. Eval set 50 Q/A gold standard + `eval.py`
