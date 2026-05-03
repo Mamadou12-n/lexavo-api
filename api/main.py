@@ -53,6 +53,33 @@ def _setup_json_logging():
 _setup_json_logging()
 log = logging.getLogger("api")
 
+# ─── Sentry (observabilité erreurs + performance) ─────────────────────────────
+try:
+    import sentry_sdk
+    _sentry_dsn = os.getenv("SENTRY_DSN")
+    if _sentry_dsn:
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            integrations=[
+                FastApiIntegration(),
+                LoggingIntegration(level=logging.WARNING, event_level=logging.ERROR),
+            ],
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_RATE", "0.1")),
+            profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_RATE", "0.05")),
+            environment=os.getenv("SENTRY_ENV", "production" if os.getenv("DATABASE_URL") else "development"),
+            release=os.getenv("RAILWAY_GIT_COMMIT_SHA", "2.1.0"),
+            send_default_pii=False,  # RGPD — jamais de PII dans Sentry
+        )
+        log.info("Sentry initialisé (env=%s)", os.getenv("SENTRY_ENV", "production"))
+    else:
+        log.info("SENTRY_DSN non défini — observabilité désactivée")
+except ImportError:
+    log.info("sentry-sdk non installé — pip install sentry-sdk[fastapi]")
+except Exception as _sentry_err:
+    log.warning("Sentry init échoué (non bloquant) : %s", _sentry_err)
+
 try:
     from api.security import install_pii_filter
     install_pii_filter()

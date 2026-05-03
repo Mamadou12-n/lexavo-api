@@ -48,6 +48,9 @@ lxml>=6.1.0                          # CVE-2026-41066
 python-dotenv>=1.0.1
 jinja2>=3.1.0                        # Templates HTML pour SEO programmatique
 
+# ─── Observabilité ──────────────────────────────────────────────────────────
+sentry-sdk[fastapi]>=2.0.0           # Error tracking + performance monitoring
+
 # ─── Testing ─────────────────────────────────────────────────────────────────
 pytest>=8.2.0
 pytest-asyncio>=0.23.0
