@@ -1,6 +1,10 @@
 """Router Student — /student/*."""
 
 import logging
+import os
+import base64
+import json
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Query
 from typing import Annotated, Optional
 
@@ -8,6 +12,29 @@ from api.auth import get_current_user as _get_current_user
 from api.routers.deps import get_api_key, limiter
 
 log = logging.getLogger("api.student")
+
+# ─── NotebookLM storage init (Option B — cookies sans Playwright) ─────────────
+# En prod Railway : NOTEBOOKLM_STORAGE=<base64 du storage.json>
+# En dev local : notebooklm login génère ~/.config/notebooklm/storage.json
+_NLM_STORAGE_PATH = Path.home() / ".config" / "notebooklm" / "storage.json"
+
+def _init_notebooklm_storage() -> bool:
+    """Initialise le fichier storage NotebookLM depuis la variable d'env Railway."""
+    encoded = os.environ.get("NOTEBOOKLM_STORAGE", "")
+    if not encoded:
+        return _NLM_STORAGE_PATH.exists()
+    try:
+        decoded = base64.b64decode(encoded).decode("utf-8")
+        json.loads(decoded)  # valide que c'est du JSON
+        _NLM_STORAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _NLM_STORAGE_PATH.write_text(decoded, encoding="utf-8")
+        log.info("NotebookLM storage initialisé depuis NOTEBOOKLM_STORAGE")
+        return True
+    except Exception as e:
+        log.warning(f"NotebookLM storage init échoué : {e}")
+        return False
+
+_NLM_READY = _init_notebooklm_storage()
 
 router = APIRouter(prefix="/student", tags=["student"])
 
@@ -1015,6 +1042,8 @@ async def create_notebooklm_notebook(
 ):
     """Crée un notebook NotebookLM depuis le contenu de l'étudiant et retourne l'URL partage."""
     import asyncio as _asyncio
+    if not _NLM_READY:
+        raise HTTPException(503, "NotebookLM non configuré sur ce serveur (NOTEBOOKLM_STORAGE manquant)")
     try:
         from notebooklm import NotebookLMClient
     except ImportError:
