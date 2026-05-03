@@ -17,8 +17,8 @@ LEXAVO
 ├── Retriever         → rag/retriever.py (9 alternatives de recherche mutuellement correctives)
 ├── Indexer Qdrant    → rag/indexer_qdrant.py (actif en prod)
 ├── Indexer ChromaDB  → rag/indexer.py (legacy, NON utilisé en prod — à archiver)
-├── Mobile Expo       → mobile/ (React Native 0.81.5, Expo SDK 54, 33 écrans, 6 composants)
-├── Scrapers          → scrapers/ (20+ scrapers : JUSTEL, HUDOC, EUR-Lex, SPF Finances, SPF Emploi, etc.)
+├── Mobile Expo       → mobile/ (React Native 0.81.5, Expo SDK 54, 33 écrans + LexavoHomeScreen, design system ivoire/terracotta/navy)
+├── Scrapers          → scrapers/ (26 scrapers : JUSTEL, HUDOC, EUR-Lex, SPF Finances, SPF Emploi, FSMA, BNB, IBPT, CREG, INAMI, AVOCATS.BE, IRE, doctrine PDF HAL/DIAL/UGENT/ORBI, etc.)
 ├── Tests             → tests/ (30 fichiers pytest, 55+ tests) + mobile/__tests__/ (60 jest)
 └── Déploiement       → Railway (Dockerfile multi-stage, PostgreSQL prod, Qdrant cloud)
 ```
@@ -78,7 +78,20 @@ LEXAVO
 | `mobile/src/screens/student/utils.js` | Utilitaires extraits de StudentScreen (refactor H.4) |
 | `mobile/src/i18n/translations.js` | 680 entrées, 8+1 langues (fr/nl/en/de/es/it/pt/ar/tr) — coverage 70% sur 5 écrans principaux |
 | `mobile/src/context/LanguageContext.js` | getDeviceLanguage() + fallback fr + clé unifiée @lexavo_lang |
-| `mobile/src/theme/designSystem.js` | Colors ivoire/terracotta/navy, EB Garamond+Nunito, tokens UI |
+| `mobile/src/theme/designSystem.js` | Colors ivoire/terracotta/navy, EB Garamond+Nunito, tokens UI — source unique de vérité |
+| `mobile/src/theme/colors.js` | Palette exportée séparément (brand, surface, text, states) |
+| `mobile/src/screens/LexavoHomeScreen.js` | Écran d'accueil alternatif (238 L) — FadeInDown stagger Reanimated |
+| `mobile/src/components/ui/Button.js` | Composant bouton design system |
+| `mobile/src/components/ui/Card.js` | Composant carte design system |
+| `mobile/src/components/ui/Disclaimer.js` | Disclaimer réutilisable (source unique — 1 seul fichier) |
+| `mobile/src/components/ui/ToolCard.js` | Carte outil avec Ionicons + accessibilityRole |
+
+### Composants partagés (mobile/src/components/)
+BadgeGrid, ChecklistStep, ConsentModal, ExtractedCard, ModelBadge, PhotoPicker, ResultCard, ScoreGauge, SourceBadge, SourceCard, StreakCounter, XPBar
+
+### Animations
+- `react-native-reanimated ~4.1.1` — FadeInDown.delay(index × 40ms).springify() sur grilles HomeScreen + LexavoHomeScreen
+- Tous les emojis UI → Ionicons (27 écrans, 203/203 boutons couverts)
 
 ### Features (20 modules)
 | Module | Modèle Claude | Description |
@@ -135,7 +148,7 @@ users, lawyers, conversations, messages, subscriptions, shield_analyses, newslet
 - **Auth** : JWT bcrypt 12 rounds, refresh tokens 30 jours, 8 langues, expo-secure-store mobile, account lockout 5 fails/15min
 - **Sécurité** : api/security.py — HSTS/CSP/X-Frame-DENY/Referrer-Policy/Permissions-Policy, PII masking, CORS strict whitelist, MIME magic bytes upload, admin audit log
 - **Paiement** : Stripe live (7 plans : free/basic/pro/business/firm_s/firm_m/enterprise), webhooks idempotents, beta gratuit jusqu'au 2026-10-01
-- **Mobile** : React Native 0.81.5, Expo SDK ~54.0.34, React Navigation 7.x, expo-secure-store, Ionicons (emojis → icônes)
+- **Mobile** : React Native 0.81.5, Expo SDK ~54.0.34, React Navigation 7.x, expo-secure-store, Ionicons, react-native-reanimated ~4.1.1
 - **i18n** : 680 entrées × 8+1 langues, coverage 70% sur 5 écrans principaux, RTL arabe
 - **Tests** : pytest 55+ tests backend (conftest.py, asyncio), jest 60 tests mobile (mocks expo-secure-store)
 - **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, Qdrant cloud)
@@ -336,7 +349,9 @@ Vérifications Phase F :
   - Branche WIP sauvegarde : `wip/2026-05-02-avant-fixes-p0` (138 fichiers, ~16K lignes, hash 49db384)
   - Commit audit CLAUDE.md : 35bb755
 
-- **Session 2026-05-03** : mise à jour CLAUDE.md — Qdrant prod, historique complet, corrections ChromaDB→Qdrant.
+- **Sessions 2026-04-29 → 2026-04-30** : scrapers régulateurs (FSMA, BNB, IBPT, CREG), professions (INAMI, AVOCATS.BE, IRE), doctrine PDF batch (HAL/DIAL/UGENT/ORBI), Code de la route + Douanes, Statut Camu, 10 codes belges manquants + 4 régionaux, CJUE Cellar, CCT + circulaires SPF.
+- **Sessions 2026-04-30 → 2026-05-01** : design system complet (ivoire/terracotta/navy, EB Garamond+Nunito, tokens), composants ui/ (Button/Card/Disclaimer/ToolCard), FadeInDown stagger Reanimated, emojis→Ionicons 27 écrans, accessibilityRole 203/203 boutons.
+- **Session 2026-05-03** : mise à jour CLAUDE.md — état réel complet, design system, scrapers, composants, animations.
 
 ### État Git
 
