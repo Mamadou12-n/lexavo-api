@@ -7,24 +7,17 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  Modal, Share, Alert, Image, Linking,
+  Modal, Share, Alert, Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 // expo-av retiré d'Expo Go SDK 54 → import lazy via require() pour éviter
-// "Exception in HostFunction" au chargement du bundle. Audio résolu uniquement
-// à l'appel de handlePlayPodcast (cf. ligne ~390).
+// "Exception in HostFunction" au chargement du bundle.
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   generateQuiz, generateFlashcards, generateSummary, askQuestion,
-  getStudentDashboard, postStudentActivity, getStudentLeaderboard,
   generateCaseStudy, evaluateCaseStudy, generateMockExam, submitMockExam,
-  getStudentBadges, getStudentWeakBranches, generateFreeRecall,
-  evaluateFreeRecall, generateInterleavedQuiz, generatePodcast, generatePodcastAudio, createNotebookLM,
-  createStudentGroup, joinStudentGroup, getStudentGroups,
-  getLMSStatus, getLMSUniversities, connectLMS, getLMSCourses,
-  getLMSCourseContent, importLMSContent, disconnectLMS,
-  shareNote, listSharedNotes, getSharedNote, likeSharedNote,
-  uploadNoteFile,
+  generateFreeRecall, evaluateFreeRecall, generateInterleavedQuiz,
+  likeSharedNote, uploadNoteFile,
 } from '../api/client';
 import * as DocumentPicker from 'expo-document-picker';
 import Markdown from 'react-native-markdown-display';
@@ -33,7 +26,14 @@ import XPBar from '../components/XPBar';
 import StreakCounter from '../components/StreakCounter';
 import BadgeGrid from '../components/BadgeGrid';
 import { colors, typography, spacing, radius } from '../theme/designSystem';
-import { XP_PER_LEVEL, MODES, fmtTime, computeQuizScore } from './student/utils';
+import { MODES, computeQuizScore } from './student/utils';
+import { useStudentData } from './student/hooks/useStudentData';
+import { useExamTimer } from './student/hooks/useExamTimer';
+import { useLMS } from './student/hooks/useLMS';
+import { useStudentGroups } from './student/hooks/useStudentGroups';
+import { useSharedNotes } from './student/hooks/useSharedNotes';
+import { usePodcast } from './student/hooks/usePodcast';
+import NotebookLMScreen from './student/NotebookLMScreen';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -63,17 +63,54 @@ const T = {
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function StudentScreen() {
   // Navigation interne
-  const [view, setView] = useState('dashboard'); // 'dashboard' | 'topic_input' | mode.id
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'notebooklm' | 'topic_input' | mode.id
   const [activeMode, setActiveMode] = useState(null);
   const [branch, setBranch] = useState(null);
 
-  // Dashboard data
-  const [dash, setDash] = useState(null);
-  const [weakBranches, setWeakBranches] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [badges, setBadges] = useState([]);
-  const [lbScope, setLbScope] = useState('global');
-  const [dashLoading, setDashLoading] = useState(false);
+  // ─── Hooks ──────────────────────────────────────────────────────────────────
+  const {
+    dash, badges, leaderboard, weakBranches,
+    lbScope, setLbScope,
+    xpEarned, setXpEarned, newBadges, setNewBadges,
+    awardXP, loadDashboard,
+    totalXP, level, streak, xpInLevel, earnedIds, XP_PER_LEVEL,
+  } = useStudentData();
+
+  const { examTimer, timerRef, startTimer, stopTimer, fmtTime } = useExamTimer({
+    onTimeUp: () => submitExamRef.current?.(),
+  });
+
+  const lms = useLMS();
+  const {
+    lmsConnected, lmsSiteName, lmsFullname, lmsCourses, lmsCourseContent,
+    lmsActiveCourse, lmsTab, setLmsTab, lmsModal, setLmsModal,
+    lmsUrl, setLmsUrl, lmsUser, setLmsUser, lmsPass, setLmsPass,
+    lmsLoading, lmsError, lmsUniversities,
+    loadLMSCourses, handleLMSConnect, handleLMSDisconnect,
+    openCourseContent, handleImportFile,
+  } = lms;
+
+  const {
+    groups, groupModal, setGroupModal, groupTab, setGroupTab,
+    groupName, setGroupName, joinCode, setJoinCode,
+    loadGroups, handleCreateGroup, handleJoinGroup,
+  } = useStudentGroups();
+
+  const {
+    notesModal, setNotesModal, notesTab, setNotesTab,
+    notesList, activeNote, setActiveNote, notesLoading,
+    notesSubjectFilter, setNotesSubjectFilter,
+    shareForm, setShareForm, uploadLoading,
+    uploadedDoc, setUploadedDoc,
+    loadNotes, openNote, handlePickFile, handleShareNote,
+  } = useSharedNotes();
+
+  const {
+    podcastResult, setPodcastResult,
+    audioLoading, audioPlaying, audioProgress,
+    generatePodcast: generatePodcastHook,
+    stopAudio, handlePlayPodcast,
+  } = usePodcast();
 
   // Modes communs
   const [loading, setLoading] = useState(false);
@@ -81,57 +118,40 @@ export default function StudentScreen() {
   const [error, setError] = useState(null);
   const [topic, setTopic] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [dashLoading, setDashLoading] = useState(false);
+  const [nlmLoading, setNlmLoading] = useState(false);
 
   // Quiz / Flashcards
   const [flippedCards, setFlipped] = useState({});
   const [selectedAnswers, setSelected] = useState({});
   const [showCorrections, setShowCorr] = useState(false);
 
-  // Chat (conversationnel — conversation_id persistant)
+  // Chat
   const [messages, setMessages] = useState([{ role: 'assistant', content: 'Salut ! Je suis ton tuteur IA en droit belge.\n\nPose-moi n\'importe quelle question, ou photographie tes notes.' }]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const chatScrollRef = useRef(null);
   const [conversationId, setConversationId] = useState(null);
 
-  // Notes partagées
-  const [notesModal, setNotesModal] = useState(false);
-  const [notesTab, setNotesTab] = useState('browse'); // browse | share | view
-  const [notesList, setNotesList] = useState([]);
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [notesSubjectFilter, setNotesSubjectFilter] = useState(null);
-  const [activeNote, setActiveNote] = useState(null);
-  const [shareForm, setShareForm] = useState({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadedDoc, setUploadedDoc] = useState({ text: '', filename: '' }); // document importé pour génération
-  const [podcastResult, setPodcastResult] = useState(null);
-  const [nlmLoading, setNlmLoading] = useState(false);
-  const [audioLoading, setAudioLoading] = useState(false);
-  const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audioProgress, setAudioProgress] = useState({ position: 0, duration: 0 });
-  const soundRef = useRef(null);
-
   // Cas pratique
   const [caseData, setCaseData] = useState(null);
   const [caseAnswer, setCaseAnswer] = useState('');
-  const [caseStep, setCaseStep] = useState('config'); // config|writing|result
+  const [caseStep, setCaseStep] = useState('config');
   const [caseDifficulty, setCaseDifficulty] = useState('moyen');
 
   // Examen blanc
   const [examData, setExamData] = useState(null);
   const [examAnswers, setExamAnswers] = useState({});
-  const [examStep, setExamStep] = useState('config'); // config|exam|result
+  const [examStep, setExamStep] = useState('config');
   const [examResult, setExamResult] = useState(null);
-  const [examTimer, setExamTimer] = useState(20 * 60);
   const [examBranches, setExamBranches] = useState([]);
-  const timerRef = useRef(null);
-  const submitExamRef = useRef(null); // ref pour éviter stale closure dans le timer
+  const submitExamRef = useRef(null);
 
   // Rappel libre
   const [recallQuestion, setRecallQuestion] = useState(null);
   const [recallAnswer, setRecallAnswer] = useState('');
   const [recallResult, setRecallResult] = useState(null);
-  const [recallStep, setRecallStep] = useState('config'); // config|writing|result
+  const [recallStep, setRecallStep] = useState('config');
 
   // Révision mixte
   const [mixBranches, setMixBranches] = useState([]);
@@ -139,78 +159,9 @@ export default function StudentScreen() {
   const [mixAnswers, setMixAnswers] = useState({});
   const [mixCorrections, setMixCorrections] = useState(false);
 
-  // XP animation
-  const [xpEarned, setXpEarned] = useState(null);
-  const [newBadges, setNewBadges] = useState([]);
-
-  // LMS (Moodle)
-  const [lmsConnected, setLmsConnected] = useState(false);
-  const [lmsSiteName, setLmsSiteName] = useState('');
-  const [lmsFullname, setLmsFullname] = useState('');
-  const [lmsCourses, setLmsCourses] = useState([]);
-  const [lmsModal, setLmsModal] = useState(false);
-  const [lmsTab, setLmsTab] = useState('connect'); // connect | courses | content
-  const [lmsUrl, setLmsUrl] = useState('');
-  const [lmsUser, setLmsUser] = useState('');
-  const [lmsPass, setLmsPass] = useState('');
-  const [lmsUniversities, setLmsUniversities] = useState([]);
-  const [lmsLoading, setLmsLoading] = useState(false);
-  const [lmsError, setLmsError] = useState('');
-  const [lmsCourseContent, setLmsCourseContent] = useState(null);
-  const [lmsActiveCourse, setLmsActiveCourse] = useState(null);
-
-  // Groupes
-  const [groups, setGroups] = useState([]);
-  const [groupModal, setGroupModal] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
-  const [groupTab, setGroupTab] = useState('list'); // list | create | join
-
-  // ─── Chargement dashboard ───────────────────────────────────────────────────
-  const loadDashboard = useCallback(async () => {
-    setDashLoading(true);
-    try {
-      const [d, wb, lb, bg] = await Promise.all([
-        getStudentDashboard().catch(() => null),
-        getStudentWeakBranches().catch(() => []),
-        getStudentLeaderboard('global').catch(() => []),
-        getStudentBadges().catch(() => ({ available: [], earned_ids: [] })),
-      ]);
-      if (d) setDash(d);
-      setWeakBranches(wb?.branches || []);
-      setLeaderboard(lb?.leaderboard || []);
-      setBadges(bg);
-    } catch (_) {}
-    finally { setDashLoading(false); }
-  }, []);
-
   useEffect(() => { if (view === 'dashboard') loadDashboard(); }, [view]);
 
-  useEffect(() => {
-    let mounted = true;
-    if (lbScope === 'global') {
-      getStudentLeaderboard('global').then(d => { if (mounted) setLeaderboard(d?.leaderboard || []); }).catch(() => {});
-    } else {
-      // lbScope = group ID
-      getStudentLeaderboard('group', lbScope).then(d => { if (mounted) setLeaderboard(d?.leaderboard || []); }).catch(() => {});
-    }
-    return () => { mounted = false; };
-  }, [lbScope]);
-
-  // Timer examen blanc — submitExamRef évite le stale closure
-  useEffect(() => {
-    if (examStep !== 'exam') return;
-    timerRef.current = setInterval(() => {
-      setExamTimer(t => {
-        if (t <= 1) { clearInterval(timerRef.current); submitExamRef.current?.(); return 0; }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [examStep]);
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
-  // fmtTime importé depuis ./student/utils
 
   const goMode = (m) => {
     if (m.disabled) { Alert.alert('Bientôt', 'Cette fonctionnalité arrive bientôt !'); return; }
@@ -218,9 +169,7 @@ export default function StudentScreen() {
     setResult(null); setError(null); setBranch(null); setTopic(''); setPhotos([]);
     setSelected({}); setShowCorr(false); setFlipped({});
     setUploadedDoc({ text: '', filename: '' });
-    // Tuteur IA → chat direct
     if (m.id === 'chat') { setView('chat'); return; }
-    // Tous les autres modes → écran conversationnel unifié
     if (m.id === 'case_study') { setCaseStep('config'); }
     if (m.id === 'mock_exam') { setExamStep('config'); setExamBranches([]); }
     if (m.id === 'free_recall') { setRecallStep('config'); }
@@ -237,16 +186,7 @@ export default function StudentScreen() {
     setUploadedDoc({ text: '', filename: '' });
     setPodcastResult(null);
     stopAudio();
-    clearInterval(timerRef.current);
-  };
-
-  const awardXP = async (mode, score, total) => {
-    try {
-      const r = await postStudentActivity(mode, branch || 'Général', score, total);
-      if (r?.xp_earned > 0) setXpEarned(r.xp_earned);
-      if (r?.new_badges?.length > 0) setNewBadges(r.new_badges);
-      loadDashboard();
-    } catch (_) {}
+    stopTimer();
   };
 
   const getScore = () => computeQuizScore(result, selectedAnswers);
@@ -285,12 +225,9 @@ export default function StudentScreen() {
     try {
       const data = await askQuestion(text || 'Analyse ces notes', {
         photos, top_k: 4,
-        conversation_id: conversationId, // multi-tour
+        conversation_id: conversationId,
       });
-      // Sauvegarder le conversation_id pour les échanges suivants
-      if (data.conversation_id && !conversationId) {
-        setConversationId(data.conversation_id);
-      }
+      if (data.conversation_id && !conversationId) setConversationId(data.conversation_id);
       setMessages(prev => [...prev, { role: 'assistant', content: data.answer }]);
       setPhotos([]);
     } catch (e) {
@@ -301,49 +238,6 @@ export default function StudentScreen() {
     }
   };
 
-  // ─── Notes partagées ──────────────────────────────────────────────────────
-  const loadNotes = async (subject = null) => {
-    setNotesLoading(true);
-    try {
-      const data = await listSharedNotes(subject);
-      setNotesList(data);
-    } catch (_) {}
-    finally { setNotesLoading(false); }
-  };
-
-  const openNote = async (noteId) => {
-    try {
-      const note = await getSharedNote(noteId);
-      setActiveNote(note);
-      setNotesTab('view');
-    } catch (_) { Alert.alert('Erreur', 'Impossible de charger cette note'); }
-  };
-
-  const handlePickFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf',
-               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-               'text/plain'],
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      setUploadLoading(true);
-      const data = await uploadNoteFile(asset.uri, asset.name, asset.mimeType || 'application/octet-stream');
-      setShareForm(p => ({
-        ...p,
-        content: data.extracted_text,
-        title: p.title || asset.name.replace(/\.[^.]+$/, ''),
-      }));
-      Alert.alert('Fichier importé', `${data.char_count} caractères extraits depuis "${asset.name}". Tu peux relire et modifier avant de partager.`);
-    } catch (e) {
-      Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
   const startPodcast = async () => {
     const subject = topic.trim() || branch;
     if (!subject && !uploadedDoc.text) { setError('Dis-moi ce que tu veux étudier ou importe un document.'); return; }
@@ -351,95 +245,30 @@ export default function StudentScreen() {
     setBranch(branchName);
     setLoading(true); setPodcastResult(null); setError(null);
     try {
-      const d = await generatePodcast(branchName, topic, uploadedDoc.text || '');
-      setPodcastResult(d);
+      const d = await generatePodcastHook(branchName, uploadedDoc.text || '');
       setView('podcast');
     } catch (e) { setError(e.response?.data?.detail || e.message || 'Erreur réseau'); }
     finally { setLoading(false); }
   };
 
-  const stopAudio = async () => {
-    if (soundRef.current) {
-      await soundRef.current.stopAsync().catch(() => {});
-      await soundRef.current.unloadAsync().catch(() => {});
-      soundRef.current = null;
-    }
-    setAudioPlaying(false);
-    setAudioProgress({ position: 0, duration: 0 });
-  };
-
-  const handlePlayPodcast = async () => {
-    if (audioPlaying) { await stopAudio(); return; }
-    if (!podcastResult?.script?.length) return;
-    setAudioLoading(true);
-    try {
-      const data = await generatePodcastAudio(podcastResult.script);
-      const uri = `data:audio/mp3;base64,${data.audio_base64}`;
-      // Lazy require — évite crash "Runtime not ready" sur Expo Go SDK 54
-      const { Audio } = require('expo-av');
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync({ uri });
-      soundRef.current = sound;
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setAudioProgress({ position: status.positionMillis || 0, duration: status.durationMillis || 0 });
-          if (status.didJustFinish) { setAudioPlaying(false); setAudioProgress({ position: 0, duration: 0 }); soundRef.current = null; }
-        }
-      });
-      await sound.playAsync();
-      setAudioPlaying(true);
-    } catch (e) {
-      Alert.alert('Erreur audio', e.message || 'Impossible de générer l\'audio');
-    } finally {
-      setAudioLoading(false);
-    }
-  };
-
-  const handleOpenNotebookLM = async (contentText, title) => {
-    // Collecter le meilleur contenu disponible
-    let text = contentText || uploadedDoc.text || '';
-    if (!text && result?.summary) text = result.summary;
-    if (!text && result?.questions) text = result.questions.map(q => `Q: ${q.question}\nR: ${q.explanation || q.correct}`).join('\n\n');
-    if (!text && result?.cards) text = result.cards.map(c => `${c.front}\n→ ${c.back}`).join('\n\n');
-    if (!text && podcastResult?.script) text = podcastResult.script.map(l => `${l.speaker}: ${l.text}`).join('\n\n');
-    if (!text && branch) text = `Notes de cours sur : ${branch}. Matière de droit belge à approfondir.`;
-
-    // Si toujours rien, ouvrir NLM directement
-    if (!text || text.length < 50) {
-      Linking.openURL('https://notebooklm.google.com');
-      return;
-    }
-
-    setNlmLoading(true);
-    try {
-      const data = await createNotebookLM(title || branch || 'Notes Lexavo', text, branch || '');
-      Linking.openURL(data.url);
-    } catch (e) {
-      Linking.openURL('https://notebooklm.google.com');
-      Alert.alert('NotebookLM', 'Ouverture directe — colle ton contenu manuellement si besoin.');
-    } finally {
-      setNlmLoading(false);
-    }
-  };
+  // Ouvre la WebView NotebookLM intégrée (chaque étudiant utilise son propre compte Google)
+  const handleOpenNotebookLM = () => setView('notebooklm');
 
   const handlePickDocForStudy = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
+      const res = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf',
                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                'text/plain'],
         copyToCacheDirectory: true,
       });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      setUploadLoading(true);
+      if (res.canceled || !res.assets?.[0]) return;
+      const asset = res.assets[0];
       const data = await uploadNoteFile(asset.uri, asset.name, asset.mimeType || 'application/octet-stream');
       setUploadedDoc({ text: data.extracted_text, filename: asset.name });
       if (!topic.trim()) setTopic(asset.name.replace(/\.[^.]+$/, ''));
     } catch (e) {
       Alert.alert('Erreur', e.message || 'Impossible d\'importer ce fichier');
-    } finally {
-      setUploadLoading(false);
     }
   };
 
@@ -460,27 +289,6 @@ export default function StudentScreen() {
       }},
       { text: 'Annuler', style: 'cancel' },
     ]);
-  };
-
-  const handleShareNote = async () => {
-    const { title, subject, content, university, year, anonymous, authorName } = shareForm;
-    if (!title.trim() || !content.trim()) {
-      Alert.alert('Champs requis', 'Titre et contenu sont obligatoires');
-      return;
-    }
-    try {
-      await shareNote({
-        title: title.trim(), subject, contentText: content.trim(),
-        university: university.trim() || null, studyYear: year.trim() || null,
-        isAnonymous: anonymous, authorName: authorName.trim() || null,
-      });
-      Alert.alert('Partagé !', 'Ta note est maintenant disponible pour tous les étudiants.');
-      setShareForm({ title: '', subject: 'droit_civil', content: '', university: '', year: '', anonymous: true, authorName: '' });
-      setNotesTab('browse');
-      loadNotes();
-    } catch (e) {
-      Alert.alert('Erreur', e.response?.data?.detail || 'Impossible de partager');
-    }
   };
 
   // ─── Cas pratique ──────────────────────────────────────────────────────────
@@ -584,102 +392,11 @@ export default function StudentScreen() {
 
   // toggleMixBranch / toggleExamBranch supprimés — tout passe par topic_input
 
-  // ─── Groupes ───────────────────────────────────────────────────────────────
-  const loadGroups = async () => {
-    try { const g = await getStudentGroups(); setGroups(g?.groups || []); } catch (_) {}
-  };
-
-  const handleCreateGroup = async () => {
-    if (!groupName.trim()) return;
-    try {
-      const g = await createStudentGroup(groupName.trim());
-      Alert.alert('Groupe créé !', `Code d\'invitation : ${g.code}\nPartage ce code avec tes amis.`);
-      setGroupName(''); setGroupTab('list'); loadGroups();
-    } catch (e) { Alert.alert('Erreur', e.message); }
-  };
-
-  const handleJoinGroup = async () => {
-    if (!joinCode.trim()) return;
-    try {
-      await joinStudentGroup(joinCode.trim().toUpperCase());
-      Alert.alert('Rejoint !', 'Tu as rejoint le groupe.'); setJoinCode(''); setGroupTab('list'); loadGroups();
-    } catch (e) { Alert.alert('Erreur', e.message); }
-  };
-
   const shareResult = async (label) => {
     try { await Share.share({ message: `🎓 Lexavo Campus — ${label}\n\nTélécharge l\'app Lexavo pour étudier le droit belge !` }); }
     catch (_) {}
   };
 
-  // ─── LMS (Moodle) ─────────────────────────────────────────────────────────
-  const loadLMSStatus = async () => {
-    try {
-      const s = await getLMSStatus();
-      setLmsConnected(s.connected);
-      if (s.connected) { setLmsSiteName(s.site_name || ''); setLmsFullname(s.user_fullname || ''); }
-    } catch (_) {}
-  };
-
-  const loadLMSCourses = async () => {
-    setLmsLoading(true); setLmsError('');
-    try {
-      const d = await getLMSCourses();
-      setLmsCourses(d?.courses || []);
-      setLmsTab('courses');
-    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
-    finally { setLmsLoading(false); }
-  };
-
-  const handleLMSConnect = async () => {
-    if (!lmsUrl.trim() || !lmsUser.trim() || !lmsPass) { setLmsError('Remplis tous les champs'); return; }
-    setLmsLoading(true); setLmsError('');
-    try {
-      const r = await connectLMS(lmsUrl.trim(), lmsUser.trim(), lmsPass);
-      setLmsConnected(true);
-      setLmsSiteName(r.site_name || '');
-      setLmsFullname(r.user_fullname || '');
-      setLmsPass(''); // Ne pas garder le mot de passe
-      Alert.alert('Connecté !', `${r.site_name}\n${r.user_fullname}`);
-      loadLMSCourses();
-    } catch (e) { setLmsError(e.response?.data?.detail || e.message || 'Échec de connexion'); }
-    finally { setLmsLoading(false); }
-  };
-
-  const handleLMSDisconnect = async () => {
-    Alert.alert('Déconnexion', 'Tu perdras l\'accès à tes cours importés.', [
-      { text: 'Annuler' },
-      { text: 'Déconnecter', style: 'destructive', onPress: async () => {
-        try {
-          await disconnectLMS();
-          setLmsConnected(false); setLmsCourses([]); setLmsSiteName(''); setLmsFullname('');
-          setLmsTab('connect');
-        } catch (_) {}
-      }},
-    ]);
-  };
-
-  const openCourseContent = async (course) => {
-    setLmsActiveCourse(course);
-    setLmsLoading(true); setLmsError('');
-    try {
-      const d = await getLMSCourseContent(course.id);
-      setLmsCourseContent(d?.sections || []);
-      setLmsTab('content');
-    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
-    finally { setLmsLoading(false); }
-  };
-
-  const handleImportFile = async (fileUrl, courseName, courseId) => {
-    setLmsLoading(true); setLmsError('');
-    try {
-      const r = await importLMSContent(fileUrl, courseId, courseName);
-      Alert.alert('Importé !', `${r.content_length} caractères extraits.\nCe contenu sera utilisé pour tes quiz et flashcards.`);
-    } catch (e) { setLmsError(e.response?.data?.detail || e.message); }
-    finally { setLmsLoading(false); }
-  };
-
-  // Charger le statut LMS au montage
-  useEffect(() => { loadLMSStatus(); }, []);
 
   // ─── XP notification overlay ────────────────────────────────────────────────
   const XPNotif = () => {
@@ -704,6 +421,11 @@ export default function StudentScreen() {
   // ════════════════════════════════════════════════════════════════════════════
   //  RENDER
   // ════════════════════════════════════════════════════════════════════════════
+
+  // ─── NotebookLM — WebView intégrée (chaque étudiant utilise son compte Google)
+  if (view === 'notebooklm') {
+    return <NotebookLMScreen onBack={() => setView('dashboard')} />;
+  }
 
   // ─── Écran conversationnel unifié (remplace la grille de branches) ─────────
   if (view === 'topic_input') {
@@ -1397,13 +1119,8 @@ export default function StudentScreen() {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  DASHBOARD principal
+  //  DASHBOARD principal  (totalXP, level, streak, xpInLevel, earnedIds, XP_PER_LEVEL viennent de useStudentData)
   // ════════════════════════════════════════════════════════════════════════════
-  const totalXP = dash?.total_xp || 0;
-  const level = dash?.level || 1;
-  const streak = dash?.streak_count || 0;
-  const xpInLevel = totalXP % XP_PER_LEVEL;
-  const earnedIds = (badges?.earned_ids || []);
 
   return (
     <View style={s.root}>
