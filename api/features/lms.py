@@ -31,18 +31,32 @@ _PRIVATE_NETWORKS = [
 
 
 def _validate_lms_url(url: str) -> None:
-    """Lève ValueError si l'URL pointe vers une IP privée ou cloud metadata."""
+    """
+    Lève ValueError si l'URL pointe vers une IP privée ou cloud metadata.
+    Protection SSRF : HTTPS obligatoire + résolution DNS + blocage redirections.
+    """
     parsed = urlparse(url)
-    if parsed.scheme not in ('https', 'http'):
-        raise ValueError("L'URL doit commencer par https:// ou http://")
+    # HTTPS uniquement en prod — bloquer http pour éviter MITM + redirections vers metadata
+    if parsed.scheme != 'https':
+        raise ValueError("L'URL doit commencer par https://")
     host = parsed.hostname
     if not host:
         raise ValueError("URL invalide : hôte manquant")
-    # Résoudre le nom de domaine → IP
+    # Bloquer les IPs littérales directement dans l'URL (ex: https://169.254.169.254/...)
+    try:
+        direct_ip = ipaddress.ip_address(host)
+        raise ValueError(f"Connexion refusée : adresse IP directe non autorisée ({host})")
+    except ValueError as e:
+        if "non autorisée" in str(e):
+            raise
+        # host est un nom de domaine, pas une IP — continuer
+    # Résoudre le nom de domaine → IP et vérifier chaque adresse résolue
     try:
         infos = socket.getaddrinfo(host, None)
     except socket.gaierror:
         raise ValueError(f"Impossible de résoudre l'hôte : {host}")
+    if not infos:
+        raise ValueError(f"Résolution DNS vide pour : {host}")
     for info in infos:
         ip_str = info[4][0]
         try:
@@ -52,7 +66,7 @@ def _validate_lms_url(url: str) -> None:
         for net in _PRIVATE_NETWORKS:
             if ip in net:
                 raise ValueError(
-                    f"Connexion refusée : l'URL pointe vers une adresse réseau privée ({ip_str})"
+                    f"Connexion refusée : l'URL résout vers une adresse réseau privée ({ip_str})"
                 )
 
 # ─── Universités belges connues ───────────────────────────────────────────────
@@ -84,7 +98,9 @@ def moodle_authenticate(site_url: str, username: str, password: str) -> str:
             'username': username,
             'password': password,
             'service': MOODLE_SERVICE,
-        }, timeout=15)
+        }, timeout=15, allow_redirects=False)
+        if r.status_code in (301, 302, 303, 307, 308):
+            raise ValueError(f"Redirection refusée vers {r.headers.get('Location', '?')} — possible SSRF")
         data = r.json()
     except requests.RequestException as e:
         raise ValueError(f"Impossible de joindre {site_url}: {e}")
@@ -105,7 +121,9 @@ def moodle_call(site_url: str, token: str, function: str, **params) -> dict:
         **params,
     }
     try:
-        r = requests.post(url, data=payload, timeout=20)
+        r = requests.post(url, data=payload, timeout=20, allow_redirects=False)
+        if r.status_code in (301, 302, 303, 307, 308):
+            raise ValueError(f"Redirection refusée — possible SSRF")
         data = r.json()
     except requests.RequestException as e:
         raise ValueError(f"Erreur API Moodle: {e}")
@@ -189,7 +207,9 @@ def download_and_extract(site_url: str, token: str, file_url: str) -> str:
     download_url = f"{file_url}{'&' if '?' in file_url else '?'}token={token}"
 
     try:
-        r = requests.get(download_url, timeout=30, allow_redirects=True)
+        r = requests.get(download_url, timeout=30, allow_redirects=False)
+        if r.status_code in (301, 302, 303, 307, 308):
+            raise ValueError(f"Redirection refusée lors du téléchargement — possible SSRF")
         r.raise_for_status()
     except requests.RequestException as e:
         raise ValueError(f"Impossible de télécharger: {e}")
