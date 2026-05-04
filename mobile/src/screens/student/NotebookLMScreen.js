@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TouchableOpacity, ActivityIndicator,
-  StyleSheet, SafeAreaView, Platform,
+  StyleSheet, Platform,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { colors } from '../../theme/designSystem';

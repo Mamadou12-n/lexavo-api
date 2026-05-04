@@ -21,6 +21,7 @@ export default function AskScreen() {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const [question, setQuestion] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
   const [answer, setAnswer]     = useState(null);
   const [sources, setSources]   = useState([]);
   const [loading, setLoading]   = useState(false);
@@ -119,13 +120,15 @@ export default function AskScreen() {
         <View style={styles.inputCard}>
           <Text style={styles.inputLabel}>{t('ask_input_label')}</Text>
           <TextInput
-            style={styles.textArea}
+            style={[styles.textArea, inputFocused && styles.textAreaFocused]}
             multiline
             numberOfLines={4}
             placeholder={t('ask_placeholder')}
             placeholderTextColor={colors.textMuted}
             value={question}
             onChangeText={(val) => { setQuestion(val); resetFade(); }}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             textAlignVertical="top"
             accessibilityLabel={t('ask_input_label')}
           />
@@ -373,6 +376,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     lineHeight: 20,
+  },
+  textAreaFocused: {
+    borderColor: colors.brand,
+    borderWidth: 2,
   },
 
   filterToggle: { marginTop: 8, alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },

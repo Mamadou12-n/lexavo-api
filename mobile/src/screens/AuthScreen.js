@@ -29,6 +29,7 @@ export default function AuthScreen({ onAuthSuccess }) {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
   const [forgotSent, setForgotSent] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
   const isLogin = mode === 'login';
   const isForgot = mode === 'forgot';
@@ -141,9 +142,11 @@ export default function AuthScreen({ onAuthSuccess }) {
             <View style={styles.field}>
               <Text style={styles.label}>{t('auth_full_name')}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedField === 'name' && styles.inputFocused]}
                 value={name}
                 onChangeText={setName}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="Jean Dupont"
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="words"
@@ -158,9 +161,11 @@ export default function AuthScreen({ onAuthSuccess }) {
           <View style={styles.field}>
             <Text style={styles.label}>{t('auth_email')}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedField === 'email' && styles.inputFocused]}
               value={email}
               onChangeText={setEmail}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
               placeholder="votre@email.be"
               placeholderTextColor={colors.textMuted}
               keyboardType="email-address"
@@ -175,9 +180,11 @@ export default function AuthScreen({ onAuthSuccess }) {
           <View style={styles.field}>
             <Text style={styles.label}>{t('auth_password')}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedField === 'password' && styles.inputFocused]}
               value={password}
               onChangeText={setPassword}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
               placeholder={t('auth_password_hint')}
               placeholderTextColor={colors.textMuted}
               secureTextEntry
@@ -242,9 +249,11 @@ export default function AuthScreen({ onAuthSuccess }) {
                   <View style={styles.field}>
                     <Text style={styles.label}>{t('auth_email')}</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, focusedField === 'forgot-email' && styles.inputFocused]}
                       value={email}
                       onChangeText={setEmail}
+                      onFocus={() => setFocusedField('forgot-email')}
+                      onBlur={() => setFocusedField(null)}
                       placeholder="votre@email.be"
                       placeholderTextColor={colors.textMuted}
                       keyboardType="email-address"
@@ -357,6 +366,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  inputFocused: {
+    borderColor: colors.brand,
+    borderWidth: 2,
   },
 
   errorBox: {
