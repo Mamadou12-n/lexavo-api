@@ -268,14 +268,14 @@ Vérifications Phase F :
 - 14 duplications du pattern `json.loads(json_match.group())` dans 8 features
 - 1 seule migration Alembic (schéma figé)
 - Mobile : god components (StudentScreen 2451 L, SubscriptionScreen, ShieldScreen)
-- Pas de Sentry, pas de TypeScript, pas de linter/formatter, pas d'ADR
+- ~~Pas de Sentry~~ **✅ Sentry React Native intégré (2026-05-04)** — pas de TypeScript, pas de linter/formatter, pas d'ADR
 - 30 fichiers de tests backend mais **0 test RAG**
 
 ### Findings UX/A11y détaillés
 
-- WCAG 2.1 AA : 65-70% conforme
-- Critique : SafeAreaProvider importé mais non wrappé → notch overlap iOS
-- Critique : TextInput sans focus ring (Auth + Ask)
+- WCAG 2.1 AA : 65-70% conforme → **✅ fixes 2026-05-04 : SafeAreaView + focus ring**
+- ~~Critique : SafeAreaProvider importé mais non wrappé → notch overlap iOS~~ **✅ CORRIGÉ** (NotebookLMScreen.js)
+- ~~Critique : TextInput sans focus ring (Auth + Ask)~~ **✅ CORRIGÉ** (AuthScreen.js + AskScreen.js)
 - Caption font 11pt + tabBar 10pt = sous WCAG AA
 - BCE/VAT placeholder `[NUMÉRO BCE À COMPLÉTER]` non remplacé !
 - 30% des écrans avec strings FR hardcodés (i18n incomplète)
@@ -310,27 +310,27 @@ Vérifications Phase F :
 
 ### Quick wins 1 semaine (cibles 8.0/10)
 
-1. Rotation secrets + suppression `.env` disque (30 min)
-2. Cap quota beta dur (30 min)
-3. SSRF whitelist sur `lms.py` (1h)
-4. Prompt caching `ephemeral` Anthropic (2h)
-5. Pool DB PostgreSQL `asyncpg` ou `pool_size` (30 min)
-6. Pre-warm SentenceTransformer + Qdrant (2h)
-7. Streaming SSE sur `/ask` (1j)
-8. Payload index Qdrant + TextIndexParams (2h)
-9. Sentry SDK Python + React Native (4h)
-10. Helper `extract_json_from_claude()` mutualisé (4h)
-11. Fix SafeAreaView iOS notch wrap (30 min)
-12. TextInput focus ring (Auth + Ask) (45 min)
-13. Cap quota free + paywall progressif (1j)
-14. CI GitHub Actions bloquante (1j)
-15. Eval set 50 Q/A gold + script `eval.py` (2j)
+1. Rotation secrets + suppression `.env` disque (30 min) — **⏳ à faire par Mamadou**
+2. Cap quota beta dur (30 min) — **⏳ à faire**
+3. SSRF whitelist sur `lms.py` (1h) — **⏳ à faire**
+4. Prompt caching `ephemeral` Anthropic (2h) — **⏳ à faire**
+5. Pool DB PostgreSQL `asyncpg` ou `pool_size` (30 min) — **⏳ à faire**
+6. Pre-warm SentenceTransformer + Qdrant (2h) — **⏳ à faire**
+7. Streaming SSE sur `/ask` (1j) — **⏳ à faire**
+8. Payload index Qdrant + TextIndexParams (2h) — **⏳ à faire**
+9. Sentry SDK Python + React Native (4h) — **✅ FAIT (2026-05-04)** — React Native done, Python à faire
+10. Helper `extract_json_from_claude()` mutualisé (4h) — **⏳ à faire**
+11. Fix SafeAreaView iOS notch wrap (30 min) — **✅ FAIT (2026-05-04)** commit c90193a
+12. TextInput focus ring (Auth + Ask) (45 min) — **✅ FAIT (2026-05-04)** commit c90193a
+13. Cap quota free + paywall progressif (1j) — **⏳ à faire**
+14. CI GitHub Actions bloquante (1j) — **✅ FAIT (2026-05-04)** commit c90193a
+15. Eval set 50 Q/A gold + script `eval.py` (2j) — **⏳ à faire**
 
 **Total : 7-8 jours dev concentré → 6.6/10 → 8.0/10 = RELEASE-READY**
 
 ---
 
-## Historique sessions récentes (2026-05-01 → 2026-05-03)
+## Historique sessions récentes (2026-05-01 → 2026-05-04)
 
 ### Ce qui a été fait
 
@@ -353,13 +353,22 @@ Vérifications Phase F :
 - **Sessions 2026-04-30 → 2026-05-01** : design system complet (ivoire/terracotta/navy, EB Garamond+Nunito, tokens), composants ui/ (Button/Card/Disclaimer/ToolCard), FadeInDown stagger Reanimated, emojis→Ionicons 27 écrans, accessibilityRole 203/203 boutons.
 - **Session 2026-05-03** : mise à jour CLAUDE.md — état réel complet, design system, scrapers, composants, animations.
 
+- **Session 2026-05-04** : Quick wins post-audit (tâches 2-5) — 4 commits :
+  - **Tâche 2** ✅ Fix SafeAreaView iOS notch — `NotebookLMScreen.js` importe depuis `react-native-safe-area-context`
+  - **Tâche 3** ✅ Focus ring WCAG 2.1 AA — `AuthScreen.js` (4 champs) + `AskScreen.js` (textarea) avec onFocus/onBlur + bordure brand
+  - **Tâche 4** ✅ CI GitHub Actions — `.github/workflows/ci.yml` : pytest Python 3.11 (sqlite) + jest Node 20
+  - **Tâche 5** ✅ Sentry React Native SDK — `App.js` (init + wrap), `app.json` (plugin), `metro.config.js` (getSentryExpoConfig), `.env` (DSN)
+  - Commit groupé fichiers source non trackés : api/routers/ (9 modules), tests/ (6 nouveaux), hooks/ (6), scripts racine, utils/
+
 ### État Git
 
 - Branche principale : `main`
 - Branche WIP sauvegarde : `wip/2026-05-02-avant-fixes-p0` (138 fichiers, hash 49db384)
 - Commit Phase H (v2.1.0) : d962312
 - Commit Phase F (92/100) : a046414
-- Commit audit CLAUDE.md : 35bb755
+- Commit quick wins mobile (tâches 2-4) : c90193a
+- Commit Sentry React Native : d26f99e
+- Commit fichiers source non trackés : 8ab51b5
 
 ### Vrai DB vectorielle en prod
 
@@ -368,12 +377,16 @@ Vérifications Phase F :
 
 ### Prochaines actions prioritaires (dans l'ordre)
 
-1. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars
-2. Cap quota beta dur (50 req/mois free)
-3. SSRF whitelist sur `/student/lms/connect` dans `api/features/lms.py`
-4. Retirer `chromadb` de `requirements.txt` (legacy)
-5. Prompt caching `ephemeral` Anthropic (économie 30-80€/mois)
-6. Pool DB PostgreSQL
-7. Streaming SSE `/ask` (UX 12s → <3s perceived)
-8. Sentry SDK Python + React Native
-9. Eval set 50 Q/A gold standard + `eval.py`
+1. ~~Fix SafeAreaView iOS notch~~ ✅ FAIT 2026-05-04
+2. ~~Focus ring WCAG TextInput (Auth + Ask)~~ ✅ FAIT 2026-05-04
+3. ~~CI GitHub Actions bloquante~~ ✅ FAIT 2026-05-04
+4. ~~Sentry React Native SDK~~ ✅ FAIT 2026-05-04 — **⚠️ reste : `npx expo install @sentry/react-native` + DSN dans Railway**
+5. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars — **⏳ Mamadou**
+6. Cap quota beta dur (50 req/mois free)
+7. SSRF whitelist sur `/student/lms/connect` dans `api/features/lms.py`
+8. Retirer `chromadb` de `requirements.txt` (legacy)
+9. Prompt caching `ephemeral` Anthropic (économie 30-80€/mois)
+10. Pool DB PostgreSQL
+11. Streaming SSE `/ask` (UX 12s → <3s perceived)
+12. Sentry SDK Python (backend FastAPI)
+13. Eval set 50 Q/A gold standard + `eval.py`
