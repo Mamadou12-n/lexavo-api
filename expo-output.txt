@@ -1,0 +1,20 @@
+env: load .env
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_PROJECT_ID
+Starting project at C:\Users\bahma\Downloads\base-juridique-app\mobile
+Starting Metro Bundler
+Tunnel connected.
+Tunnel ready.
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+iOS .\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 1046ms index.js (1302 modules)
+ ERROR  [runtime not ready]: ReferenceError: Property 'SCREEN_WIDTH' doesn't exist
+iOS .\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 62ms index.js (1 module)
+ ERROR  [runtime not ready]: ReferenceError: Property 'SCREEN_WIDTH' doesn't exist
+iOS .\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 1127ms index.js (1 module)
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ WARN  [Notifications] Token error: Error encountered while fetching Expo token, expected an OK response, received: 400 (body: "{"errors":[{"code":"VALIDATION_ERROR","type":"USER","message":"\"projectId\": Invalid uuid.","isTransient":false,"requestId":"9046a08d-2b73-4e04-bffd-26738ca7f9bb"}]}").

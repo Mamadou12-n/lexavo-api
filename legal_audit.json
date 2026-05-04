@@ -1,0 +1,676 @@
+[
+  {
+    "source": "spf_finances",
+    "timestamp": "2026-04-06T11:28:19.528176",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://finances.belgium.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "spf_emploi",
+    "timestamp": "2026-04-06T11:28:21.750826",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://emploi.belgique.be/robots.txt",
+        "status": 404,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "cbe",
+    "timestamp": "2026-04-06T11:28:23.615588",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://economie.fgov.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": false,
+        "legal_basis": "A VERIFIER MANUELLEMENT",
+        "ok": false
+      }
+    },
+    "passed": false
+  },
+  {
+    "source": "datagov",
+    "timestamp": "2026-04-06T11:28:25.688972",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://data.gov.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "apd",
+    "timestamp": "2026-04-06T11:28:50.116781",
+    "checks": {
+      "connectivity": {
+        "status": 0,
+        "ok": false,
+        "error": "HTTPSConnectionPool(host='www.apd-gba.be', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"HTTPSConnection(host='www.apd-gba.be', port=443): Failed to resolve 'www.apd-gba.be' ([Errno 11001] getaddrinfo failed)\"))"
+      },
+      "robots_txt": {
+        "ok": true,
+        "note": "robots.txt non accessible: HTTPSConnectionPool(host='www.apd-gba.be', port=443): Max retries exceeded with url: /robots.txt (Caused by NameResolutionError(\"HTTPSConnection(host='www.apd-gba.be', port=443): Failed to resolve 'www.apd-gba.be' ([Errno 11001] getaddrinfo failed)\"))"
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": false
+  },
+  {
+    "source": "cbe",
+    "timestamp": "2026-04-06T11:30:04.729819",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://economie.fgov.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "apd",
+    "timestamp": "2026-04-06T11:30:49.136783",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.autoriteprotectiondonnees.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "codex_vlaanderen",
+    "timestamp": "2026-04-06T11:32:00.777128",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://codex.opendata.api.vlaanderen.be/robots.txt",
+        "status": 404,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "eurlex",
+    "timestamp": "2026-04-06T11:32:06.990324",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://eur-lex.europa.eu/robots.txt",
+        "status": 200,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "apd",
+    "timestamp": "2026-04-06T11:32:11.508900",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.autoriteprotectiondonnees.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "moniteur",
+    "timestamp": "2026-04-06T11:32:16.917406",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.ejustice.just.fgov.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "cnt",
+    "timestamp": "2026-04-06T11:32:22.278336",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://cnt-nar.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "consconst",
+    "timestamp": "2026-04-06T11:32:25.005659",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.const-court.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "wallex",
+    "timestamp": "2026-04-06T11:32:33.947162",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://wallex.wallonie.be/robots.txt",
+        "status": 404,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "chambre",
+    "timestamp": "2026-04-06T11:33:33.228484",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.lachambre.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "bruxelles",
+    "timestamp": "2026-04-06T11:34:26.392846",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://etaamb.openjustice.be/robots.txt",
+        "status": 404,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "codex_vlaanderen",
+    "timestamp": "2026-04-06T11:37:30.501253",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://codex.opendata.api.vlaanderen.be/robots.txt",
+        "status": 404,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "eurlex_legislation",
+    "timestamp": "2026-04-06T11:38:57.851290",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://eur-lex.europa.eu/robots.txt",
+        "status": 200,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "juridat",
+    "timestamp": "2026-04-06T11:39:38.139860",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://juportal.be/robots.txt",
+        "status": 200,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "moniteur",
+    "timestamp": "2026-04-06T11:40:45.127954",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.ejustice.just.fgov.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "juridat",
+    "timestamp": "2026-04-06T12:01:27.501185",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://juportal.be/robots.txt",
+        "status": 200,
+        "has_restrictions": false,
+        "ok": true
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "conseil_etat",
+    "timestamp": "2026-04-06T12:01:28.320117",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.raadvst-consetat.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "cce",
+    "timestamp": "2026-04-06T12:01:28.543616",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.rvv-cce.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "gallilex",
+    "timestamp": "2026-04-06T12:08:35.157575",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.gallilex.cfwb.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  },
+  {
+    "source": "ccrek",
+    "timestamp": "2026-04-06T14:31:17.947898",
+    "checks": {
+      "connectivity": {
+        "status": 200,
+        "ok": true
+      },
+      "robots_txt": {
+        "url": "https://www.ccrek.be/robots.txt",
+        "status": 200,
+        "has_restrictions": true,
+        "ok": false
+      },
+      "cgu": {
+        "url": "non fournie",
+        "note": "Verification manuelle recommandee",
+        "ok": true
+      },
+      "legal_basis": {
+        "is_known_free_source": true,
+        "legal_basis": "art. XI.172 §2 CDE / CGU site / licence ouverte",
+        "ok": true
+      }
+    },
+    "passed": true
+  }
+]

@@ -21,6 +21,7 @@ USE_PG = bool(DATABASE_URL)
 if USE_PG:
     import psycopg2
     from psycopg2.extras import RealDictCursor
+    from psycopg2 import pool as _pg_pool
     log.info("Database: PostgreSQL")
 else:
     _default_db = str(Path(__file__).parent.parent / "output" / "lexavo.db")
@@ -31,11 +32,26 @@ else:
 # ─── Placeholder: %s for PostgreSQL, ? for SQLite ───────────────────────────
 PH = "%s" if USE_PG else "?"
 
+# ─── Connection pool (PostgreSQL uniquement) ────────────────────────────────
+_pg_connection_pool = None
+
+
+def _get_pg_pool():
+    global _pg_connection_pool
+    if _pg_connection_pool is None:
+        minconn = int(os.getenv("DB_POOL_MIN", "2"))
+        maxconn = int(os.getenv("DB_POOL_MAX", "10"))
+        _pg_connection_pool = _pg_pool.ThreadedConnectionPool(
+            minconn, maxconn, DATABASE_URL, cursor_factory=RealDictCursor
+        )
+        log.info(f"PostgreSQL connection pool initialized (min={minconn}, max={maxconn})")
+    return _pg_connection_pool
+
 
 def _get_conn():
-    """Get a database connection (PostgreSQL or SQLite)."""
+    """Get a database connection — pooled for PostgreSQL, direct for SQLite."""
     if USE_PG:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        conn = _get_pg_pool().getconn()
         conn.autocommit = False
         return conn
     else:
@@ -45,6 +61,20 @@ def _get_conn():
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
+
+
+def _release_conn(conn):
+    """Retourne une connexion PostgreSQL au pool (no-op pour SQLite)."""
+    if USE_PG:
+        try:
+            _get_pg_pool().putconn(conn)
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    else:
+        conn.close()
 
 
 def _execute(conn, sql, params=None):
@@ -745,7 +775,7 @@ def init_db():
         _safe_add_column(conn, "emergency_requests", "paid", "BOOLEAN NOT NULL DEFAULT FALSE")
         log.info("Database schema initialized")
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def _safe_add_column(conn, table: str, column: str, col_type: str):
@@ -787,7 +817,7 @@ def create_user(email: str, password_hash: str, name: str, language: str = "fr")
         conn.rollback()
         return None
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_user_by_id(user_id: int) -> Optional[dict]:
@@ -795,7 +825,7 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT id, email, name, language, role, created_at FROM users WHERE id = {PH}", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
@@ -807,7 +837,7 @@ def get_user_by_email(email: str) -> Optional[dict]:
             (email,),
         )
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Lawyers CRUD ────────────────────────────────────────────────────────────
@@ -826,7 +856,7 @@ def create_lawyer(name: str, bar: str, specialties: list, email: str, phone: str
         conn.commit()
         return get_lawyer_by_id(new_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_lawyer_by_id(lawyer_id: int) -> Optional[dict]:
@@ -839,7 +869,7 @@ def get_lawyer_by_id(lawyer_id: int) -> Optional[dict]:
         d["verified"] = bool(d["verified"])
         return d
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_lawyers(city: Optional[str] = None, specialty: Optional[str] = None, language: Optional[str] = None) -> list:
@@ -860,7 +890,7 @@ def list_lawyers(city: Optional[str] = None, specialty: Optional[str] = None, la
             d["verified"] = bool(d["verified"])
         return rows
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def count_lawyers() -> int:
@@ -869,7 +899,7 @@ def count_lawyers() -> int:
         row = _fetchone(conn, "SELECT COUNT(*) as cnt FROM lawyers")
         return row["cnt"] if row else 0
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Conversations CRUD ─────────────────────────────────────────────────────
@@ -885,7 +915,7 @@ def create_conversation(user_id: int, title: str) -> dict:
         conn.commit()
         return get_conversation_by_id(new_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_conversation_by_id(conversation_id: int) -> Optional[dict]:
@@ -893,7 +923,7 @@ def get_conversation_by_id(conversation_id: int) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM conversations WHERE id = {PH}", (conversation_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_conversations(user_id: int) -> list:
@@ -901,7 +931,7 @@ def list_conversations(user_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM conversations WHERE user_id = {PH} ORDER BY created_at DESC", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Messages CRUD ──────────────────────────────────────────────────────────
@@ -917,7 +947,7 @@ def create_message(conversation_id: int, role: str, content: str, sources_json: 
         conn.commit()
         return get_message_by_id(new_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_message_by_id(message_id: int) -> Optional[dict]:
@@ -931,7 +961,7 @@ def get_message_by_id(message_id: int) -> Optional[dict]:
                 d["sources_json"] = []
         return d
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_messages(conversation_id: int) -> list:
@@ -945,7 +975,7 @@ def list_messages(conversation_id: int) -> list:
                 d["sources_json"] = []
         return rows
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Subscriptions CRUD ────────────────────────────────────────────────────
@@ -960,7 +990,7 @@ def get_subscription(user_id: int) -> Optional[dict]:
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM subscriptions WHERE user_id = {PH}", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_subscription(user_id: int, plan: str, stripe_customer_id: Optional[str] = None,
@@ -989,7 +1019,7 @@ def update_subscription(user_id: int, plan: str, stripe_customer_id: Optional[st
         conn.commit()
         return get_subscription(user_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def increment_question_count(user_id: int) -> dict:
@@ -1022,7 +1052,7 @@ def increment_question_count(user_id: int) -> dict:
         plan = sub.get("plan", "free")
         return {"questions_used": sub["questions_used"] + 1, "limit": limits.get(plan, 5), "plan": plan}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_subscription_by_stripe_customer(stripe_customer_id: str) -> Optional[dict]:
@@ -1030,7 +1060,7 @@ def get_subscription_by_stripe_customer(stripe_customer_id: str) -> Optional[dic
     try:
         return _fetchone(conn, f"SELECT * FROM subscriptions WHERE stripe_customer_id = {PH}", (stripe_customer_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Shield CRUD ────────────────────────────────────────────────────────────
@@ -1048,7 +1078,7 @@ def save_shield_analysis(user_id: int, contract_type: str, verdict: str,
         conn.commit()
         return get_shield_analysis(new_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_shield_analysis(analysis_id: int) -> Optional[dict]:
@@ -1056,7 +1086,7 @@ def get_shield_analysis(analysis_id: int) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM shield_analyses WHERE id = {PH}", (analysis_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_shield_analyses(user_id: int, limit: int = 20) -> list:
@@ -1064,7 +1094,7 @@ def list_shield_analyses(user_id: int, limit: int = 20) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM shield_analyses WHERE user_id = {PH} ORDER BY created_at DESC LIMIT {PH}", (user_id, limit))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Newsletter CRUD ────────────────────────────────────────────────────────
@@ -1093,7 +1123,7 @@ def subscribe_newsletter(email: str, domains: list) -> dict:
             d["confirmed"] = bool(d["confirmed"])
         return d
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def unsubscribe_newsletter(token: str) -> bool:
@@ -1103,7 +1133,7 @@ def unsubscribe_newsletter(token: str) -> bool:
         conn.commit()
         return cur.rowcount > 0
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_confirmed_subscribers() -> list:
@@ -1116,7 +1146,7 @@ def list_confirmed_subscribers() -> list:
             d["confirmed"] = bool(d["confirmed"])
         return rows
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Push Tokens ──────────────────────────────────────────────────────────────
@@ -1136,7 +1166,7 @@ def save_push_token(user_id: int, token: str) -> None:
                 (user_id, token))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_push_preferences(user_id: int, token: str, preferences: dict) -> None:
@@ -1150,7 +1180,7 @@ def update_push_preferences(user_id: int, token: str, preferences: dict) -> None
                      (json.dumps(preferences), user_id, token))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_push_tokens_for_user(user_id: int) -> list:
@@ -1158,7 +1188,7 @@ def get_push_tokens_for_user(user_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM push_tokens WHERE user_id = {PH}", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Alert Preferences CRUD ────────────────────────────────────────────────
@@ -1175,7 +1205,7 @@ def get_alert_preferences(user_id: int) -> dict:
         conn.commit()
         return get_alert_preferences(user_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_alert_preferences(user_id: int, domains: list = None, frequency: str = None, enabled: bool = None) -> dict:
@@ -1199,7 +1229,7 @@ def update_alert_preferences(user_id: int, domains: list = None, frequency: str 
             conn.commit()
         return get_alert_preferences(user_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Proof Cases CRUD ───────────────────────────────────────────────────────
@@ -1215,7 +1245,7 @@ def create_proof_case(user_id: int, title: str, description: str = None) -> dict
         conn.commit()
         return get_proof_case(new_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_proof_case(case_id: int) -> Optional[dict]:
@@ -1223,7 +1253,7 @@ def get_proof_case(case_id: int) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM proof_cases WHERE id = {PH}", (case_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_proof_cases(user_id: int) -> list:
@@ -1231,7 +1261,7 @@ def list_proof_cases(user_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM proof_cases WHERE user_id = {PH} ORDER BY created_at DESC", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def add_proof_entry(case_id: int, entry_type: str, content: str, metadata: dict = None) -> dict:
@@ -1245,7 +1275,7 @@ def add_proof_entry(case_id: int, entry_type: str, content: str, metadata: dict 
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM proof_entries WHERE id = {PH}", (new_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_proof_entries(case_id: int) -> list:
@@ -1253,7 +1283,7 @@ def list_proof_entries(case_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM proof_entries WHERE case_id = {PH} ORDER BY created_at ASC", (case_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Backup ──────────────────────────────────────────────────────────────────
@@ -1278,7 +1308,7 @@ def backup_database(backup_dir: str = None) -> str:
             backup_conn.close()
             return backup_path
         finally:
-            conn.close()
+            _release_conn(conn)
 
 
 # ─── Emergency Requests CRUD ────────────────────────────────────────────────
@@ -1296,7 +1326,7 @@ def create_emergency_request(user_id: int, category: str, priority: str,
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM emergency_requests WHERE id = {PH}", (new_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_emergency_requests(user_id: int) -> list:
@@ -1304,7 +1334,7 @@ def list_emergency_requests(user_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM emergency_requests WHERE user_id = {PH} ORDER BY created_at DESC", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_emergency_paid(emergency_id: int) -> None:
@@ -1313,7 +1343,7 @@ def update_emergency_paid(emergency_id: int) -> None:
         _execute(conn, f"UPDATE emergency_requests SET status = 'completed' WHERE id = {PH}", (emergency_id,))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Refresh Tokens CRUD ────────────────────────────────────────────────────
@@ -1325,7 +1355,7 @@ def save_refresh_token(user_id: int, token: str, expires_at: str) -> None:
                  (user_id, token, expires_at))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_refresh_token(token: str) -> Optional[dict]:
@@ -1333,7 +1363,7 @@ def get_refresh_token(token: str) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM refresh_tokens WHERE token = {PH}", (token,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def delete_refresh_token(token: str) -> bool:
@@ -1343,7 +1373,7 @@ def delete_refresh_token(token: str) -> bool:
         conn.commit()
         return cur.rowcount > 0
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def delete_user_refresh_tokens(user_id: int) -> None:
@@ -1352,7 +1382,7 @@ def delete_user_refresh_tokens(user_id: int) -> None:
         _execute(conn, f"DELETE FROM refresh_tokens WHERE user_id = {PH}", (user_id,))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Password Reset Tokens ───────────────────────────────────────────────────
@@ -1367,7 +1397,7 @@ def create_password_reset_token(user_id: int, token: str, expires_at: str) -> No
                  (user_id, token, expires_at))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_password_reset_token(token: str) -> Optional[dict]:
@@ -1375,7 +1405,7 @@ def get_password_reset_token(token: str) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM password_reset_tokens WHERE token = {PH}", (token,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def mark_password_reset_token_used(token: str) -> None:
@@ -1385,7 +1415,7 @@ def mark_password_reset_token_used(token: str) -> None:
         _execute(conn, f"UPDATE password_reset_tokens SET used = {_used_true} WHERE token = {PH}", (token,))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_user_password(user_id: int, password_hash: str) -> None:
@@ -1394,7 +1424,7 @@ def update_user_password(user_id: int, password_hash: str) -> None:
         _execute(conn, f"UPDATE users SET password_hash = {PH} WHERE id = {PH}", (password_hash, user_id))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Conversations DELETE ────────────────────────────────────────────────────
@@ -1406,7 +1436,7 @@ def delete_conversation(conversation_id: int) -> bool:
         conn.commit()
         return cur.rowcount > 0
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Audit Reports CRUD ───────────────────────────────────────────────────
@@ -1424,7 +1454,7 @@ def save_audit_report(user_id: int, company_name: str, company_type: str,
         conn.commit()
         return {"id": new_id}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_audit_reports(user_id: int) -> list:
@@ -1448,7 +1478,7 @@ def get_audit_reports(user_id: int) -> list:
             cols = ["id", "company_name", "company_type", "score", "verdict", "created_at"]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ── User Context ──────────────────────────────────────────────
@@ -1461,7 +1491,7 @@ def get_user_context(user_id: int) -> dict:
             return {"region": None, "profession": None, "language": "fr"}
         return {"region": row.get("region"), "profession": row.get("profession"), "language": row.get("language") or "fr"}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_user_context(user_id: int, region: str = None, profession: str = None, language: str = None) -> dict:
@@ -1489,7 +1519,7 @@ def update_user_context(user_id: int, region: str = None, profession: str = None
         conn.commit()
         return get_user_context(user_id)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Student Gamification CRUD ──────────────────────────────────────────────
@@ -1503,7 +1533,7 @@ def get_student_progress(user_id: int, branch: str = None) -> list:
             return [row] if row else []
         return _fetchall(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} ORDER BY xp DESC", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def upsert_student_progress(user_id: int, branch: str, xp_delta: int = 0,
@@ -1539,7 +1569,7 @@ def upsert_student_progress(user_id: int, branch: str, xp_delta: int = 0,
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM student_progress WHERE user_id = {PH} AND branch = {PH}", (user_id, branch)) or {}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def update_student_streak(user_id: int) -> dict:
@@ -1565,7 +1595,7 @@ def update_student_streak(user_id: int) -> dict:
         conn.commit()
         return {"streak_count": new_streak, "streak_last_date": today}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_student_badges(user_id: int) -> list:
@@ -1574,7 +1604,7 @@ def get_student_badges(user_id: int) -> list:
     try:
         return _fetchall(conn, f"SELECT badge_id, badge_name, badge_emoji, earned_at FROM student_badges WHERE user_id = {PH} ORDER BY earned_at DESC", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def award_student_badge(user_id: int, badge_id: str, badge_name: str, badge_emoji: str) -> bool:
@@ -1595,7 +1625,7 @@ def award_student_badge(user_id: int, badge_id: str, badge_name: str, badge_emoj
             pass
         return False
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def save_quiz_history(user_id: int, branch: str, mode: str, score: int, total_questions: int,
@@ -1609,7 +1639,7 @@ def save_quiz_history(user_id: int, branch: str, mode: str, score: int, total_qu
         conn.commit()
         return new_id
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_quiz_history(user_id: int, limit: int = 20) -> list:
@@ -1618,7 +1648,7 @@ def get_quiz_history(user_id: int, limit: int = 20) -> list:
     try:
         return _fetchall(conn, f"SELECT * FROM student_quiz_history WHERE user_id = {PH} ORDER BY created_at DESC LIMIT {PH}", (user_id, limit))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_leaderboard(branch: str = None, limit: int = 20) -> list:
@@ -1633,7 +1663,7 @@ def get_leaderboard(branch: str = None, limit: int = 20) -> list:
             FROM student_progress sp JOIN users u ON sp.user_id = u.id
             GROUP BY sp.user_id, u.name ORDER BY total_xp DESC LIMIT {PH}""", (limit,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_weak_branches(user_id: int, limit: int = 3) -> list:
@@ -1642,7 +1672,7 @@ def get_weak_branches(user_id: int, limit: int = 3) -> list:
     try:
         return _fetchall(conn, f"SELECT branch, best_score, xp, total_quizzes FROM student_progress WHERE user_id = {PH} AND total_quizzes > 0 ORDER BY best_score ASC LIMIT {PH}", (user_id, limit))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_student_total_xp(user_id: int) -> int:
@@ -1652,7 +1682,7 @@ def get_student_total_xp(user_id: int) -> int:
         row = _fetchone(conn, f"SELECT COALESCE(SUM(xp), 0) as total_xp FROM student_progress WHERE user_id = {PH}", (user_id,))
         return row["total_xp"] if row else 0
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Flashcard SRS (Leitner) ───────────────────────────────────────────────
@@ -1667,7 +1697,7 @@ def get_due_flashcards(user_id: int, branch: str = None, limit: int = 20) -> lis
             return _fetchall(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND branch = {PH} AND next_review_at <= CURRENT_TIMESTAMP ORDER BY box ASC, next_review_at ASC LIMIT {PH}", (user_id, branch, limit))
         return _fetchall(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND next_review_at <= CURRENT_TIMESTAMP ORDER BY box ASC, next_review_at ASC LIMIT {PH}", (user_id, limit))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def upsert_flashcard_srs(user_id: int, branch: str, card_hash: str, correct: bool) -> dict:
@@ -1703,7 +1733,7 @@ def upsert_flashcard_srs(user_id: int, branch: str, card_hash: str, correct: boo
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM student_flashcard_srs WHERE user_id = {PH} AND card_hash = {PH}", (user_id, card_hash)) or {}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Student Groups CRUD ───────────────────────────────────────────────────
@@ -1725,7 +1755,7 @@ def create_student_group(name: str, user_id: int) -> dict:
         conn.commit()
         return {"id": group_id, "name": name, "code": code, "created_by": user_id}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def join_student_group(code: str, user_id: int) -> dict:
@@ -1741,7 +1771,7 @@ def join_student_group(code: str, user_id: int) -> dict:
             conn.commit()
         return dict(group)
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def leave_student_group(group_id: int, user_id: int) -> bool:
@@ -1752,7 +1782,7 @@ def leave_student_group(group_id: int, user_id: int) -> bool:
         conn.commit()
         return True
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_user_groups(user_id: int) -> list:
@@ -1765,7 +1795,7 @@ def get_user_groups(user_id: int) -> list:
             JOIN student_group_members gm ON g.id = gm.group_id
             WHERE gm.user_id = {PH} ORDER BY g.name""", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_group_leaderboard(group_id: int) -> list:
@@ -1779,7 +1809,7 @@ def get_group_leaderboard(group_id: int) -> list:
             WHERE gm.group_id = {PH}
             GROUP BY u.id, u.name ORDER BY total_xp DESC""", (group_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── LMS Connections CRUD ─────────────────────────────────────────────────────
@@ -1805,7 +1835,7 @@ def save_lms_connection(user_id: int, platform: str, site_url: str, token: str,
             conn.commit()
             return _fetchone(conn, f"SELECT * FROM student_lms_connections WHERE id = {PH}", (new_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_lms_connection(user_id: int, platform: str = 'moodle') -> Optional[dict]:
@@ -1814,7 +1844,7 @@ def get_lms_connection(user_id: int, platform: str = 'moodle') -> Optional[dict]
     try:
         return _fetchone(conn, f"SELECT * FROM student_lms_connections WHERE user_id = {PH} AND platform = {PH}", (user_id, platform))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def delete_lms_connection(user_id: int, platform: str = 'moodle') -> bool:
@@ -1825,7 +1855,7 @@ def delete_lms_connection(user_id: int, platform: str = 'moodle') -> bool:
         conn.commit()
         return True
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def save_lms_course(user_id: int, connection_id: int, course_id: int,
@@ -1849,7 +1879,7 @@ def save_lms_course(user_id: int, connection_id: int, course_id: int,
             conn.commit()
             return _fetchone(conn, f"SELECT * FROM student_lms_courses WHERE id = {PH}", (new_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_lms_courses(user_id: int) -> list:
@@ -1859,7 +1889,7 @@ def get_lms_courses(user_id: int) -> list:
         return _fetchall(conn, f"""SELECT id, course_id, course_name, course_shortname, imported_content IS NOT NULL as has_content, synced_at
             FROM student_lms_courses WHERE user_id = {PH} ORDER BY course_name""", (user_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_lms_course_content(user_id: int, course_id: int) -> Optional[str]:
@@ -1869,7 +1899,7 @@ def get_lms_course_content(user_id: int, course_id: int) -> Optional[str]:
         row = _fetchone(conn, f"SELECT imported_content FROM student_lms_courses WHERE user_id = {PH} AND course_id = {PH}", (user_id, course_id))
         return row['imported_content'] if row else None
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── Notes partagées (bibliothèque communautaire) ───────────────────────────
@@ -1890,7 +1920,7 @@ def create_shared_note(user_id: int, author_name: str, is_anonymous: bool,
         conn.commit()
         return _fetchone(conn, f"SELECT * FROM student_shared_notes WHERE id = {PH}", (new_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def list_shared_notes(subject: str = None, university: str = None, limit: int = 50, offset: int = 0) -> list:
@@ -1911,7 +1941,7 @@ def list_shared_notes(subject: str = None, university: str = None, limit: int = 
                 FROM student_shared_notes {where}
                 ORDER BY created_at DESC LIMIT {PH} OFFSET {PH}""", tuple(params))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def get_shared_note(note_id: int) -> Optional[dict]:
@@ -1919,7 +1949,7 @@ def get_shared_note(note_id: int) -> Optional[dict]:
     try:
         return _fetchone(conn, f"SELECT * FROM student_shared_notes WHERE id = {PH}", (note_id,))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def increment_note_downloads(note_id: int):
@@ -1928,7 +1958,7 @@ def increment_note_downloads(note_id: int):
         _execute(conn, f"UPDATE student_shared_notes SET downloads = downloads + 1 WHERE id = {PH}", (note_id,))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def increment_note_likes(note_id: int):
@@ -1937,7 +1967,7 @@ def increment_note_likes(note_id: int):
         _execute(conn, f"UPDATE student_shared_notes SET likes = likes + 1 WHERE id = {PH}", (note_id,))
         conn.commit()
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def delete_shared_note(note_id: int, user_id: int) -> bool:
@@ -1951,7 +1981,7 @@ def delete_shared_note(note_id: int, user_id: int) -> bool:
         conn.commit()
         return True
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ─── RGPD : droit a l'oubli (art.17) + portabilite (art.20) ──────────────────
@@ -2006,7 +2036,7 @@ def delete_user_cascade(user_id: int) -> dict:
         conn.commit()
         return {"user_id": user_id, "deleted": deleted}
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def export_user_data(user_id: int) -> dict:
@@ -2069,4 +2099,4 @@ def export_user_data(user_id: int) -> dict:
 
         return out
     finally:
-        conn.close()
+        _release_conn(conn)

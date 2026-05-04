@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lexavo — Prototype mobile (final)</title>
+
+<!-- Google Fonts : EB Garamond + Nunito (mêmes que l'app native) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Ionicons (mêmes icônes que dans l'app) -->
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<style>
+  /* ════════════════════════════════════════════════════════════════════
+     DESIGN SYSTEM — miroir exact de mobile/src/theme/designSystem.js
+     ════════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:           #F7F5F2;
+    --surface:      #FFFFFF;
+    --surface-alt:  #F0EDE9;
+    --brand:        #C45A2D;
+    --brand-light:  #E8795A;
+    --brand-dark:   #9E4522;
+    --navy:         #1C2B3A;
+    --navy-light:   #2E4259;
+    --text-primary: #1C2B3A;
+    --text-secondary: #5A6275;
+    --text-muted:   #9CA3AF;
+    --text-on-navy: #FFFFFF;
+    --border:       #E8E4DF;
+    --border-strong:#C8C4BF;
+    --shadow:       rgba(28,43,58,0.08);
+    --shadow-med:   rgba(28,43,58,0.14);
+    --success:      #27AE60;
+    --warning:      #F39C12;
+    --warning-light:#FEF3C7;
+    --error:        #E74C3C;
+    --info:         #2980B9;
+
+    --font-display: 'EB Garamond', Georgia, serif;
+    --font-body:    'Nunito', system-ui, sans-serif;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 999px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #EDE8E2 0%, #DCD5CC 100%);
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 40px 16px;
+  }
+
+  .wrap {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .page-title h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 40px;
+    color: var(--navy);
+    letter-spacing: 4px;
+    margin: 0 0 8px;
+  }
+  .page-title p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+  }
+  .page-title .accent { color: var(--brand); font-weight: 700; }
+
+  /* ── Phone frame ──────────────────────────────────────────────────── */
+  .phones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 32px;
+    align-items: start;
+  }
+  .phone {
+    width: 360px;
+    margin: 0 auto;
+    background: #0d0d0d;
+    border-radius: 44px;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(28,43,58,0.45),
+      0 12px 30px -12px rgba(28,43,58,0.30),
+      inset 0 0 0 2px #2a2a2a;
+    position: relative;
+  }
+  .phone::before {
+    content: ""; position: absolute;
+    top: 22px; left: 50%;
+    transform: translateX(-50%);
+    width: 90px; height: 26px;
+    background: #0d0d0d;
+    border-radius: 14px;
+    z-index: 10;
+  }
+  .screen {
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    height: 720px;
+    overflow-y: auto;
+    position: relative;
+  }
+  .screen::-webkit-scrollbar { width: 0; }
+  .screen-label {
+    text-align: center;
+    margin-top: 16px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Hero (navy) ──────────────────────────────────────────────────── */
+  .hero {
+    background: var(--navy);
+    color: var(--text-on-navy);
+    padding: 60px 24px 28px;
+    text-align: center;
+  }
+  .hero-mark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 32px;
+    letter-spacing: 6px;
+    color: var(--brand);
+    margin: 0 0 6px;
+  }
+  .hero-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.80);
+    margin: 0 0 14px;
+  }
+  .hero-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .hero ion-icon {
+    color: #fff;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: #fff;
+    margin: 0 0 4px;
+  }
+
+  /* ── Sections ─────────────────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 16px 8px;
+  }
+  .section-title {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .section-count {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── Tool grid (Home / Outils) ────────────────────────────────────── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  .tool-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    position: relative;
+    box-shadow: 0 1px 3px var(--shadow);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .tool-card:active { transform: scale(0.97); }
+  .tool-dot {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+  }
+  .tool-icon-box {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    margin: 8px 0;
+  }
+  .tool-icon-box ion-icon { font-size: 22px; }
+  .tool-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 18px;
+    margin: 0 0 2px;
+  }
+  .tool-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 15px;
+  }
+  .see-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px;
+    margin-top: 4px;
+    cursor: pointer;
+    color: var(--brand);
+    font-weight: 600;
+    font-size: 13px;
+    gap: 4px;
+  }
+
+  /* ── Disclaimer ───────────────────────────────────────────────────── */
+  .disclaimer {
+    margin: 16px;
+    padding: 8px;
+    background: var(--warning-light);
+    border-radius: var(--radius-sm);
+    display: flex;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  .disclaimer ion-icon {
+    color: var(--warning);
+    font-size: 14px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .disclaimer p {
+    margin: 0;
+    font-size: 11px;
+    color: #92400E;
+    line-height: 15px;
+  }
+
+  /* ── Tab bar (5 onglets — App.js réel) ────────────────────────────── */
+  .tab-bar {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: 60px;
+    padding: 4px 0 8px;
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .tab ion-icon { font-size: 24px; }
+  .tab.active { color: var(--brand); }
+
+  /* ════════════════════════════════════════════════════════════════════
+     CAMPUS (StudentScreen — 8 modes d'apprentissage)
+     ════════════════════════════════════════════════════════════════════ */
+  .xp-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 0 16px;
+    margin-top: -16px;
+    margin-bottom: 12px;
+  }
+  .xp-bar-wrap {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: #fff;
+    margin-top: -8px;
+  }
+  .xp-bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .xp-bar-level {
+    font-weight: 700;
+    color: var(--brand);
+    font-size: 14px;
+  }
+  .xp-bar-xp {
+    font-size: 11px;
+    color: rgba(255,255,255,0.70);
+  }
+  .xp-bar-track {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.15);
+    overflow: hidden;
+  }
+  .xp-bar-fill {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--brand);
+    width: 64%;
+  }
+  .streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(196,90,45,0.20);
+    border: 1px solid var(--brand);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 16px;
+  }
+  .mode-card {
+    border-radius: var(--radius-lg);
+    padding: 14px 12px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(28,43,58,0.18);
+    cursor: pointer;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .mode-card .badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(255,255,255,0.20);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    font-size: 9px;
+    font-weight: 700;
+  }
+  .mode-card ion-icon {
+    font-size: 26px;
+    color: rgba(255,255,255,0.95);
+    margin-bottom: 8px;
+  }
+  .mode-card h4 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .mode-card p {
+    margin: 0;
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+    line-height: 13px;
+  }
+  /* gradients par mode (fidèles aux couleurs du code) */
+  .grad-quiz       { background: linear-gradient(135deg,#4A1D96,#8B5CF6); }
+  .grad-flashcards { background: linear-gradient(135deg,#004D8F,#4DA6FF); }
+  .grad-summary    { background: linear-gradient(135deg,#991B1B,#FF6B6B); }
+  .grad-podcast    { background: linear-gradient(135deg,#7C4D00,#FFB84D); }
+  .grad-case       { background: linear-gradient(135deg,#1A4731,#2DD4BF); }
+  .grad-mock       { background: linear-gradient(135deg,#4A1A1A,#E53E3E); }
+  .grad-mix        { background: linear-gradient(135deg,#1A1A4A,#6366F1); }
+  .grad-recall     { background: linear-gradient(135deg,#2D1A4A,#A855F7); }
+
+  /* ════════════════════════════════════════════════════════════════════
+     CHAT (AskScreen)
+     ════════════════════════════════════════════════════════════════════ */
+  .ask-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 19px;
+    min-height: 80px;
+  }
+  .suggested {
+    margin: 0 16px 12px;
+  }
+  .suggested-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .suggested-chip {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-primary);
+    margin: 0 4px 6px 0;
+    cursor: pointer;
+  }
+  .answer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin: 0 16px 12px;
+    padding: 16px;
+  }
+  .answer-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .answer-meta ion-icon { font-size: 14px; color: var(--brand); }
+  .answer-text {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 20px;
+    margin: 0;
+  }
+  .src-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    margin: 4px 4px 0 0;
+  }
+  .src-juridat { background: #B22222; }
+  .src-eurlex { background: #0050A0; }
+  .src-moniteur { background: #1A6B3A; }
+
+  /* ════════════════════════════════════════════════════════════════════
+     SUBSCRIPTION
+     ════════════════════════════════════════════════════════════════════ */
+  .plan-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin: 0 16px 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .plan-card.highlight {
+    border: 2px solid var(--brand);
+    box-shadow: 0 8px 20px var(--shadow-med);
+    position: relative;
+  }
+  .plan-name {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+  .plan-price {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--brand);
+    margin: 0 0 4px;
+  }
+  .plan-price small {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 500;
+  }
+  .plan-feature {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin: 6px 0;
+    line-height: 18px;
+  }
+  .plan-feature ion-icon {
+    color: var(--success);
+    font-size: 16px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border-radius: var(--radius-md);
+    padding: 14px 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1.5px solid var(--brand);
+  }
+  .btn-secondary {
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .save-pill {
+    display: inline-block;
+    background: var(--warning);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .toggle-row {
+    display: flex;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    margin: 16px;
+    gap: 4px;
+  }
+  .toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .toggle-btn.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+
+  /* ── Légende ──────────────────────────────────────────────────────── */
+  .legend {
+    margin-top: 48px;
+    padding: 24px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 12px var(--shadow);
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .legend h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 12px;
+  }
+  .legend dl { margin: 0; }
+  .legend dt {
+    font-weight: 700;
+    color: var(--brand);
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  .legend dd {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .swatches {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .swatch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-alt);
+    padding: 6px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    color: var(--text-secondary);
+  }
+  .swatch-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="page-title">
+    <h1>LEXAVO</h1>
+    <p>
+      <span class="accent">Prototype mobile final</span> — 5 onglets : Accueil · Campus · Chat · Abonnement · Réglages
+    </p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ÉCRAN 1 — Accueil (LexavoHomeScreen)
+         ════════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="screen">
+          <div class="hero">
+            <p class="hero-mark">LEXAVO</p>
+            <p class="hero-sub">L'assistant juridique belge</p>
+            <span class="hero-pill">Droit belge · 8 langues</span>
+          </div>
+
+          <div class="section-header">
+            <h3 class="section-title">Outils juridiques</h3>
+            <span class="section-count">14 outils</span>
+          </div>
+
+          <div class="tool-grid">
+            <div class="tool-card">
+              <span class="tool-dot" style="background:#C45A2D"></span>
+              <div class="tool-icon-box" style="background:rgba(196,90,45,0.10)">
+                <ion-icon name="shield-checkmark-outline" style="color:#C45A2D"></ion-icon>
+              </div>
+              <p class="tool-title">Contester une décision</p>
+              <p class="tool-sub">Recours, opposition, plainte</p>
+            </div>
+            <div class="tool-card">
+              <span class="tool-dot" style="background:#2980B9"></span>
+              <div class="tool-icon-box" style="background:rgba(41,128,185,0.10)">
+                <ion-icon name="document-text-outline" style="color:#2980B9"></ion-icon>
+              </div>
+              <p class="tool-title">Analyser un contrat</p>
+              <p class="tool-sub">Bail, CDI, CDD, commercial</p>
+            </div>
+            <div class="tool-card">
+              <span class="tool-dot" style="background:#27AE60"></span>
+              <div class="tool-icon-box" style="background:rgba(39,174,96,0.10)">
+                <ion-icon name="calculator-outline" style="color:#27AE60"></ion-icon>
+              </div>
+              <p class="tool-title">Calculateurs juridiques</p>
+              <p class="tool-sub">Préavis, pension, succession</p>
+            </div>
+            <div class="tool-card">
+              <span class="tool-dot" style="background:#8E44AD"></span>
+              <div class="tool-icon-box" style="background:rgba(142,68,173,0.10)">
+                <ion-icon name="search-outline" style="color:#8E44AD"></ion-icon>
+              </div>
+              <p class="tool-title">Diagnostic juridique</p>
+              <p class="tool-sub">Analyser ma situation</p>
+            </div>
+          </div>
+
+          <div class="see-all">
+            Voir tous les outils (14)
+            <ion-icon name="chevron-down" style="font-size:14px"></ion-icon>
+          </div>
+
+          <div class="disclaimer">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <p>Lexavo est un assistant juridique. Il ne remplace pas un avocat ou un conseiller juridique.</p>
+          </div>
+
+          <div style="height: 60px"></div>
+
+          <div class="tab-bar">
+            <div class="tab active"><ion-icon name="home"></ion-icon><span>Accueil</span></div>
+            <div class="tab"><ion-icon name="school-outline"></ion-icon><span>Campus</span></div>
+            <div class="tab"><ion-icon name="chatbubbles-outline"></ion-icon><span>Chat</span></div>
+            <div class="tab"><ion-icon name="star-outline"></ion-icon><span>Abonnement</span></div>
+            <div class="tab"><ion-icon name="settings-outline"></ion-icon><span>Réglages</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="screen-label">Accueil — LexavoHomeScreen</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ÉCRAN 2 — Campus (StudentScreen — REMPLACE Avocats)
+         ════════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="screen">
+          <div class="hero">
+            <ion-icon name="school-outline" style="color:#C45A2D"></ion-icon>
+            <p class="hero-title">Lexavo Campus</p>
+            <p class="hero-sub">Apprends le droit en t'amusant</p>
+          </div>
+
+          <div class="xp-row">
+            <div class="xp-bar-wrap">
+              <div class="xp-bar-label">
+                <span class="xp-bar-level">Lvl 7</span>
+                <span class="xp-bar-xp">320 / 500 XP</span>
+              </div>
+              <div class="xp-bar-track">
+                <div class="xp-bar-fill"></div>
+              </div>
+            </div>
+            <span class="streak">🔥 12 j</span>
+          </div>
+
+          <div class="section-header">
+            <h3 class="section-title">8 modes d'apprentissage</h3>
+            <span class="section-count">+50 XP / partie</span>
+          </div>
+
+          <div class="mode-grid">
+            <div class="mode-card grad-quiz">
+              <span class="badge">+50 XP</span>
+              <ion-icon name="flash-outline"></ion-icon>
+              <div>
+                <h4>Quiz IA</h4>
+                <p>L'IA s'adapte à ton niveau.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-flashcards">
+              <span class="badge">+20 XP</span>
+              <ion-icon name="albums-outline"></ion-icon>
+              <div>
+                <h4>Flashcards SRS</h4>
+                <p>Algorithme Leitner. Mémorise moins, retiens plus.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-summary">
+              <span class="badge">+10 XP</span>
+              <ion-icon name="rocket-outline"></ion-icon>
+              <div>
+                <h4>Résumé Turbo</h4>
+                <p>Des heures de cours en 30 secondes.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-podcast">
+              <span class="badge">+10 XP</span>
+              <ion-icon name="mic-outline"></ion-icon>
+              <div>
+                <h4>Podcast IA</h4>
+                <p>Script 2 hosts + export NotebookLM.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-case">
+              <span class="badge">+75 XP</span>
+              <ion-icon name="bulb-outline"></ion-icon>
+              <div>
+                <h4>Cas Pratique</h4>
+                <p>Résoudre un cas réel. Correction IA.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-mock">
+              <span class="badge">+150 XP</span>
+              <ion-icon name="create-outline"></ion-icon>
+              <div>
+                <h4>Examen Blanc</h4>
+                <p>20 questions chrono. Solo ou groupe.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-mix">
+              <span class="badge">+50 XP</span>
+              <ion-icon name="shuffle-outline"></ion-icon>
+              <div>
+                <h4>Révision Mixte</h4>
+                <p>+50% rétention prouvé.</p>
+              </div>
+            </div>
+            <div class="mode-card grad-recall">
+              <span class="badge">+75 XP</span>
+              <ion-icon name="pencil-outline"></ion-icon>
+              <div>
+                <h4>Rappel Libre</h4>
+                <p>Question ouverte. ×2 vs QCM.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px;">
+            <div class="btn-secondary">
+              <ion-icon name="people-outline" style="font-size:18px;color:var(--brand)"></ion-icon>
+              Mes groupes d'étude (3)
+            </div>
+          </div>
+
+          <div style="height: 60px"></div>
+
+          <div class="tab-bar">
+            <div class="tab"><ion-icon name="home-outline"></ion-icon><span>Accueil</span></div>
+            <div class="tab active"><ion-icon name="school"></ion-icon><span>Campus</span></div>
+            <div class="tab"><ion-icon name="chatbubbles-outline"></ion-icon><span>Chat</span></div>
+            <div class="tab"><ion-icon name="star-outline"></ion-icon><span>Abonnement</span></div>
+            <div class="tab"><ion-icon name="settings-outline"></ion-icon><span>Réglages</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="screen-label">Campus — StudentScreen</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ÉCRAN 3 — Chat (AskScreen)
+         ════════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="screen">
+          <div class="hero">
+            <ion-icon name="scale-outline" style="color:#C45A2D"></ion-icon>
+            <p class="hero-title">Assistant juridique</p>
+            <p class="hero-sub">Posez votre question en droit belge</p>
+          </div>
+
+          <div class="ask-input">
+            Quelles sont les conditions d'un licenciement pour motif grave en Belgique ?
+          </div>
+
+          <div class="suggested">
+            <p class="suggested-label">Questions populaires</p>
+            <div class="suggested-chip">Préavis CDI</div>
+            <div class="suggested-chip">Garantie locative</div>
+            <div class="suggested-chip">Faillite SRL</div>
+          </div>
+
+          <div style="margin: 0 16px 12px;">
+            <div class="btn-primary">
+              <ion-icon name="paper-plane-outline" style="font-size:16px"></ion-icon>
+              Poser ma question
+            </div>
+          </div>
+
+          <div class="answer-card">
+            <div class="answer-meta">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              Réponse vérifiée · Claude Sonnet
+            </div>
+            <p class="answer-text">
+              Selon l'<strong>article 35 de la loi du 3 juillet 1978</strong> sur les contrats de travail, le licenciement pour motif grave doit respecter trois conditions cumulatives : la faute doit rendre toute collaboration immédiatement et définitivement impossible, être notifiée dans les 3 jours ouvrables…
+            </p>
+            <div style="margin-top: 12px">
+              <span class="src-badge src-juridat">JURIDAT</span>
+              <span class="src-badge src-moniteur">MONITEUR</span>
+              <span class="src-badge src-eurlex">EUR-LEX</span>
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <p>Cette réponse ne constitue pas un avis juridique. Consultez un avocat pour votre situation spécifique.</p>
+          </div>
+
+          <div style="height: 60px"></div>
+
+          <div class="tab-bar">
+            <div class="tab"><ion-icon name="home-outline"></ion-icon><span>Accueil</span></div>
+            <div class="tab"><ion-icon name="school-outline"></ion-icon><span>Campus</span></div>
+            <div class="tab active"><ion-icon name="chatbubbles"></ion-icon><span>Chat</span></div>
+            <div class="tab"><ion-icon name="star-outline"></ion-icon><span>Abonnement</span></div>
+            <div class="tab"><ion-icon name="settings-outline"></ion-icon><span>Réglages</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="screen-label">Chat IA — AskScreen</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ÉCRAN 4 — Abonnement (SubscriptionScreen)
+         ════════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="screen">
+          <div class="hero">
+            <ion-icon name="star-outline" style="color:#C45A2D"></ion-icon>
+            <p class="hero-title">Choisissez votre plan</p>
+            <p class="hero-sub">Beta gratuit jusqu'au 1er octobre</p>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-btn">Mensuel</div>
+            <div class="toggle-btn active">Annuel <span class="save-pill">-20%</span></div>
+          </div>
+
+          <div class="plan-card">
+            <p class="plan-name">Gratuit</p>
+            <p class="plan-price">0€<small>/mois</small></p>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>10 questions / mois</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Tous les outils basiques</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Campus — 8 modes d'apprentissage</span>
+            </div>
+            <div class="btn-secondary">Plan actuel</div>
+          </div>
+
+          <div class="plan-card highlight">
+            <p class="plan-name">Pro <span class="save-pill">Recommandé</span></p>
+            <p class="plan-price">19€<small>/mois</small></p>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Questions illimitées</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Analyse Sonnet/Opus + génération PDF</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Campus illimité + groupes d'étude</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Support prioritaire</span>
+            </div>
+            <div class="btn-primary">
+              Passer au Pro
+              <ion-icon name="arrow-forward" style="font-size:16px"></ion-icon>
+            </div>
+          </div>
+
+          <div class="plan-card">
+            <p class="plan-name">Entreprise</p>
+            <p class="plan-price">99€<small>/mois</small></p>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Tout Pro + audit RGPD</span>
+            </div>
+            <div class="plan-feature">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>API Backend dédiée</span>
+            </div>
+            <div class="btn-secondary">Nous contacter</div>
+          </div>
+
+          <div style="height: 80px"></div>
+
+          <div class="tab-bar">
+            <div class="tab"><ion-icon name="home-outline"></ion-icon><span>Accueil</span></div>
+            <div class="tab"><ion-icon name="school-outline"></ion-icon><span>Campus</span></div>
+            <div class="tab"><ion-icon name="chatbubbles-outline"></ion-icon><span>Chat</span></div>
+            <div class="tab active"><ion-icon name="star"></ion-icon><span>Abonnement</span></div>
+            <div class="tab"><ion-icon name="settings-outline"></ion-icon><span>Réglages</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="screen-label">Abonnement — SubscriptionScreen</p>
+    </div>
+
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────────── -->
+
+  <div class="legend">
+    <h2>Design system Lexavo (final)</h2>
+    <dl>
+      <dt>Navigation actuelle (5 onglets)</dt>
+      <dd>
+        🏠 <strong>Accueil</strong> · 🎓 <strong>Campus</strong> (remplace Avocats) · 💬 Chat · ⭐ Abonnement · ⚙️ Réglages<br>
+        + onglet caché <code style="background:var(--surface-alt);padding:2px 6px;border-radius:4px;">Outils</code> (LexavoStack) avec 14 outils juridiques.<br>
+        L'annuaire des avocats est désormais accessible <em>via Réglages → Avocats</em>, pas un onglet principal.
+      </dd>
+      <dt>Palette</dt>
+      <dd>
+        <div class="swatches">
+          <div class="swatch"><span class="swatch-dot" style="background:#F7F5F2"></span>Background #F7F5F2</div>
+          <div class="swatch"><span class="swatch-dot" style="background:#C45A2D"></span>Brand #C45A2D</div>
+          <div class="swatch"><span class="swatch-dot" style="background:#1C2B3A"></span>Navy #1C2B3A</div>
+          <div class="swatch"><span class="swatch-dot" style="background:#27AE60"></span>Success #27AE60</div>
+          <div class="swatch"><span class="swatch-dot" style="background:#F39C12"></span>Warning #F39C12</div>
+          <div class="swatch"><span class="swatch-dot" style="background:#E74C3C"></span>Error #E74C3C</div>
+        </div>
+      </dd>
+      <dt>Typographie</dt>
+      <dd>
+        <span style="font-family: 'EB Garamond'; font-weight: 700; font-size: 24px;">EB Garamond 700</span>
+        — titres affichage<br>
+        <span style="font-family: 'Nunito'; font-weight: 400;">Nunito 400/500/600/700</span>
+        — corps & UI
+      </dd>
+      <dt>Anti-patterns supprimés</dt>
+      <dd>
+        ❌ borderLeftWidth/RightWidth > 1px (BAN absolu)<br>
+        ❌ Gradient text · ❌ Glassmorphism · ❌ AI palette dark+cyan/purple<br>
+        ❌ Emoji-as-icon (remplacés par Ionicons sur 27 écrans) · ❌ fontWeight 'bold'
+      </dd>
+      <dt>Accessibilité</dt>
+      <dd>
+        ✅ 203/203 boutons avec accessibilityRole + accessibilityLabel FR<br>
+        ✅ Touch targets ≥ 44px (WCAG 2.5.8)<br>
+        ✅ Contraste WCAG AA (≥ 4.5:1)
+      </dd>
+      <dt>Tester l'app native</dt>
+      <dd>
+        Scanner <code style="background:var(--surface-alt);padding:2px 6px;border-radius:4px;">lexavo-qrcode.png</code>
+        avec <strong>Expo Go</strong> sur iOS/Android.<br>
+        URL : <code style="background:var(--surface-alt);padding:2px 6px;border-radius:4px;">exp://mg90zdm-anonymous-8082.exp.direct</code>
+      </dd>
+    </dl>
+  </div>
+
+</div>
+
+</body>
+</html>
