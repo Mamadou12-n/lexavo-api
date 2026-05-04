@@ -19,6 +19,16 @@
  *   Defend reste accessible via la grille Outils de HomeScreen.
  */
 
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: !__DEV__,
+  tracesSampleRate: 0.2,
+  environment: 'production',
+  sendDefaultPii: false,
+});
+
 import React, { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import AsyncStorage                    from '@react-native-async-storage/async-storage';
@@ -261,7 +271,7 @@ function MainApp() {
   );
 }
 
-export default function App() {
+function App() {
   // Chargement des polices Google en TÂCHE DE FOND (non-bloquant).
   // L'app démarre immédiatement avec fonts système → fonts custom apparaissent
   // dès qu'elles sont téléchargées. Évite le splash bloquant si pas d'internet.
@@ -399,3 +409,5 @@ export default function App() {
     </LanguageProvider>
   );
 }
+
+export default Sentry.wrap(App);

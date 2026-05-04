@@ -37,6 +37,14 @@
     },
     "plugins": [
       [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "lexavo-mobile",
+          "organization": "lexavo"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Lexavo accède à vos photos pour analyser vos documents.",
