@@ -40,8 +40,11 @@ def register(request: Request, body: RegisterRequest, lang: str = Depends(get_la
 
 @router.post("/auth/login", response_model=AuthResponse)
 @limiter.limit("5/minute")
-def login(request: Request, body: LoginRequest):
-    """Connexion — retourne un JWT + refresh token. Account lockout 5 fails / 15min."""
+def login(request: Request, body: LoginRequest, lang: str = Depends(get_lang)):
+    """Connexion — retourne un JWT + refresh token. Account lockout 5 fails / 15min.
+
+    Erreurs i18n via Accept-Language (FR/NL/EN/DE).
+    """
     from api.auth import login_user
     from api.security import (
         check_account_locked, record_failed_login, reset_failed_logins,
@@ -50,7 +53,7 @@ def login(request: Request, body: LoginRequest):
     ip = request.client.host if request.client else ""
     check_account_locked(body.email)
     try:
-        result = login_user(email=body.email, password=body.password)
+        result = login_user(email=body.email, password=body.password, lang=lang)
     except HTTPException as e:
         if e.status_code == 401:
             record_failed_login(body.email, ip)

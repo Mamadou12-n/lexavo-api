@@ -186,21 +186,25 @@ def register_user(email: str, password: str, name: str, language: str = "fr", la
     return {"user": user, "token": token, "refresh_token": refresh}
 
 
-def login_user(email: str, password: str) -> dict:
+def login_user(email: str, password: str, lang: str = "fr") -> dict:
     """Authenticate a user. Returns dict with user info + token.
+
     Raises HTTPException on invalid credentials.
+    `lang` = langue de la requete pour les messages d'erreur i18n.
+    Le meme message est utilise pour user-not-found et bad-password
+    pour eviter l'enumeration de comptes (security best-practice).
     """
     user = get_user_by_email(email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou mot de passe incorrect.",
+            detail=_t("auth_invalid_credentials", lang),
         )
 
     if not verify_password(password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou mot de passe incorrect.",
+            detail=_t("auth_invalid_credentials", lang),
         )
 
     # Return user without password_hash
