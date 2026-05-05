@@ -650,20 +650,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ─── Segment toggle (Particulier / Etudiant) — design system Lexavo ───
+  // ─── Segment toggle (Particulier / Etudiant) ───
+  // Pattern aligne sur ComplianceScreen.toggleRow (design system existant) :
+  // surfaceAlt + radius.md (12) + padding 4 + textSecondary -> textOnBrand.
   segmentWrap: {
     paddingHorizontal: spacing.base,
     marginTop: spacing.lg,
   },
   segmentTrack: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.round,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
     padding: 4,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...elevation.low,
+    gap: spacing.sm,
   },
   segmentBtn: {
     flex: 1,
@@ -672,24 +671,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     paddingVertical: 10,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.round,
+    borderRadius: radius.sm,
     minHeight: touch.minSize,
   },
   segmentBtnActive: {
     backgroundColor: colors.brand,
   },
   segmentBtnText: {
-    fontFamily: typography.fontBodyMedium,
+    fontFamily: typography.fontBodySemiBold,
     fontSize: typography.sizeSmall,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   segmentBtnTextActive: {
     color: colors.textOnBrand,
-    fontFamily: typography.fontBodySemiBold,
   },
 
-  // ─── Bouton "Voir plus" ───
+  // ─── Bouton "Voir plus" — outline brand sur surface ivoire ───
   viewMoreBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -698,15 +695,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    borderRadius: radius.round,
+    marginTop: spacing.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     minHeight: touch.minSize,
   },
   viewMoreText: {
-    fontFamily: typography.fontBodyMedium,
+    fontFamily: typography.fontBodySemiBold,
     fontSize: typography.sizeSmall,
     color: colors.brand,
   },
