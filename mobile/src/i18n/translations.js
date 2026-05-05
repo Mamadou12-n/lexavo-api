@@ -258,6 +258,15 @@ export const translations = {
     screen_search: 'Recherche',
     screen_student: 'Campus',
 
+    // Hero titles écrans Defend / Shield / Fiscal
+    shield_hero_title: 'Analyseur de documents',
+    shield_hero_sub: 'Analyse de contrats, baux, documents administratifs',
+    defend_hero_title: 'Lexavo Defend',
+    defend_hero_sub: 'Contestez, réclamez, agissez — en 3 étapes',
+    fiscal_hero_title: 'Fiscal — Questions fiscales',
+    fiscal_hero_sub: 'IPP, ISOC, TVA · Droit fiscal belge',
+    cta_analyze: 'Analyser',
+
     // Subscription screen (refocalisation 2026-05-05 : Free + Particulier)
     subscription_hero_title: 'Choisissez votre plan',
     subscription_hero_sub: 'Investissez dans votre sécurité juridique',
@@ -477,6 +486,15 @@ export const translations = {
     screen_lawyers: 'Advocatenlijst',
     screen_search: 'Zoeken',
     screen_student: 'Campus',
+
+    // Hero titles écrans Defend / Shield / Fiscal
+    shield_hero_title: 'Documentanalyzer',
+    shield_hero_sub: 'Analyse van contracten, huurovereenkomsten, administratieve documenten',
+    defend_hero_title: 'Lexavo Defend',
+    defend_hero_sub: 'Bezwaar maken, claimen, handelen — in 3 stappen',
+    fiscal_hero_title: 'Fiscaal — Belastingvragen',
+    fiscal_hero_sub: 'PB, VenB, BTW · Belgisch belastingrecht',
+    cta_analyze: 'Analyseren',
 
     // Subscription screen
     subscription_hero_title: 'Kies uw abonnement',
@@ -698,6 +716,15 @@ export const translations = {
     screen_search: 'Search',
     screen_student: 'Campus',
 
+    // Hero titles écrans Defend / Shield / Fiscal
+    shield_hero_title: 'Document analyzer',
+    shield_hero_sub: 'Contracts, leases, administrative documents',
+    defend_hero_title: 'Lexavo Defend',
+    defend_hero_sub: 'Contest, claim, act — in 3 steps',
+    fiscal_hero_title: 'Tax — Tax questions',
+    fiscal_hero_sub: 'PIT, CIT, VAT · Belgian tax law',
+    cta_analyze: 'Analyze',
+
     // Subscription screen
     subscription_hero_title: 'Choose your plan',
     subscription_hero_sub: 'Invest in your legal protection',
@@ -917,6 +944,24 @@ export const translations = {
     screen_lawyers: 'Anwaltsverzeichnis',
     screen_search: 'Suche',
     screen_student: 'Campus',
+
+    // Hero titles écrans Defend / Shield / Fiscal
+    shield_hero_title: 'Dokumentenanalyse',
+    shield_hero_sub: 'Verträge, Mietverträge, behördliche Dokumente',
+    defend_hero_title: 'Lexavo Defend',
+    defend_hero_sub: 'Widersprechen, fordern, handeln — in 3 Schritten',
+    fiscal_hero_title: 'Steuer — Steuerfragen',
+    fiscal_hero_sub: 'EkSt, KöSt, MwSt · Belgisches Steuerrecht',
+    cta_analyze: 'Analysieren',
+
+    // Hero titles écrans Defend / Shield / Fiscal
+    shield_hero_title: 'Dokumentenanalyse',
+    shield_hero_sub: 'Verträge, Mietverträge, behördliche Dokumente',
+    defend_hero_title: 'Lexavo Defend',
+    defend_hero_sub: 'Widersprechen, fordern, handeln — in 3 Schritten',
+    fiscal_hero_title: 'Steuer — Steuerfragen',
+    fiscal_hero_sub: 'EkSt, KöSt, MwSt · Belgisches Steuerrecht',
+    cta_analyze: 'Analysieren',
 
     // Subscription screen
     subscription_hero_title: 'Wählen Sie Ihren Plan',
