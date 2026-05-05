@@ -17,6 +17,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from api.database import create_user, get_user_by_email, get_user_by_id
+from api.i18n import t as _t
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 SECRET_KEY = os.getenv("LEXAVO_JWT_SECRET", "")
@@ -125,25 +126,28 @@ def get_current_user(
 
 # ─── Auth logic (used by endpoints) ─────────────────────────────────────────
 
-def register_user(email: str, password: str, name: str, language: str = "fr") -> dict:
+def register_user(email: str, password: str, name: str, language: str = "fr", lang: str = "fr") -> dict:
     """Register a new user. Returns dict with user info + token.
+
     Raises HTTPException on duplicate email or validation error.
+    `language` = langue stockee dans le profil utilisateur (FR/NL/EN/DE).
+    `lang`     = langue de la requete pour les messages d'erreur (Accept-Language).
     """
     # Validate
     if not email or "@" not in email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Adresse email invalide.",
+            detail=_t("auth_invalid_email", lang),
         )
     if not password or len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le mot de passe doit contenir au moins 8 caractères.",
+            detail=_t("auth_password_too_short", lang),
         )
     if not name or len(name.strip()) < 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le nom doit contenir au moins 2 caractères.",
+            detail=_t("auth_name_too_short", lang),
         )
     # Refocalisation 2026-05-05 : 4 langues uniquement (FR/NL officielles BE + EN/DE).
     # Les comptes existants avec language ar/tr/es/pt restent lisibles (lecture libre),
@@ -151,7 +155,7 @@ def register_user(email: str, password: str, name: str, language: str = "fr") ->
     if language not in ("fr", "nl", "en", "de"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Langue invalide. Choisissez parmi : fr, nl, en, de.",
+            detail=_t("auth_invalid_language", lang),
         )
 
     # Check duplicate
@@ -159,7 +163,7 @@ def register_user(email: str, password: str, name: str, language: str = "fr") ->
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Un compte existe déjà avec cet email.",
+            detail=_t("auth_email_taken", lang),
         )
 
     # Create
@@ -227,16 +231,20 @@ def forgot_password(email: str) -> str:
     return secrets.token_urlsafe(32)
 
 
-def reset_password(token: str, new_password: str) -> bool:
-    """Valide le token et met à jour le mot de passe. Retourne True si succès."""
+def reset_password(token: str, new_password: str, lang: str = "fr") -> bool:
+    """Valide le token et met à jour le mot de passe. Retourne True si succès.
+
+    `lang` = langue de la requete pour les messages d'erreur i18n.
+    """
     from api.database import get_password_reset_token, mark_password_reset_token_used, update_user_password
     if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères.")
+        raise HTTPException(status_code=400, detail=_t("auth_password_too_short", lang))
     row = get_password_reset_token(token)
     if not row:
-        raise HTTPException(status_code=400, detail="Token invalide ou expiré.")
+        raise HTTPException(status_code=400, detail=_t("auth_invalid_token", lang))
     if row.get("used") in (True, 1):
-        raise HTTPException(status_code=400, detail="Ce token a déjà été utilisé.")
+        # "Token deja utilise" tombe dans la categorie auth_invalid_token (token plus utilisable)
+        raise HTTPException(status_code=400, detail=_t("auth_invalid_token", lang))
     raw_expires = row["expires_at"]
     if isinstance(raw_expires, str):
         expires = datetime.strptime(raw_expires, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
@@ -244,7 +252,7 @@ def reset_password(token: str, new_password: str) -> bool:
         # PostgreSQL retourne un datetime objet directement
         expires = raw_expires if raw_expires.tzinfo else raw_expires.replace(tzinfo=timezone.utc)
     if datetime.now(timezone.utc) > expires:
-        raise HTTPException(status_code=400, detail="Token expiré. Refaites une demande.")
+        raise HTTPException(status_code=400, detail=_t("auth_invalid_token", lang))
     new_hash = hash_password(new_password)
     update_user_password(row["user_id"], new_hash)
     mark_password_reset_token_used(token)

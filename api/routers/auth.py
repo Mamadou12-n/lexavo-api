@@ -11,6 +11,7 @@ from api.models import (
     ForgotPasswordRequest, ResetPasswordRequest,
 )
 from api.auth import get_current_user as _get_current_user
+from api.i18n import get_lang
 from api.routers.deps import limiter
 
 log = logging.getLogger("api.auth")
@@ -20,14 +21,15 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/auth/register", response_model=AuthResponse)
 @limiter.limit("3/minute")
-def register(request: Request, body: RegisterRequest):
-    """Inscription d'un nouvel utilisateur."""
+def register(request: Request, body: RegisterRequest, lang: str = Depends(get_lang)):
+    """Inscription d'un nouvel utilisateur. Erreurs i18n via Accept-Language."""
     from api.auth import register_user
     result = register_user(
         email=body.email,
         password=body.password,
         name=body.name,
         language=body.language,
+        lang=lang,
     )
     return AuthResponse(
         user=UserResponse(**result["user"]),
@@ -124,10 +126,10 @@ def forgot_password_endpoint(request: Request, body: ForgotPasswordRequest):
 
 @router.post("/auth/reset-password")
 @limiter.limit("5/minute")
-def reset_password_endpoint(request: Request, body: ResetPasswordRequest):
-    """Valide le token et met à jour le mot de passe."""
+def reset_password_endpoint(request: Request, body: ResetPasswordRequest, lang: str = Depends(get_lang)):
+    """Valide le token et met à jour le mot de passe. Erreurs i18n."""
     from api.auth import reset_password
-    reset_password(body.token, body.new_password)
+    reset_password(body.token, body.new_password, lang=lang)
     return {"message": "Mot de passe mis à jour avec succès. Vous pouvez vous reconnecter."}
 
 
