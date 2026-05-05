@@ -26,15 +26,12 @@ const REGION_DEFS = [
   { id: 'flandre',   flag: '🦁', labelKey: 'region_fla', subKey: 'region_fla_sub' },
 ];
 
+// Refocalisation 2026-05-05 : 4 langues (BE officielles + EN).
 const LANGUAGES = [
   { code: 'fr', flag: '🇫🇷', label: 'Français' },
   { code: 'nl', flag: '🇳🇱', label: 'Nederlands' },
   { code: 'en', flag: '🇬🇧', label: 'English' },
   { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
-  { code: 'ar', flag: '🇦🇪', label: 'العربية' },
-  { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
-  { code: 'es', flag: '🇪🇸', label: 'Español' },
-  { code: 'pt', flag: '🇵🇹', label: 'Português' },
 ];
 
 export default function OnboardingScreen({ navigation, onDone }) {

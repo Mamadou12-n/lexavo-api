@@ -21,15 +21,12 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Disclaimer } from '../components/ui/Disclaimer';
 
+// Refocalisation 2026-05-05 : 4 langues (BE officielles + EN).
 const LANGUAGES = [
   { code: 'fr', label: 'Français',   flag: '🇫🇷' },
   { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
   { code: 'de', label: 'Deutsch',    flag: '🇩🇪' },
   { code: 'en', label: 'English',    flag: '🇬🇧' },
-  { code: 'es', label: 'Español',    flag: '🇪🇸' },
-  { code: 'it', label: 'Italiano',   flag: '🇮🇹' },
-  { code: 'pt', label: 'Português',  flag: '🇵🇹' },
-  { code: 'ar', label: 'العربية',    flag: '🇸🇦' },
 ];
 
 // /shape — icônes Ionicons pour les features campus

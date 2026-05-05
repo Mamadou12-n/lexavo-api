@@ -3,10 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nManager } from 'react-native';
 import { translations } from '../i18n/translations';
 
-const RTL_LANGS = ['ar'];
+// Refocalisation 2026-05-05 : 4 langues (FR/NL officielles BE + EN international + DE).
+// Suppression ES/IT/PT/AR/TR. Plus de RTL pour le moment.
+export const SUPPORTED_LANGS = ['fr', 'nl', 'en', 'de'];
+const RTL_LANGS = [];
 
 export const LANG_KEY = '@lexavo_lang';
 const LEGACY_LANG_KEYS = ['lexavo_lang', '@lexavo_language'];
+
+function normalizeLang(code) {
+  if (!code) return 'fr';
+  const lower = String(code).toLowerCase().slice(0, 2);
+  return SUPPORTED_LANGS.includes(lower) ? lower : 'fr';
+}
 
 const LanguageContext = createContext(null);
 
@@ -29,11 +38,15 @@ export function LanguageProvider({ children }) {
             }
           }
         }
-        if (v && mounted) {
-          setLangState(v);
-          applyRTL(v);
-        } else {
-          applyRTL('fr');
+        const normalized = normalizeLang(v);
+        // Si l'utilisateur avait stocke une langue desormais non supportee
+        // (ex : 'ar' avant le passage a 4 langues), on persiste le fallback 'fr'.
+        if (v && v !== normalized) {
+          await AsyncStorage.setItem(LANG_KEY, normalized).catch(() => {});
+        }
+        if (mounted) {
+          setLangState(normalized);
+          applyRTL(normalized);
         }
       } catch (_) {}
     })();
@@ -54,9 +67,10 @@ export function LanguageProvider({ children }) {
   };
 
   const setLang = async (code) => {
-    setLangState(code);
-    applyRTL(code);
-    await AsyncStorage.setItem(LANG_KEY, code).catch(() => {});
+    const normalized = normalizeLang(code);
+    setLangState(normalized);
+    applyRTL(normalized);
+    await AsyncStorage.setItem(LANG_KEY, normalized).catch(() => {});
   };
 
   const t = (key) => {
