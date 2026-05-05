@@ -18,6 +18,7 @@ import {
   getCachedUser,
 } from '../api/client';
 import { colors, typography, spacing, radius, elevation } from '../theme/designSystem';
+import { useLanguage } from '../context/LanguageContext';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── Plans alignes sur le backend ──────────────────────────────────────────
@@ -161,6 +162,7 @@ const PLANS = [
 ];
 
 export default function SubscriptionScreen() {
+  const { t } = useLanguage();
   const [status, setStatus]         = useState(null);
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -257,9 +259,11 @@ export default function SubscriptionScreen() {
     const price = billing === 'annual' && plan.annual
       ? plan.annual
       : plan.monthly;
-    if (price === 0)  return 'Gratuit';
-    if (price === -1) return 'Sur devis';
-    const suffix = billing === 'annual' ? ' / an' : ' / mois';
+    if (price === 0)  return t('subscription_price_free');
+    if (price === -1) return t('subscription_price_quote');
+    const suffix = billing === 'annual'
+      ? ` ${t('subscription_per_year')}`
+      : ` ${t('subscription_per_month')}`;
     return `${price.toFixed(2).replace('.', ',')}€${suffix}`;
   };
 
@@ -276,17 +280,17 @@ export default function SubscriptionScreen() {
 
       {/* Hero */}
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Choisissez votre plan</Text>
-        <Text style={styles.heroSub}>Investissez dans votre s{'\u00E9'}curit{'\u00E9'} juridique</Text>
+        <Text style={styles.heroTitle}>{t('subscription_hero_title')}</Text>
+        <Text style={styles.heroSub}>{t('subscription_hero_sub')}</Text>
         {user && (
           <Text style={styles.heroEmail}>{user.email}</Text>
         )}
         {status && (
           <View style={styles.currentPlanBadge}>
             <Text style={styles.currentPlanText}>
-              Plan actuel : {PLANS.find(p => p.id === currentPlanId)?.name ?? currentPlanId}
+              {t('subscription_current_plan')} : {PLANS.find(p => p.id === currentPlanId)?.name ?? currentPlanId}
               {status.current_period_end
-                ? ` \u00B7 actif jusqu'au ${status.current_period_end.slice(0, 10)}`
+                ? ` \u00B7 ${t('subscription_active_until')} ${status.current_period_end.slice(0, 10)}`
                 : ''}
             </Text>
           </View>
@@ -296,11 +300,8 @@ export default function SubscriptionScreen() {
       {/* Beta banner — date volontairement cachee, notification par email J-30 */}
       {isBeta && (
         <View style={styles.betaBanner}>
-          <Text style={styles.betaTitle}>Acces complet offert</Text>
-          <Text style={styles.betaText}>
-            Profitez de toutes les fonctionnalites Lexavo gratuitement.{'\n'}
-            Pas de carte bancaire requise.
-          </Text>
+          <Text style={styles.betaTitle}>{t('subscription_beta_title')}</Text>
+          <Text style={styles.betaText}>{t('subscription_beta_text')}</Text>
         </View>
       )}
 
@@ -311,11 +312,11 @@ export default function SubscriptionScreen() {
           onPress={() => setBilling('monthly')}
           accessible={true}
           accessibilityRole="tab"
-          accessibilityLabel="Facturation mensuelle"
+          accessibilityLabel={t('subscription_billing_monthly')}
           accessibilityState={{ selected: billing === 'monthly' }}
         >
           <Text style={[styles.toggleText, billing === 'monthly' && styles.toggleTextActive]}>
-            Mensuel
+            {t('subscription_billing_monthly')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity activeOpacity={0.75}
@@ -323,11 +324,11 @@ export default function SubscriptionScreen() {
           onPress={() => setBilling('annual')}
           accessible={true}
           accessibilityRole="tab"
-          accessibilityLabel="Facturation annuelle, économie 17%"
+          accessibilityLabel={`${t('subscription_billing_annual')} -17%`}
           accessibilityState={{ selected: billing === 'annual' }}
         >
           <Text style={[styles.toggleText, billing === 'annual' && styles.toggleTextActive]}>
-            Annuel
+            {t('subscription_billing_annual')}
           </Text>
           <View style={[styles.savePill, { backgroundColor: colors.warning }]}>
             <Text style={styles.saveText}>-17%</Text>
@@ -339,7 +340,7 @@ export default function SubscriptionScreen() {
       {status && status.questions_limit !== -1 && !isBeta && (
         <View style={styles.quotaBar}>
           <Text style={styles.quotaLabel}>
-            {status.questions_used} / {status.questions_limit} questions ce mois
+            {status.questions_used} / {status.questions_limit} {t('subscription_quota_text')}
           </Text>
           <View style={styles.quotaTrack}>
             <View style={[
@@ -392,7 +393,7 @@ export default function SubscriptionScreen() {
               </View>
               {isCurrent && (
                 <View style={styles.activePill}>
-                  <Text style={styles.activePillText}>Actif</Text>
+                  <Text style={styles.activePillText}>{t('subscription_active_pill')}</Text>
                 </View>
               )}
             </View>
@@ -433,7 +434,7 @@ export default function SubscriptionScreen() {
                   ? <View style={styles.subscribeBtnFallback}><ActivityIndicator color="#FFF" /></View>
                   : <View style={[styles.subscribeBtn, { backgroundColor: plan.highlight ? '#8B5CF6' : colors.brandNavy }]}>
                       <Text style={styles.subscribeBtnText}>
-                        {isEnterprise ? 'Nous contacter' : `Souscrire \u2014 ${priceLabel}`}
+                        {isEnterprise ? t('subscription_cta_contact') : `${t('subscription_cta_subscribe')} \u2014 ${priceLabel}`}
                       </Text>
                     </View>
                 }
@@ -441,8 +442,8 @@ export default function SubscriptionScreen() {
             )}
 
             {isCurrent && plan.id !== 'free' && (
-              <TouchableOpacity activeOpacity={0.75} style={styles.cancelBtn} onPress={handleCancel} accessible={true} accessibilityRole="button" accessibilityLabel="Gérer ou annuler l'abonnement">
-                <Text style={styles.cancelBtnText}>Gerer / Annuler l'abonnement</Text>
+              <TouchableOpacity activeOpacity={0.75} style={styles.cancelBtn} onPress={handleCancel} accessible={true} accessibilityRole="button" accessibilityLabel={t('subscription_cta_manage')}>
+                <Text style={styles.cancelBtnText}>{t('subscription_cta_manage')}</Text>
               </TouchableOpacity>
             )}
           </>
@@ -472,16 +473,11 @@ export default function SubscriptionScreen() {
 
       {/* Legal */}
       <View style={styles.legalBox}>
-        <Text style={styles.legalText}>
-          Paiements securises via Stripe (PCI-DSS){'\n'}
-          Facture TVA belge disponible{'\n'}
-          ↩️ Droit de retractation 14 jours (Art. VI.47 CDE){'\n'}
-          Renouvellement automatique — annulation a tout moment
-        </Text>
+        <Text style={styles.legalText}>{t('subscription_legal')}</Text>
       </View>
 
-      <TouchableOpacity activeOpacity={0.75} style={styles.restoreBtn} onPress={handleRestore} accessible={true} accessibilityRole="button" accessibilityLabel="Restaurer un abonnement existant">
-        <Text style={styles.restoreBtnText}>Restaurer un abonnement existant</Text>
+      <TouchableOpacity activeOpacity={0.75} style={styles.restoreBtn} onPress={handleRestore} accessible={true} accessibilityRole="button" accessibilityLabel={t('subscription_restore')}>
+        <Text style={styles.restoreBtnText}>{t('subscription_restore')}</Text>
       </TouchableOpacity>
 
     </ScrollView>
