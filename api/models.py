@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 class RegisterRequest(BaseModel):
     """Corps de la requête POST /auth/register."""
     email: str = Field(..., description="Adresse email")
-    password: str = Field(..., min_length=6, description="Mot de passe (min 6 caractères)")
+    password: str = Field(..., min_length=8, description="Mot de passe (min 8 caractères)")
     name: str = Field(..., min_length=2, description="Nom complet")
     language: str = Field(default="fr", description="Langue : fr, nl, en")
 

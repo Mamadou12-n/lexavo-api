@@ -135,10 +135,10 @@ def register_user(email: str, password: str, name: str, language: str = "fr") ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Adresse email invalide.",
         )
-    if not password or len(password) < 6:
+    if not password or len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le mot de passe doit contenir au moins 6 caractères.",
+            detail="Le mot de passe doit contenir au moins 8 caractères.",
         )
     if not name or len(name.strip()) < 2:
         raise HTTPException(
@@ -227,8 +227,8 @@ def forgot_password(email: str) -> str:
 def reset_password(token: str, new_password: str) -> bool:
     """Valide le token et met à jour le mot de passe. Retourne True si succès."""
     from api.database import get_password_reset_token, mark_password_reset_token_used, update_user_password
-    if len(new_password) < 6:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères.")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères.")
     row = get_password_reset_token(token)
     if not row:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré.")

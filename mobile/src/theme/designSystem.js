@@ -74,7 +74,7 @@ export const typography = {
   sizeH2:      20,
   sizeBody:    16,
   sizeSmall:   13,
-  sizeCaption: 11,
+  sizeCaption: 12,
 
   // Line-heights — ratio ~1.25
   lineDisplay: 40,
