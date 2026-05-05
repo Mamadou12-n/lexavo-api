@@ -86,6 +86,44 @@ _MESSAGES: Final[dict[str, dict[str, str]]] = {
         "en": "Invalid or expired token.",
         "de": "Ungültiges oder abgelaufenes Token.",
     },
+    # Push notifications (cf. api/push.py)
+    "push_new_answer_title": {
+        "fr": "Nouvelle réponse",
+        "nl": "Nieuw antwoord",
+        "en": "New answer",
+        "de": "Neue Antwort",
+    },
+    "push_new_answer_body": {
+        "fr": "Votre question juridique a été analysée.",
+        "nl": "Uw juridische vraag is geanalyseerd.",
+        "en": "Your legal question has been analyzed.",
+        "de": "Ihre Rechtsfrage wurde analysiert.",
+    },
+    "push_beta_ending_j30_title": {
+        "fr": "Votre beta se termine dans 30 jours",
+        "nl": "Uw beta eindigt over 30 dagen",
+        "en": "Your beta ends in 30 days",
+        "de": "Ihre Beta endet in 30 Tagen",
+    },
+    "push_beta_ending_j30_body": {
+        "fr": "Bloquez votre tarif fondateur 3,99€/mois à vie.",
+        "nl": "Reserveer uw oprichterstarief van €3,99/maand voor het leven.",
+        "en": "Lock in your founder price of €3.99/month forever.",
+        "de": "Sichern Sie sich den Gründerpreis von 3,99 €/Monat lebenslang.",
+    },
+    "push_beta_ending_j7_title": {
+        "fr": "Plus que 7 jours de beta",
+        "nl": "Nog 7 dagen beta",
+        "en": "Only 7 days of beta left",
+        "de": "Nur noch 7 Tage Beta",
+    },
+    "push_beta_ending_j7_body": {
+        "fr": "Activez Particulier avant la fin de la beta.",
+        "nl": "Activeer Particulier vóór het einde van de beta.",
+        "en": "Activate Individual before the beta ends.",
+        "de": "Aktivieren Sie Privat vor dem Beta-Ende.",
+    },
+
     # Generic
     "internal_error": {
         "fr": "Une erreur interne est survenue. Veuillez réessayer.",
