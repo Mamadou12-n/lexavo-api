@@ -169,8 +169,11 @@ PLANS = {
     },
 }
 
-# Plans payants pouvant etre achetes via Stripe checkout
-PAID_PLANS = {"basic", "pro", "business", "firm_s", "firm_m"}
+# Plans payants pouvant etre achetes via Stripe checkout.
+# Refocalisation 2026-05-05 : segments cibles = etudiants + particuliers uniquement.
+# Plans pro/business/firm_s/firm_m masques (code conserve pour reactivation future,
+# mais checkout bloque cote API pour eviter fraude/double-facturation).
+PAID_PLANS = {"basic"}
 
 
 # ─── Checkout ────────────────────────────────────────────────────────────────
