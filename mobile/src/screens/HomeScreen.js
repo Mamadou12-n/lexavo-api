@@ -16,7 +16,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubscriptionStatus, setLanguage as setClientLang } from '../api/client';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, typography, spacing, radius, elevation, motion } from '../theme/designSystem';
+import { colors, typography, spacing, radius, elevation, motion, touch } from '../theme/designSystem';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Disclaimer } from '../components/ui/Disclaimer';
@@ -38,13 +38,19 @@ const CAMPUS_FEATURES = [
 ];
 
 // /clarify — labels citoyens
-const TOOL_DEFS = [
+// Refocalisation 2026-05-05 : 4 outils visibles + 3 outils sous "Voir plus".
+// Segment "Particulier" — outils citoyens grand public.
+const TOOL_VISIBLE = [
   { icon: 'shield-checkmark-outline', color: colors.brand,  titleKey: 'tool_contester',    subKey: 'tool_contester_sub',    screen: 'Defend'       },
   { icon: 'document-text-outline',    color: '#C0392B',     titleKey: 'tool_document',     subKey: 'tool_document_sub',     screen: 'Shield'       },
-  { icon: 'search-outline',           color: '#8E44AD',     titleKey: 'tool_diagnostic',   subKey: 'tool_diagnostic_sub',   screen: 'Diagnostic'   },
   { icon: 'calculator-outline',       color: '#1A6B8A',     titleKey: 'tool_calculateurs', subKey: 'tool_calculateurs_sub', screen: 'Calculateurs' },
-  { icon: 'receipt-outline',          color: '#34495E',     titleKey: 'tool_fiscal',       subKey: 'tool_fiscal_sub',       screen: 'Fiscal'       },
+  { icon: 'search-outline',           color: '#8E44AD',     titleKey: 'tool_diagnostic',   subKey: 'tool_diagnostic_sub',   screen: 'Diagnostic'   },
+];
+
+const TOOL_HIDDEN = [
   { icon: 'git-branch-outline',       color: '#8B4513',     titleKey: 'tool_heritage',     subKey: 'tool_heritage_sub',     screen: 'Heritage'     },
+  { icon: 'receipt-outline',          color: '#34495E',     titleKey: 'tool_fiscal',       subKey: 'tool_fiscal_sub',       screen: 'Fiscal'       },
+  { icon: 'pulse-outline',            color: '#16A085',     titleKey: 'tool_score',        subKey: 'tool_score_sub',        screen: 'Score'        },
 ];
 
 export default function HomeScreen({ navigation }) {
@@ -52,6 +58,11 @@ export default function HomeScreen({ navigation }) {
   const [quota, setQuota]           = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [langModal, setLangModal]   = useState(false);
+  // Toggle segment : 'particulier' (defaut) | 'etudiant'.
+  // Particulier -> 4 outils visibles + bouton "Voir plus" (modal 3 outils caches).
+  // Etudiant    -> section Lexavo Campus (Quiz / Tutor / NotebookLM / OCR).
+  const [segment, setSegment]       = useState('particulier');
+  const [moreModal, setMoreModal]   = useState(false);
 
   const selectLang = async (code) => {
     await setLang(code);
@@ -175,81 +186,178 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ═══ LEXAVO CAMPUS — fond navy solide, ZÉRO LinearGradient décoratif ═══ */}
-      <View style={styles.campusSection}>
-        <View style={styles.campusCard}>
-          {/* SUPPRIMÉ : campusGlow — /quieter */}
-          <Ionicons
-            name="school-outline"
-            size={36}
-            color={colors.brand}
-            style={styles.campusIconView}
-            accessibilityElementsHidden
-          />
-          <Text style={styles.campusTitle}>LEXAVO CAMPUS</Text>
-          <Text style={styles.campusTagline}>{t('campus_tagline')}</Text>
+      {/* ═══ SEGMENT TOGGLE — Particulier ↔ Etudiant ═══ */}
+      <View style={styles.segmentWrap}>
+        <View style={styles.segmentTrack} accessibilityRole="tablist">
+          <TouchableOpacity
+            style={[styles.segmentBtn, segment === 'particulier' && styles.segmentBtnActive]}
+            onPress={() => setSegment('particulier')}
+            activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: segment === 'particulier' }}
+            accessibilityLabel={t('segment_particulier')}
+          >
+            <Ionicons
+              name="people-outline"
+              size={16}
+              color={segment === 'particulier' ? colors.textOnBrand : colors.textMuted}
+              accessibilityElementsHidden
+            />
+            <Text style={[styles.segmentBtnText, segment === 'particulier' && styles.segmentBtnTextActive]}>
+              {t('segment_particulier')}
+            </Text>
+          </TouchableOpacity>
 
-          {/* 4 features — icônes Ionicons avec fond solide teinté, ZÉRO LinearGradient ici */}
-          <View style={styles.campusGrid}>
-            {CAMPUS_FEATURES.map((feat, idx) => (
-              <View key={idx} style={styles.campusFeature}>
-                {/* Fond solid teinté — /quieter : remplace les 4 LinearGradient */}
-                <View style={[styles.campusFeatureIcon, { backgroundColor: `${feat.color}22` }]}>
-                  <Ionicons name={feat.icon} size={20} color={feat.color} accessibilityElementsHidden />
+          <TouchableOpacity
+            style={[styles.segmentBtn, segment === 'etudiant' && styles.segmentBtnActive]}
+            onPress={() => setSegment('etudiant')}
+            activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: segment === 'etudiant' }}
+            accessibilityLabel={t('segment_etudiant')}
+          >
+            <Ionicons
+              name="school-outline"
+              size={16}
+              color={segment === 'etudiant' ? colors.textOnBrand : colors.textMuted}
+              accessibilityElementsHidden
+            />
+            <Text style={[styles.segmentBtnText, segment === 'etudiant' && styles.segmentBtnTextActive]}>
+              {t('segment_etudiant')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ═══ SEGMENT : ETUDIANT — Lexavo Campus ═══ */}
+      {segment === 'etudiant' && (
+        <View style={styles.campusSection}>
+          <View style={styles.campusCard}>
+            <Ionicons
+              name="school-outline"
+              size={36}
+              color={colors.brand}
+              style={styles.campusIconView}
+              accessibilityElementsHidden
+            />
+            <Text style={styles.campusTitle}>LEXAVO CAMPUS</Text>
+            <Text style={styles.campusTagline}>{t('campus_tagline')}</Text>
+
+            <View style={styles.campusGrid}>
+              {CAMPUS_FEATURES.map((feat, idx) => (
+                <View key={idx} style={styles.campusFeature}>
+                  <View style={[styles.campusFeatureIcon, { backgroundColor: `${feat.color}22` }]}>
+                    <Ionicons name={feat.icon} size={20} color={feat.color} accessibilityElementsHidden />
+                  </View>
+                  <Text style={styles.campusFeatureLabel} allowFontScaling={true}>{t(feat.labelKey)}</Text>
+                  <Text style={styles.campusFeatureSub} allowFontScaling={true}>{t(feat.subKey)}</Text>
                 </View>
-                <Text style={styles.campusFeatureLabel} allowFontScaling={true}>{t(feat.labelKey)}</Text>
-                <Text style={styles.campusFeatureSub} allowFontScaling={true}>{t(feat.subKey)}</Text>
-              </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Campus')}
+              style={styles.campusCTA}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('campus_cta')}
+            >
+              <Text style={styles.campusCTAText}>{t('campus_cta')}</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.campusNote}>{t('campus_note')}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* ═══ SEGMENT : PARTICULIER — 4 outils visibles + Voir plus ═══ */}
+      {segment === 'particulier' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('tools_title')}</Text>
+          <View style={styles.grid}>
+            {TOOL_VISIBLE.map((tool, index) => (
+              <Animated.View
+                key={tool.screen}
+                entering={FadeInDown
+                  .delay(index * motion.stagger)
+                  .duration(motion.normal)
+                  .springify()}
+                style={styles.toolCardWrapper}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  style={styles.toolCard}
+                  onPress={() => goTool(tool.screen)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t(tool.titleKey)} — ${t(tool.subKey)}`}
+                >
+                  <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
+                    <Ionicons name={tool.icon} size={22} color={tool.color} accessibilityElementsHidden />
+                  </View>
+                  <Text style={styles.toolTitle} allowFontScaling={true}>{t(tool.titleKey)}</Text>
+                  <Text style={styles.toolSub} allowFontScaling={true}>{t(tool.subKey)}</Text>
+                </TouchableOpacity>
+              </Animated.View>
             ))}
           </View>
 
-          {/* CTA — couleur brand solid, ZÉRO LinearGradient */}
+          {/* CTA Voir plus — ouvre modal avec TOOL_HIDDEN */}
           <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('Campus')}
-            style={styles.campusCTA}
-            accessible={true}
+            style={styles.viewMoreBtn}
+            activeOpacity={0.8}
+            onPress={() => setMoreModal(true)}
             accessibilityRole="button"
-            accessibilityLabel={t('campus_cta')}
+            accessibilityLabel={t('view_more')}
           >
-            <Text style={styles.campusCTAText}>{t('campus_cta')}</Text>
+            <Ionicons name="add-circle-outline" size={18} color={colors.brand} accessibilityElementsHidden />
+            <Text style={styles.viewMoreText}>{t('view_more')}</Text>
           </TouchableOpacity>
-
-          <Text style={styles.campusNote}>{t('campus_note')}</Text>
         </View>
-      </View>
+      )}
 
-      {/* ═══ OUTILS JURIDIQUES ═══ */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('tools_title')}</Text>
-        <View style={styles.grid}>
-          {TOOL_DEFS.map((tool, index) => (
-            <Animated.View
-              key={tool.screen}
-              entering={FadeInDown
-                .delay(index * motion.stagger)
-                .duration(motion.normal)
-                .springify()}
-              style={styles.toolCardWrapper}
-            >
+      {/* ═══ MODAL "VOIR PLUS" — outils caches segment particulier ═══ */}
+      <Modal
+        visible={moreModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setMoreModal(false)}
+          accessibilityRole="button"
+          accessibilityLabel={t('view_more_close')}
+        >
+          <View style={styles.moreModal}>
+            <Text style={styles.moreModalTitle}>{t('view_more_title')}</Text>
+            {TOOL_HIDDEN.map(tool => (
               <TouchableOpacity
+                key={tool.screen}
+                style={styles.moreModalRow}
                 activeOpacity={0.75}
-                style={styles.toolCard}
-                onPress={() => goTool(tool.screen)}
-                accessible={true}
+                onPress={() => {
+                  setMoreModal(false);
+                  goTool(tool.screen);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`${t(tool.titleKey)} — ${t(tool.subKey)}`}
               >
-                <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
-                  <Ionicons name={tool.icon} size={22} color={tool.color} accessibilityElementsHidden />
+                <View style={[styles.moreModalIcon, { backgroundColor: `${tool.color}18` }]}>
+                  <Ionicons name={tool.icon} size={20} color={tool.color} accessibilityElementsHidden />
                 </View>
-                <Text style={styles.toolTitle} allowFontScaling={true}>{t(tool.titleKey)}</Text>
-                <Text style={styles.toolSub} allowFontScaling={true}>{t(tool.subKey)}</Text>
+                <View style={styles.moreModalTexts}>
+                  <Text style={styles.moreModalRowTitle}>{t(tool.titleKey)}</Text>
+                  <Text style={styles.moreModalRowSub}>{t(tool.subKey)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} accessibilityElementsHidden />
               </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </View>
-      </View>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ═══ DISCLAIMER — composant unique /polish ═══ */}
       <View style={styles.disclaimerWrap}>
@@ -540,5 +648,115 @@ const styles = StyleSheet.create({
   disclaimerWrap: {
     marginHorizontal: spacing.base,
     marginTop: spacing.sm,
+  },
+
+  // ─── Segment toggle (Particulier / Etudiant) — design system Lexavo ───
+  segmentWrap: {
+    paddingHorizontal: spacing.base,
+    marginTop: spacing.lg,
+  },
+  segmentTrack: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.round,
+    padding: 4,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...elevation.low,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.round,
+    minHeight: touch.minSize,
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.brand,
+  },
+  segmentBtnText: {
+    fontFamily: typography.fontBodyMedium,
+    fontSize: typography.sizeSmall,
+    color: colors.textMuted,
+  },
+  segmentBtnTextActive: {
+    color: colors.textOnBrand,
+    fontFamily: typography.fontBodySemiBold,
+  },
+
+  // ─── Bouton "Voir plus" ───
+  viewMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    borderRadius: radius.round,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    minHeight: touch.minSize,
+  },
+  viewMoreText: {
+    fontFamily: typography.fontBodyMedium,
+    fontSize: typography.sizeSmall,
+    color: colors.brand,
+  },
+
+  // ─── Modal "Voir plus" ───
+  moreModal: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.base,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    maxWidth: 480,
+    width: '90%',
+    alignSelf: 'center',
+    ...elevation.high,
+  },
+  moreModalTitle: {
+    fontFamily: typography.fontDisplay,
+    fontSize: typography.sizeH2,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  moreModalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    gap: spacing.md,
+    minHeight: touch.minSize,
+  },
+  moreModalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreModalTexts: {
+    flex: 1,
+  },
+  moreModalRowTitle: {
+    fontFamily: typography.fontBodyMedium,
+    fontSize: typography.sizeBody,
+    color: colors.textPrimary,
+  },
+  moreModalRowSub: {
+    fontFamily: typography.fontBody,
+    fontSize: typography.sizeCaption,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

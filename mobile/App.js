@@ -53,7 +53,11 @@ import HomeScreen     from './src/screens/HomeScreen';
 import AskScreen      from './src/screens/AskScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-// 7 outils particuliers + Campus
+// Outils particuliers + Campus (refocalisation 2026-05-05).
+// 4 visibles HomeScreen : Defend, Shield, Diagnostic, Calculateurs.
+// 3 sous "Voir plus"   : Heritage, Fiscal, Score.
+// Match/Emergency restent dans le Stack pour navigation legacy
+// (caches du HomeScreen mais code conserve, decision produit 2026-05-05).
 import ShieldScreen        from './src/screens/ShieldScreen';
 import CalculateursScreen  from './src/screens/CalculateursScreen';
 import DiagnosticScreen    from './src/screens/DiagnosticScreen';
@@ -61,6 +65,8 @@ import MatchScreen         from './src/screens/MatchScreen';
 import EmergencyScreen     from './src/screens/EmergencyScreen';
 import FiscalScreen        from './src/screens/FiscalScreen';
 import DefendScreen        from './src/screens/DefendScreen';
+import HeritageScreen      from './src/screens/HeritageScreen';
+import ScoreScreen         from './src/screens/ScoreScreen';
 import StudentScreen       from './src/screens/StudentScreen';
 
 // Legal + Subscription + Notifications + History + Lawyers screens
@@ -107,9 +113,11 @@ function LexavoStack() {
       <LexavoStackNav.Screen name="Shield"       component={ShieldScreen}       options={{ headerTitle: 'Analyser un contrat' }} />
       <LexavoStackNav.Screen name="Diagnostic"   component={DiagnosticScreen}   options={{ headerTitle: 'Diagnostic juridique' }} />
       <LexavoStackNav.Screen name="Calculateurs" component={CalculateursScreen} options={{ headerTitle: 'Calculateurs juridiques' }} />
+      <LexavoStackNav.Screen name="Heritage"     component={HeritageScreen}     options={{ headerTitle: 'Guide successoral' }} />
+      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}       options={{ headerTitle: 'Questions fiscales' }} />
+      <LexavoStackNav.Screen name="Score"        component={ScoreScreen}        options={{ headerTitle: 'Score juridique' }} />
       <LexavoStackNav.Screen name="Match"        component={MatchScreen}        options={{ headerTitle: 'Trouver un avocat' }} />
       <LexavoStackNav.Screen name="Emergency"    component={EmergencyScreen}    options={{ headerTitle: 'Urgence juridique 24h' }} />
-      <LexavoStackNav.Screen name="Fiscal"       component={FiscalScreen}       options={{ headerTitle: 'Questions fiscales' }} />
     </LexavoStackNav.Navigator>
   );
 }

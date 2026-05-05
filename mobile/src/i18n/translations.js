@@ -87,6 +87,17 @@ export const translations = {
     tool_fiscal_sub: 'Questions fiscales',
     tool_heritage: 'Guide successoral',
     tool_heritage_sub: 'Héritage, donation, droits',
+    tool_score: 'Score juridique',
+    tool_score_sub: 'Évaluez votre santé juridique',
+
+    // Segment toggle (Particulier / Étudiant)
+    segment_particulier: 'Particulier',
+    segment_etudiant: 'Étudiant',
+
+    // Voir plus (modal outils)
+    view_more: 'Voir plus d\'outils',
+    view_more_title: 'Tous les outils',
+    view_more_close: 'Fermer',
 
     // Disclaimer
     disclaimer: 'Lexavo est un outil d\'information juridique. Il ne remplace pas un avocat.',
@@ -284,6 +295,17 @@ export const translations = {
     tool_fiscal_sub: 'Fiscale vragen',
     tool_heritage: 'Erfenisgids',
     tool_heritage_sub: 'Erfenis, schenking, rechten',
+    tool_score: 'Juridische score',
+    tool_score_sub: 'Beoordeel uw juridische gezondheid',
+
+    // Segment toggle (Particulier / Student)
+    segment_particulier: 'Particulier',
+    segment_etudiant: 'Student',
+
+    // Voir plus (modal outils)
+    view_more: 'Meer tools bekijken',
+    view_more_title: 'Alle tools',
+    view_more_close: 'Sluiten',
 
     disclaimer: 'Lexavo is een juridisch informatietool. Het vervangt geen advocaat.',
     disclaimer_long: 'Lexavo is een juridisch informatietool. Het vervangt geen advocaat of juridisch raadgever. Raadpleeg bij complexe geschillen een juridisch professional.',
@@ -472,6 +494,17 @@ export const translations = {
     tool_fiscal_sub: 'Tax questions',
     tool_heritage: 'Inheritance guide',
     tool_heritage_sub: 'Inheritance, gifts, rights',
+    tool_score: 'Legal score',
+    tool_score_sub: 'Assess your legal health',
+
+    // Segment toggle (Individual / Student)
+    segment_particulier: 'Individual',
+    segment_etudiant: 'Student',
+
+    // View more (tools modal)
+    view_more: 'See more tools',
+    view_more_title: 'All tools',
+    view_more_close: 'Close',
 
     disclaimer: 'Lexavo is a legal information tool. It does not replace a lawyer.',
     disclaimer_long: 'Lexavo is a legal information tool. It does not replace a lawyer or professional legal advisor. For complex disputes, consult a legal professional.',
@@ -660,6 +693,17 @@ export const translations = {
     tool_fiscal_sub: 'Steuerfragen',
     tool_heritage: 'Erbschaftsleitfaden',
     tool_heritage_sub: 'Erbe, Schenkung, Rechte',
+    tool_score: 'Rechts-Score',
+    tool_score_sub: 'Bewerten Sie Ihre rechtliche Lage',
+
+    // Segment toggle (Privat / Student)
+    segment_particulier: 'Privat',
+    segment_etudiant: 'Student',
+
+    // Mehr anzeigen (Tools-Modal)
+    view_more: 'Weitere Tools anzeigen',
+    view_more_title: 'Alle Tools',
+    view_more_close: 'Schließen',
 
     disclaimer: 'Lexavo ist ein juristisches Informationstool. Es ersetzt keinen Anwalt.',
     disclaimer_long: 'Lexavo ist ein juristisches Informationstool. Es ersetzt keinen Anwalt oder Rechtsberater. Bei komplexen Streitfällen konsultieren Sie einen Fachmann.',
