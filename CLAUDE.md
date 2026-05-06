@@ -317,7 +317,7 @@ Vérifications Phase F :
 5. ~~Pool DB PostgreSQL `asyncpg` ou `pool_size` (30 min)~~ — **✅ FAIT** `database.py:36-48` ThreadedConnectionPool
 6. ~~Pre-warm SentenceTransformer + Qdrant (2h)~~ — **✅ FAIT** `main.py:194-222` on_startup() précharge le modèle
 7. ~~Streaming SSE sur `/ask` (1j)~~ — **✅ FAIT** `routers/rag.py:207` StreamingResponse text/event-stream
-8. Payload index Qdrant + TextIndexParams (2h) — **⏳ à faire**
+8. ~~Payload index Qdrant + TextIndexParams (2h)~~ — **✅ FAIT (2026-05-06)** `indexer_qdrant.py:create_payload_indexes()` + `scripts/create_qdrant_indexes.py`
 9. ~~Sentry SDK Python + React Native (4h)~~ — **✅ FAIT** React Native (d26f99e) + Python backend (main.py:58-67)
 10. ~~Helper `extract_json_from_claude()` mutualisé (4h)~~ — **✅ FAIT (2026-05-06)** commit ea50c85 — `api/utils/claude_json.py`
 11. ~~Fix SafeAreaView iOS notch wrap (30 min)~~ — **✅ FAIT (2026-05-04)** commit c90193a
@@ -327,7 +327,7 @@ Vérifications Phase F :
 15. ~~Eval set 50 Q/A gold + script `eval.py` (2j)~~ — **✅ FAIT** `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 16. ~~chromadb retiré de `requirements.txt`~~ — **✅ FAIT** absent du fichier
 
-**Score : 13/16 quick wins terminés. Restants : rotation secrets (Mamadou), payload index Qdrant, paywall progressif.**
+**Score : 14/16 quick wins terminés. Restants : rotation secrets (Mamadou), paywall progressif.**
 
 ---
 
@@ -392,6 +392,6 @@ Vérifications Phase F :
 12. ~~Sentry SDK Python (backend FastAPI)~~ ✅ FAIT — `main.py:58-67`
 13. ~~Eval set 50 Q/A gold standard + `eval.py`~~ ✅ FAIT — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 14. ~~Helper `extract_json_from_claude()`~~ ✅ FAIT 2026-05-06 — commit ea50c85
-15. Payload index Qdrant + TextIndexParams (2h) — **⏳ à faire**
+15. ~~Payload index Qdrant~~ ✅ FAIT 2026-05-06 — `rag/indexer_qdrant.py:create_payload_indexes()` + script `scripts/create_qdrant_indexes.py`
 16. Cap quota free + paywall progressif (1j) — **⏳ à faire**
 17. i18n SubscriptionScreen — **✅ FAIT 2026-05-06** commit 00feb75
