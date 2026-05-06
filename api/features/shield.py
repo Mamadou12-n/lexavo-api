@@ -6,6 +6,7 @@ import json
 import os
 import re
 import logging
+from api.utils.claude_json import extract_json_object
 from typing import Optional
 
 log = logging.getLogger("shield")
@@ -205,10 +206,8 @@ def analyze_contract_text(
 
     # Parse JSON avec gestion d'erreur robuste
     try:
-        json_match = re.search(r'\{[\s\S]*\}', raw)
-        if json_match:
-            result = json.loads(json_match.group())
-        else:
+        result = extract_json_object(raw)
+        if result is None:
             raise ValueError("Pas de JSON dans la reponse")
     except (json.JSONDecodeError, ValueError):
         log.error("Shield: Claude n'a pas retourné de JSON valide")

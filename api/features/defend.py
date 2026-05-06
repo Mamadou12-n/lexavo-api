@@ -10,6 +10,7 @@ import json
 import os
 import re
 import logging
+from api.utils.claude_json import extract_json_object
 from typing import Optional, List
 from datetime import datetime
 
@@ -401,10 +402,8 @@ def analyze_and_generate(
 
     # Parse JSON robuste
     try:
-        json_match = re.search(r'\{[\s\S]*\}', raw)
-        if json_match:
-            result = json.loads(json_match.group())
-        else:
+        result = extract_json_object(raw)
+        if result is None:
             raise ValueError("Pas de JSON")
     except (json.JSONDecodeError, ValueError):
         log.warning("Defend JSON parsing failed, using fallback")
@@ -696,11 +695,7 @@ def scan_amende(photos_base64: List[str], category: str = "amende") -> dict:
         )
         raw = resp.content[0].text.strip()
 
-        json_match = re.search(r'\{[\s\S]*\}', raw)
-        if json_match:
-            extracted = json.loads(json_match.group())
-        else:
-            extracted = {}
+        extracted = extract_json_object(raw) or {}
     except Exception as e:
         log.error(f"Erreur scan amende : {e}")
         extracted = {"confidence": 0.0, "error": str(e)}

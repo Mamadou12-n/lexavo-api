@@ -9,6 +9,7 @@ import json
 import os
 import re
 import logging
+from api.utils.claude_json import extract_json_object, extract_json_array
 from typing import List, Optional
 from datetime import datetime
 
@@ -318,10 +319,8 @@ Reponds en JSON :
         )
 
         raw = response.content[0].text.strip()
-        json_match = re.search(r'\[[\s\S]*\]', raw)
-        if json_match:
-            return json.loads(json_match.group())
-        return []
+        result_list = extract_json_array(raw)
+        return result_list if result_list is not None else []
 
     except Exception as e:
         log.error(f"Erreur generation recommandations IA : {e}")

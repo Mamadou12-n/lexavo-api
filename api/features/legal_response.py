@@ -5,6 +5,7 @@ import json
 import os
 import re
 import logging
+from api.utils.claude_json import extract_json_object
 from typing import Optional
 
 log = logging.getLogger("legal_response")
@@ -117,10 +118,8 @@ def generate_response(
 
     raw = response.content[0].text.strip()
     try:
-        json_match = re.search(r'\{[\s\S]*\}', raw)
-        if json_match:
-            result = json.loads(json_match.group())
-        else:
+        result = extract_json_object(raw)
+        if result is None:
             raise ValueError("Pas de JSON")
     except (json.JSONDecodeError, ValueError):
         log.warning("Legal response JSON parsing failed, using fallback")
