@@ -1,5 +1,41 @@
 # CLAUDE.md — Lexavo "Le droit pour tous"
 
+## ⚠️ TODO MAMADOU — Actions manuelles à faire (hors code)
+
+> **Code 100% release-ready (15/16 quick wins ✅).** Reste 2 actions manuelles côté infra Railway/Qdrant — rien à coder.
+
+### 1. 🔐 Rotation des secrets `.env` (sécurité CRITIQUE)
+**Pourquoi** : les secrets live Stripe + Anthropic + JWT sont en clair sur disque Windows (audit 2026-05-02 — risque CVSS 9.1).
+
+```
+1. Aller sur https://railway.app → Lexavo project → Variables
+2. Régénérer chaque clé sur sa source officielle :
+   - STRIPE_SECRET_KEY      → https://dashboard.stripe.com/apikeys (Roll key)
+   - STRIPE_WEBHOOK_SECRET  → Régénérer dans webhook config
+   - ANTHROPIC_API_KEY      → https://console.anthropic.com/settings/keys
+   - LEXAVO_JWT_SECRET      → openssl rand -hex 64 (nouvelle clé)
+3. Coller les NOUVELLES valeurs dans Railway env vars
+4. Sur Windows : supprimer ~/.env du disque (les nouvelles vivent SEULEMENT sur Railway)
+5. Redéployer Railway (auto sur push) — vérifier health endpoint
+6. Invalider tous les JWT existants : tous les users devront se reconnecter (normal)
+```
+
+⏱ Durée : 30 min · Bloquant prod : non · Risque sécurité : 🔴 critique
+
+### 2. 🚀 Activer payload indexes Qdrant cloud (perf)
+**Pourquoi** : ~20× speedup sur les filtres source/jurisdiction/text. Code livré, reste à exécuter sur le Qdrant cloud prod.
+
+```bash
+# Une seule fois, avec les credentials Qdrant cloud :
+QDRANT_URL=https://xxx.cloud.qdrant.io \
+QDRANT_API_KEY=ton_api_key \
+python scripts/create_qdrant_indexes.py
+```
+
+⏱ Durée : 2-5 min (indexation 3,5M chunks) · Bloquant : non · Idempotent ✅
+
+---
+
 ## Identité
 
 - **Nom** : Lexavo — assistant juridique belge (SRL en cours d'immatriculation)
