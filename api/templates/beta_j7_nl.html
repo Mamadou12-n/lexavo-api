@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lexavo — Nog maar 7 dagen</title>
+<style>
+  body{margin:0;padding:0;background:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;padding:24px 16px;}
+  .card{background:#FFF;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .header{background:#C45A2D;padding:32px 28px;text-align:center;}
+  .header h1{color:#FFF;font-size:22px;margin:0 0 6px;font-weight:700;}
+  .header p{color:rgba(255,255,255,.8);font-size:13px;margin:0;}
+  .body{padding:28px 28px;}
+  .body h2{color:#1C2B3A;font-size:17px;margin:0 0 14px;font-weight:700;}
+  .body p{color:#475569;font-size:14px;line-height:1.75;margin:0 0 14px;}
+  .countdown{background:#FEF2F2;border:2px solid #C45A2D;border-radius:12px;padding:20px;margin:20px 0;text-align:center;}
+  .countdown .days{font-size:48px;font-weight:900;color:#C45A2D;display:block;line-height:1;}
+  .countdown .label{font-size:13px;color:#475569;margin-top:6px;display:block;}
+  .alert{background:#FFFBEB;border-left:4px solid #F59E0B;padding:14px 16px;border-radius:0 8px 8px 0;margin:16px 0;}
+  .alert p{margin:0;color:#92400E;font-size:13px;line-height:1.6;}
+  .offer{background:#FFF7ED;border:2px solid #C45A2D;border-radius:12px;padding:18px 22px;margin:20px 0;}
+  .offer-title{font-size:14px;font-weight:800;color:#1C2B3A;margin:0 0 4px;}
+  .offer-price{font-size:26px;font-weight:900;color:#C45A2D;margin:0 0 2px;}
+  .offer-sub{font-size:12px;color:#78716C;margin:0;}
+  .offer-compare{font-size:12px;color:#475569;margin:4px 0 0;}
+  .offer-compare s{color:#94A3B8;}
+  .cta{display:block;background:#C45A2D;color:#FFF;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:700;font-size:15px;text-align:center;margin:22px 0 8px;}
+  .footer{background:#F1F5F9;padding:18px 28px;text-align:center;border-top:1px solid #E2E8F0;}
+  .footer p{color:#94A3B8;font-size:11px;margin:3px 0;}
+  .footer a{color:#C45A2D;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="header">
+    <h1>Laatste kans</h1>
+    <p>De oprichtersprijs verloopt over 7 dagen</p>
+  </div>
+  <div class="body">
+    <h2>Hallo {{NAME}},</h2>
+    <div class="countdown">
+      <span class="days">7</span>
+      <span class="label">dagen voor het einde van de beta</span>
+    </div>
+    <p>Op <strong>1 oktober 2026</strong> eindigt uw onbeperkte betatoegang. Uw account gaat automatisch naar het <strong>Free</strong>-plan (7 vragen/maand).</p>
+    <div class="alert">
+      <p><strong>De oprichtersprijs verloopt ook op 1 oktober.</strong> Daarna stijgt de prijs naar € 4,99/maand. U kunt dit aanbod daarna niet meer gebruiken.</p>
+    </div>
+    <div class="offer">
+      <div class="offer-title">Oprichtersprijs — Lexavo Particulier</div>
+      <div class="offer-price">€&nbsp;3,99<span style="font-size:15px;font-weight:600">/maand</span></div>
+      <div class="offer-sub">Voor het leven · Onbeperkte vragen · Alle tools</div>
+      <div class="offer-compare">Standaardprijs over 7 dagen: <s>€ 4,99/maand</s></div>
+    </div>
+    <a href="{{CHECKOUT_URL}}" class="cta">Nu activeren — € 3,99/maand →</a>
+    <p style="font-size:12px;color:#94A3B8;margin:0;">Geen verplichting. Annuleren met 1 klik. Uw geschiedenis blijft altijd bewaard.</p>
+  </div>
+  <div class="footer">
+    <p>Lexavo BV — Belgisch recht toegankelijk voor iedereen</p>
+    <p>Deze e-mail werd verzonden naar {{EMAIL}} · <a href="{{UNSUBSCRIBE_URL}}">Uitschrijven</a></p>
+  </div>
+</div></div>
+</body>
+</html>

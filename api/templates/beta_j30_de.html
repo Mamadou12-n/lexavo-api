@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lexavo — Ihre Beta endet in 30 Tagen</title>
+<style>
+  body{margin:0;padding:0;background:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;padding:24px 16px;}
+  .card{background:#FFF;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .header{background:#1C2B3A;padding:32px 28px;text-align:center;}
+  .header h1{color:#FFF;font-size:22px;margin:0 0 6px;font-weight:700;}
+  .header p{color:rgba(255,255,255,.65);font-size:13px;margin:0;}
+  .body{padding:28px 28px;}
+  .body h2{color:#1C2B3A;font-size:17px;margin:0 0 14px;font-weight:700;}
+  .body p{color:#475569;font-size:14px;line-height:1.75;margin:0 0 14px;}
+  .badge{display:inline-block;background:#FEF3C7;color:#92400E;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;margin-bottom:18px;}
+  .offer{background:#FFF7ED;border:2px solid #C45A2D;border-radius:12px;padding:20px 22px;margin:20px 0;}
+  .offer-title{font-size:15px;font-weight:800;color:#1C2B3A;margin:0 0 6px;}
+  .offer-price{font-size:28px;font-weight:900;color:#C45A2D;margin:0 0 4px;}
+  .offer-sub{font-size:12px;color:#78716C;margin:0 0 10px;}
+  .offer-compare{font-size:13px;color:#475569;margin:0;}
+  .offer-compare s{color:#94A3B8;}
+  .cta{display:block;background:#C45A2D;color:#FFF;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:700;font-size:15px;text-align:center;margin:22px 0 8px;}
+  .features{margin:18px 0 0;}
+  .features p{font-size:13px;color:#475569;margin:0 0 8px;font-weight:600;}
+  .feat{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#334155;padding:4px 0;}
+  .feat::before{content:"✓";color:#C45A2D;font-weight:700;flex-shrink:0;}
+  .footer{background:#F1F5F9;padding:18px 28px;text-align:center;border-top:1px solid #E2E8F0;}
+  .footer p{color:#94A3B8;font-size:11px;margin:3px 0;}
+  .footer a{color:#C45A2D;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="header">
+    <h1>Lexavo</h1>
+    <p>Belgisches Recht in Ihrer Tasche</p>
+  </div>
+  <div class="body">
+    <div class="badge">Noch 30 Tage</div>
+    <h2>Hallo {{NAME}},</h2>
+    <p>Vielen Dank, dass Sie einer der ersten Nutzer von Lexavo sind. Ihr vollständiger Beta-Zugang endet am <strong>1. Oktober 2026</strong>.</p>
+    <p>Als Dankeschön für Ihr Vertrauen bieten wir Ihnen den <strong>exklusiven Gründerpreis</strong> an — nur für Beta-Mitglieder, verfügbar bis zum 1. Oktober.</p>
+    <div class="offer">
+      <div class="offer-title">Gründerangebot — Lexavo Privat</div>
+      <div class="offer-price">3,99&nbsp;€<span style="font-size:16px;font-weight:600">/Monat</span></div>
+      <div class="offer-sub">Lebenslang, solange Ihr Abonnement aktiv bleibt</div>
+      <div class="offer-compare">Standardpreis nach dem 1. Oktober: <s>4,99 €/Monat</s></div>
+    </div>
+    <div class="features">
+      <p>Was Sie erhalten:</p>
+      <div class="feat">Unbegrenzte Fragen an die belgische Rechtsdatenbank</div>
+      <div class="feat">Unbegrenzte Vertragsanalyse (Shield)</div>
+      <div class="feat">Anfechtung von Verwaltungsentscheidungen (Defend)</div>
+      <div class="feat">Juristische Rechner (Kündigungsfrist, Erbschaft, Rente)</div>
+      <div class="feat">Personalisierte Rechtsdiagnose</div>
+      <div class="feat">Steuerlicher Copilot (MwSt., CIR für Selbstständige)</div>
+    </div>
+    <a href="{{CHECKOUT_URL}}" class="cta">Meinen Gründerpreis sichern →</a>
+    <p style="font-size:12px;color:#94A3B8;margin:0;">Keine Bindung. Kündigung mit 1 Klick. Ihr Verlauf bleibt immer erhalten.</p>
+  </div>
+  <div class="footer">
+    <p>Lexavo SRL — Belgisches Recht für alle zugänglich</p>
+    <p>Diese E-Mail wurde an {{EMAIL}} gesendet · <a href="{{UNSUBSCRIBE_URL}}">Abmelden</a></p>
+  </div>
+</div></div>
+</body>
+</html>

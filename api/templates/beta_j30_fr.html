@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lexavo — Votre beta se termine dans 30 jours</title>
+<style>
+  body{margin:0;padding:0;background:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;padding:24px 16px;}
+  .card{background:#FFF;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .header{background:#1C2B3A;padding:32px 28px;text-align:center;}
+  .header h1{color:#FFF;font-size:22px;margin:0 0 6px;font-weight:700;}
+  .header p{color:rgba(255,255,255,.65);font-size:13px;margin:0;}
+  .body{padding:28px 28px;}
+  .body h2{color:#1C2B3A;font-size:17px;margin:0 0 14px;font-weight:700;}
+  .body p{color:#475569;font-size:14px;line-height:1.75;margin:0 0 14px;}
+  .badge{display:inline-block;background:#FEF3C7;color:#92400E;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;margin-bottom:18px;}
+  .offer{background:#FFF7ED;border:2px solid #C45A2D;border-radius:12px;padding:20px 22px;margin:20px 0;}
+  .offer-title{font-size:15px;font-weight:800;color:#1C2B3A;margin:0 0 6px;}
+  .offer-price{font-size:28px;font-weight:900;color:#C45A2D;margin:0 0 4px;}
+  .offer-sub{font-size:12px;color:#78716C;margin:0 0 10px;}
+  .offer-compare{font-size:13px;color:#475569;margin:0;}
+  .offer-compare s{color:#94A3B8;}
+  .cta{display:block;background:#C45A2D;color:#FFF;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:700;font-size:15px;text-align:center;margin:22px 0 8px;}
+  .features{margin:18px 0 0;}
+  .features p{font-size:13px;color:#475569;margin:0 0 8px;font-weight:600;}
+  .feat{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#334155;padding:4px 0;}
+  .feat::before{content:"✓";color:#C45A2D;font-weight:700;flex-shrink:0;}
+  .footer{background:#F1F5F9;padding:18px 28px;text-align:center;border-top:1px solid #E2E8F0;}
+  .footer p{color:#94A3B8;font-size:11px;margin:3px 0;}
+  .footer a{color:#C45A2D;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="header">
+    <h1>Lexavo</h1>
+    <p>Le droit belge dans votre poche</p>
+  </div>
+  <div class="body">
+    <div class="badge">30 jours restants</div>
+    <h2>Bonjour {{NAME}},</h2>
+    <p>Merci de faire partie des premiers utilisateurs de Lexavo. Votre accès beta complet se termine le <strong>1er octobre 2026</strong>.</p>
+    <p>Pour vous remercier de votre confiance, nous vous offrons le <strong>tarif fondateur exclusif</strong> — réservé aux membres beta, disponible jusqu'au 1er octobre uniquement.</p>
+    <div class="offer">
+      <div class="offer-title">Offre Fondateur — Lexavo Particulier</div>
+      <div class="offer-price">3,99&nbsp;€<span style="font-size:16px;font-weight:600">/mois</span></div>
+      <div class="offer-sub">À vie, tant que vous gardez votre abonnement actif</div>
+      <div class="offer-compare">Prix standard après le 1er octobre : <s>4,99 €/mois</s></div>
+    </div>
+    <div class="features">
+      <p>Tout ce que vous obtenez :</p>
+      <div class="feat">Questions illimitées à la base juridique belge</div>
+      <div class="feat">Analyse de contrats illimitée (Shield)</div>
+      <div class="feat">Contestation de décisions administratives (Defend)</div>
+      <div class="feat">Calculateurs juridiques (préavis, succession, pension)</div>
+      <div class="feat">Diagnostic juridique personnalisé</div>
+      <div class="feat">Copilote fiscal (TVA, CIR pour indépendants)</div>
+    </div>
+    <a href="{{CHECKOUT_URL}}" class="cta">Bloquer mon tarif fondateur →</a>
+    <p style="font-size:12px;color:#94A3B8;margin:0;">Sans engagement. Annulation en 1 clic. Historique conservé dans tous les cas.</p>
+  </div>
+  <div class="footer">
+    <p>Lexavo SRL — Le droit belge accessible à tous</p>
+    <p>Cet email a été envoyé à {{EMAIL}} · <a href="{{UNSUBSCRIBE_URL}}">Se désabonner</a></p>
+  </div>
+</div></div>
+</body>
+</html>
