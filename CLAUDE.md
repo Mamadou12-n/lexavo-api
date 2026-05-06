@@ -322,12 +322,12 @@ Vérifications Phase F :
 10. ~~Helper `extract_json_from_claude()` mutualisé (4h)~~ — **✅ FAIT (2026-05-06)** commit ea50c85 — `api/utils/claude_json.py`
 11. ~~Fix SafeAreaView iOS notch wrap (30 min)~~ — **✅ FAIT (2026-05-04)** commit c90193a
 12. ~~TextInput focus ring (Auth + Ask) (45 min)~~ — **✅ FAIT (2026-05-04)** commit c90193a
-13. Cap quota free + paywall progressif (1j) — **⏳ à faire**
+13. ~~Cap quota free + paywall progressif (1j)~~ — **✅ FAIT (2026-05-06)** backend `stripe_billing.py:get_quota_status()` + endpoint `/billing/quota/status` + 3 composants RN (Banner/WarnModal/BlockedModal) + hook `useQuotaStatus` + i18n 4 langues
 14. ~~CI GitHub Actions bloquante (1j)~~ — **✅ FAIT (2026-05-04)** commit c90193a
 15. ~~Eval set 50 Q/A gold + script `eval.py` (2j)~~ — **✅ FAIT** `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 16. ~~chromadb retiré de `requirements.txt`~~ — **✅ FAIT** absent du fichier
 
-**Score : 14/16 quick wins terminés. Restants : rotation secrets (Mamadou), paywall progressif.**
+**Score : 15/16 quick wins terminés. Restant : rotation secrets (action manuelle Mamadou).**
 
 ---
 
@@ -393,5 +393,5 @@ Vérifications Phase F :
 13. ~~Eval set 50 Q/A gold standard + `eval.py`~~ ✅ FAIT — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 14. ~~Helper `extract_json_from_claude()`~~ ✅ FAIT 2026-05-06 — commit ea50c85
 15. ~~Payload index Qdrant~~ ✅ FAIT 2026-05-06 — `rag/indexer_qdrant.py:create_payload_indexes()` + script `scripts/create_qdrant_indexes.py`
-16. Cap quota free + paywall progressif (1j) — **⏳ à faire**
+16. ~~Cap quota free + paywall progressif (1j)~~ ✅ FAIT 2026-05-06 — backend (4 niveaux warning + endpoint + 17 tests) + mobile (3 composants RN + hook + i18n FR/NL/EN/DE)
 17. i18n SubscriptionScreen — **✅ FAIT 2026-05-06** commit 00feb75
