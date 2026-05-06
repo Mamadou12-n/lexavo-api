@@ -850,6 +850,13 @@ export async function getSubscriptionStatus() {
   return r.data;
 }
 
+export async function getQuotaStatus() {
+  // Backend : GET /billing/quota/status — paywall progressif (warning_level + next_reset)
+  // Ne consomme pas de quota. Pour banner + modals d'upgrade.
+  const r = await api.get('/billing/quota/status');
+  return r.data;
+}
+
 export async function getBillingPlans() {
   const r = await api.get('/billing/plans');
   return r.data;

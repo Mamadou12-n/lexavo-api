@@ -383,6 +383,20 @@ export const translations = {
     sub_cta_accessibility: 'Souscrire au plan {{name}}',
     sub_error_load: 'Impossible de charger l\'abonnement.',
     sub_error_payment: 'Impossible d\'ouvrir le paiement.',
+
+    // Paywall progressif (paliers 50% / 80% / 100%)
+    quota_banner_soft: 'Il vous reste {{n}} questions ce mois.',
+    quota_banner_hard: 'Plus que {{n}} questions — passez à Basic.',
+    quota_banner_blocked: 'Quota atteint. Reset le {{date}}.',
+    quota_modal_warn_title: 'Bientôt à court de questions',
+    quota_modal_warn_body: 'Plus que {{n}} questions ce mois-ci. Passez à Basic (4,99€/mois) pour un accès illimité.',
+    quota_modal_warn_cta: 'Voir les plans',
+    quota_modal_warn_dismiss: 'Plus tard',
+    quota_modal_blocked_title: 'Quota mensuel atteint',
+    quota_modal_blocked_body: 'Vous avez utilisé vos {{used}}/{{limit}} questions ce mois. Reset le {{date}}.',
+    quota_modal_blocked_sub: 'Passez à un plan payant pour un accès illimité dès maintenant.',
+    quota_modal_blocked_cta: 'Voir les plans',
+    quota_modal_blocked_close: 'Fermer',
   },
 
   /* ────────────────────────────  NL  ──────────────────────────── */
@@ -708,6 +722,20 @@ export const translations = {
     sub_cta_accessibility: 'Abonneren op plan {{name}}',
     sub_error_load: 'Kan abonnement niet laden.',
     sub_error_payment: 'Kan betaling niet openen.',
+
+    // Paywall progressief (drempels 50% / 80% / 100%)
+    quota_banner_soft: 'Nog {{n}} vragen deze maand.',
+    quota_banner_hard: 'Nog slechts {{n}} vragen — upgrade naar Basic.',
+    quota_banner_blocked: 'Quotum bereikt. Reset op {{date}}.',
+    quota_modal_warn_title: 'Bijna door je vragen heen',
+    quota_modal_warn_body: 'Nog slechts {{n}} vragen deze maand. Upgrade naar Basic (4,99€/maand) voor onbeperkte toegang.',
+    quota_modal_warn_cta: 'Bekijk de plannen',
+    quota_modal_warn_dismiss: 'Later',
+    quota_modal_blocked_title: 'Maandelijks quotum bereikt',
+    quota_modal_blocked_body: 'Je hebt {{used}}/{{limit}} vragen gebruikt deze maand. Reset op {{date}}.',
+    quota_modal_blocked_sub: 'Upgrade naar een betaald plan voor onbeperkte toegang vanaf nu.',
+    quota_modal_blocked_cta: 'Bekijk de plannen',
+    quota_modal_blocked_close: 'Sluiten',
   },
 
   /* ────────────────────────────  EN  ──────────────────────────── */
@@ -1032,6 +1060,20 @@ export const translations = {
     sub_cta_accessibility: 'Subscribe to {{name}} plan',
     sub_error_load: 'Unable to load plans. Please try again.',
     sub_error_payment: 'Payment error. Please try again or contact support.',
+
+    // Progressive paywall (50% / 80% / 100% thresholds)
+    quota_banner_soft: '{{n}} questions left this month.',
+    quota_banner_hard: 'Only {{n}} questions left — upgrade to Basic.',
+    quota_banner_blocked: 'Quota reached. Resets on {{date}}.',
+    quota_modal_warn_title: 'Running low on questions',
+    quota_modal_warn_body: 'Only {{n}} questions left this month. Upgrade to Basic (€4.99/month) for unlimited access.',
+    quota_modal_warn_cta: 'View plans',
+    quota_modal_warn_dismiss: 'Later',
+    quota_modal_blocked_title: 'Monthly quota reached',
+    quota_modal_blocked_body: 'You used {{used}}/{{limit}} questions this month. Resets on {{date}}.',
+    quota_modal_blocked_sub: 'Upgrade to a paid plan for unlimited access right now.',
+    quota_modal_blocked_cta: 'View plans',
+    quota_modal_blocked_close: 'Close',
   },
 
   /* ────────────────────────────  DE  ──────────────────────────── */
@@ -1365,6 +1407,20 @@ export const translations = {
     sub_cta_accessibility: 'Plan {{name}} abonnieren',
     sub_error_load: 'Pläne konnten nicht geladen werden. Bitte erneut versuchen.',
     sub_error_payment: 'Zahlungsfehler. Bitte erneut versuchen oder Support kontaktieren.',
+
+    // Progressives Paywall (Schwellen 50% / 80% / 100%)
+    quota_banner_soft: 'Noch {{n}} Fragen diesen Monat.',
+    quota_banner_hard: 'Nur noch {{n}} Fragen — auf Basic umsteigen.',
+    quota_banner_blocked: 'Kontingent erreicht. Reset am {{date}}.',
+    quota_modal_warn_title: 'Fragen werden knapp',
+    quota_modal_warn_body: 'Nur noch {{n}} Fragen diesen Monat. Wechseln Sie zu Basic (4,99€/Monat) für unbegrenzten Zugriff.',
+    quota_modal_warn_cta: 'Pläne anzeigen',
+    quota_modal_warn_dismiss: 'Später',
+    quota_modal_blocked_title: 'Monatliches Kontingent erreicht',
+    quota_modal_blocked_body: 'Sie haben {{used}}/{{limit}} Fragen diesen Monat genutzt. Reset am {{date}}.',
+    quota_modal_blocked_sub: 'Wechseln Sie zu einem bezahlten Plan für sofortigen unbegrenzten Zugriff.',
+    quota_modal_blocked_cta: 'Pläne anzeigen',
+    quota_modal_blocked_close: 'Schließen',
   },
 };
 

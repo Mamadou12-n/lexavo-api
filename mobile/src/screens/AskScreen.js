@@ -14,6 +14,12 @@ import SourceBadge from '../components/SourceBadge';
 import PhotoPicker from '../components/PhotoPicker';
 import { Disclaimer } from '../components/ui/Disclaimer';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  QuotaBanner,
+  QuotaWarningModal,
+  QuotaBlockedModal,
+  useQuotaStatus,
+} from '../components/quota';
 
 const SUGGESTED_KEYS = ['ask_q1', 'ask_q2', 'ask_q3', 'ask_q4', 'ask_q5', 'ask_q6'];
 
@@ -31,6 +37,8 @@ export default function AskScreen() {
   const [usedModel, setUsedModel] = useState(null); // modèle retourné par le backend
   const [photos, setPhotos] = useState([]);
   const [quota, setQuota] = useState(null);
+  const quotaStatus = useQuotaStatus();
+  const goSubscription = () => navigation.navigate('Subscription');
   const scrollRef = useRef(null);
   const fadeAnim  = useRef(new Animated.Value(0)).current;
 
@@ -115,6 +123,9 @@ export default function AskScreen() {
           <Text style={styles.heroTitle}>{t('ask_hero_title')}</Text>
           <Text style={styles.heroSub}>{t('ask_hero_sub')}</Text>
         </View>
+
+        {/* Paywall progressif — bandeau awareness selon warning_level */}
+        <QuotaBanner status={quotaStatus.status} onPress={goSubscription} />
 
         {/* Zone de saisie */}
         <View style={styles.inputCard}>
@@ -279,6 +290,20 @@ export default function AskScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Paywall progressif — modals incitation (80%) + blocage (100%) */}
+      <QuotaWarningModal
+        visible={quotaStatus.showWarningModal}
+        status={quotaStatus.status}
+        onUpgrade={() => { quotaStatus.setShowWarningModal(false); goSubscription(); }}
+        onDismiss={() => quotaStatus.setShowWarningModal(false)}
+      />
+      <QuotaBlockedModal
+        visible={quotaStatus.showBlockedModal}
+        status={quotaStatus.status}
+        onUpgrade={() => { quotaStatus.setShowBlockedModal(false); goSubscription(); }}
+        onClose={() => quotaStatus.setShowBlockedModal(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
