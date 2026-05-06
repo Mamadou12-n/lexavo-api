@@ -12,7 +12,7 @@ import logging
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 
 from api.beta_funnel import (
@@ -94,10 +94,10 @@ class DailyRunResponse(BaseModel):
 
 @router.get("/status", response_model=FunnelStatusResponse)
 def get_funnel_status(
-    x_admin_key: str = "",
-    _: None = Depends(lambda x_admin_key="": _check_admin(x_admin_key)),
+    x_admin_key: str = Header(default=""),
 ) -> FunnelStatusResponse:
     """Etat du funnel : jours restants, prochain milestone."""
+    _check_admin(x_admin_key)
     days_left = days_until_beta_end()
     next_milestone = None
     days_to_next = None
@@ -121,7 +121,7 @@ def get_funnel_status(
 @router.post("/trigger", response_model=TriggerResponse)
 def trigger_milestone(
     body: TriggerRequest,
-    x_admin_key: str = "",
+    x_admin_key: str = Header(default=""),
 ) -> TriggerResponse:
     """Declenche manuellement un milestone du funnel.
 
@@ -160,7 +160,7 @@ def trigger_milestone(
 
 @router.post("/run-daily", response_model=DailyRunResponse)
 def run_daily(
-    x_admin_key: str = "",
+    x_admin_key: str = Header(default=""),
 ) -> DailyRunResponse:
     """Execute le cron quotidien manuellement (idempotent).
 

@@ -29,6 +29,12 @@ os.environ.setdefault("LEXAVO_JWT_SECRET", "test-secret-key")
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("LEXAVO_ADMIN_KEY", "admin-test-key")
 
+# psycopg2 absent en dev SQLite — mock avant import du script
+if "psycopg2" not in sys.modules:
+    _mock_pg = MagicMock()
+    sys.modules["psycopg2"] = _mock_pg
+    sys.modules["psycopg2.extras"] = _mock_pg.extras
+
 ADMIN_KEY = "admin-test-key"
 
 from scripts.send_beta_emails import (  # noqa: E402
@@ -113,7 +119,9 @@ def test_personalize_empty_name() -> None:
 def test_get_subject_returns_non_empty(milestone: str, lang: str) -> None:
     subject = get_subject(milestone, lang)
     assert len(subject) > 5
-    assert "Lexavo" in subject
+    # j30/j0 contiennent "Lexavo", j7 est une phrase de countdown sans marque
+    if milestone != "j7":
+        assert "Lexavo" in subject
 
 
 def test_get_subject_fallback_unsupported_lang() -> None:
@@ -186,7 +194,15 @@ def test_send_email_retries_on_500(mock_post: MagicMock, mock_sleep: MagicMock) 
 def client():
     from fastapi.testclient import TestClient
     from api.main import app
-    return TestClient(app)
+    import api.routers.beta_funnel as _bf_router
+    # ADMIN_KEY est lu à l'import du module — mutation directe pour que le patch
+    # reste actif pendant toute la durée du test (y compris @patch imbriqués)
+    original = _bf_router.ADMIN_KEY
+    _bf_router.ADMIN_KEY = ADMIN_KEY
+    try:
+        yield TestClient(app)
+    finally:
+        _bf_router.ADMIN_KEY = original
 
 
 def test_admin_status_missing_key(client) -> None:
@@ -210,7 +226,7 @@ def test_admin_status_ok(client) -> None:
 def test_admin_trigger_invalid_milestone(client) -> None:
     r = client.post(
         "/admin/beta-funnel/trigger",
-        json={"milestone": "j999", "dry_run": True},
+        json={"milestone": "beta_j999", "dry_run": True},
         headers={"x-admin-key": ADMIN_KEY},
     )
     assert r.status_code == 400
@@ -219,13 +235,13 @@ def test_admin_trigger_invalid_milestone(client) -> None:
 def test_admin_trigger_dry_run(client) -> None:
     r = client.post(
         "/admin/beta-funnel/trigger",
-        json={"milestone": "j30", "dry_run": True},
+        json={"milestone": "beta_j30", "dry_run": True},
         headers={"x-admin-key": ADMIN_KEY},
     )
     assert r.status_code == 200
     data = r.json()
     assert data["dry_run"] is True
-    assert data["milestone"] == "j30"
+    assert data["milestone"] == "beta_j30"
 
 
 @patch("api.routers.beta_funnel.run_daily_beta_funnel")
@@ -233,7 +249,7 @@ def test_admin_run_daily(mock_run: MagicMock, client) -> None:
     mock_run.return_value = {
         "today": "2026-09-01",
         "days_until_end": 30,
-        "stage_triggered": "j30",
+        "stage_triggered": "beta_j30",
         "j30_sent": 5,
         "j7_sent": 0,
         "j0_sent": 0,
@@ -243,4 +259,4 @@ def test_admin_run_daily(mock_run: MagicMock, client) -> None:
     assert r.status_code == 200
     data = r.json()
     assert data["j30_sent"] == 5
-    assert data["stage_triggered"] == "j30"
+    assert data["stage_triggered"] == "beta_j30"
