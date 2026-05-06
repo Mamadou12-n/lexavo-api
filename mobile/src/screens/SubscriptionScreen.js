@@ -22,45 +22,45 @@ import { useLanguage } from '../context/LanguageContext';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── Plans alignes sur le backend ──────────────────────────────────────────
-const PLANS = [
+const makePlans = (t) => [
   {
     id: 'free',
     name: 'Lexavo Free',
-    subtitle: 'Etudiants en droit',
+    subtitle: t('plan_free_subtitle'),
     emoji: '🎓',
     monthly: 0,
     annual: 0,
     highlight: false,
     badge: null,
     features: [
-      { ok: true,  label: '7 questions / mois' },
-      { ok: true,  label: 'Recherche vectorielle' },
-      { ok: true,  label: 'Acces a la base juridique' },
-      { ok: true,  label: 'Lexavo Score' },
-      { ok: false, label: 'Chat IA illimite' },
-      { ok: false, label: 'Analyse de contrats' },
-      { ok: false, label: 'Generation de documents' },
+      { ok: true,  label: t('feat_free_1') },
+      { ok: true,  label: t('feat_free_2') },
+      { ok: true,  label: t('feat_free_3') },
+      { ok: true,  label: t('feat_free_4') },
+      { ok: false, label: t('feat_free_5') },
+      { ok: false, label: t('feat_free_6') },
+      { ok: false, label: t('feat_free_7') },
     ],
   },
   {
     id: 'basic',
     name: 'Lexavo Basic',
-    subtitle: 'Particuliers',
+    subtitle: t('plan_basic_subtitle'),
     emoji: '👤',
     monthly: 4.99,
     annual: 49.99,
     foundingPrice: 3.99,
     highlight: false,
-    badge: 'Accessible',
+    badge: t('plan_basic_badge'),
     features: [
-      { ok: true, label: 'Chat IA illimite' },
-      { ok: true, label: '15 branches du droit' },
-      { ok: true, label: '3 modeles de contrats / mois' },
-      { ok: true, label: 'Alertes legislatives de base' },
-      { ok: true, label: 'Lexavo Score' },
-      { ok: true, label: 'Historique complet' },
-      { ok: false, label: 'Analyse de contrats (Shield)' },
-      { ok: false, label: 'Support prioritaire' },
+      { ok: true, label: t('feat_basic_1') },
+      { ok: true, label: t('feat_basic_2') },
+      { ok: true, label: t('feat_basic_3') },
+      { ok: true, label: t('feat_basic_4') },
+      { ok: true, label: t('feat_basic_5') },
+      { ok: true, label: t('feat_basic_6') },
+      { ok: false, label: t('feat_basic_7') },
+      { ok: false, label: t('feat_basic_8') },
     ],
   },
   // --- Plans cachés (pro, business, firm_s, firm_m, enterprise) ---
@@ -163,6 +163,7 @@ const PLANS = [
 
 export default function SubscriptionScreen() {
   const { t } = useLanguage();
+  const PLANS = makePlans(t);
   const [status, setStatus]         = useState(null);
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -184,7 +185,7 @@ export default function SubscriptionScreen() {
         })
         .catch((e) => {
           if (!active) return;
-          setError(e.response?.data?.detail || e.message || 'Impossible de charger l\'abonnement.');
+          setError(e.response?.data?.detail || e.message || t('sub_error_load'));
         })
         .finally(() => { if (active) setLoading(false); });
 
@@ -195,8 +196,8 @@ export default function SubscriptionScreen() {
   const subscribe = async (planId) => {
     if (planId === 'enterprise') {
       Alert.alert(
-        'Lexavo Enterprise',
-        'Contactez-nous a contact@lexavo.be pour un devis sur mesure.',
+        t('sub_alert_enterprise_title'),
+        t('sub_alert_enterprise_msg'),
       );
       return;
     }
@@ -208,7 +209,7 @@ export default function SubscriptionScreen() {
         await Linking.openURL(data.checkout_url);
       }
     } catch (e) {
-      setError(e.response?.data?.detail || e.message || 'Impossible d\'ouvrir le paiement.');
+      setError(e.response?.data?.detail || e.message || t('sub_error_payment'));
     } finally {
       setActionPlan(null);
     }
@@ -216,17 +217,17 @@ export default function SubscriptionScreen() {
 
   const handleCancel = () => {
     Alert.alert(
-      'Annuler l\'abonnement',
-      'Vous gardez l\'acces jusqu\'a la fin de la periode en cours.',
+      t('sub_alert_cancel_title'),
+      t('sub_alert_cancel_msg'),
       [
-        { text: 'Non', style: 'cancel' },
+        { text: t('sub_alert_cancel_no'), style: 'cancel' },
         {
-          text: 'Oui, annuler',
+          text: t('sub_alert_cancel_yes'),
           style: 'destructive',
           onPress: async () => {
             try {
               await cancelSubscription();
-              Alert.alert('Annulation confirmee', 'Votre abonnement reste actif jusqu\'en fin de periode.');
+              Alert.alert(t('sub_alert_cancelled_title'), t('sub_alert_cancelled_msg'));
               const updated = await getSubscriptionStatus();
               setStatus(updated);
             } catch (e) {
@@ -244,7 +245,7 @@ export default function SubscriptionScreen() {
       await restoreSubscription();
       const updated = await getSubscriptionStatus();
       setStatus(updated);
-      Alert.alert('Abonnement reactive', `Plan ${updated.plan} actif.`);
+      Alert.alert(t('sub_alert_restored_title'), `Plan ${updated.plan} actif.`);
     } catch (e) {
       setError(e.response?.data?.detail || e.message);
     } finally {
@@ -402,7 +403,7 @@ export default function SubscriptionScreen() {
             {isBeta && plan.foundingPrice && (
               <View style={styles.foundingBox}>
                 <Text style={styles.foundingText}>
-                  {'\u{1F396}'} Founding Member : {plan.foundingPrice.toFixed(2).replace('.', ',')}€/mois a vie
+                  {'\u{1F396}'} {t('sub_founding_text').replace('{{price}}', `${plan.foundingPrice.toFixed(2).replace('.', ',')}€`)}
                 </Text>
               </View>
             )}
@@ -428,7 +429,7 @@ export default function SubscriptionScreen() {
                 disabled={!!actionPlan}
                 accessible={true}
                 accessibilityRole="button"
-                accessibilityLabel={`Souscrire au plan ${plan.name}`}
+                accessibilityLabel={t('sub_cta_accessibility').replace('{{name}}', plan.name)}
               >
                 {isLoading
                   ? <View style={styles.subscribeBtnFallback}><ActivityIndicator color="#FFF" /></View>

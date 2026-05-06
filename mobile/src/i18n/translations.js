@@ -287,6 +287,102 @@ export const translations = {
     subscription_per_month: '/ mois',
     subscription_per_year: '/ an',
     subscription_legal: 'Paiements sécurisés via Stripe (PCI-DSS)\nFacture TVA belge disponible\nDroit de rétractation 14 jours (Art. VI.47 CDE)\nRenouvellement automatique — annulation à tout moment',
+
+    // Plans — noms, sous-titres, badges
+    plan_free_name: 'Lexavo Free',
+    plan_free_subtitle: 'Étudiants en droit',
+    plan_basic_name: 'Lexavo Basic',
+    plan_basic_subtitle: 'Particuliers',
+    plan_basic_badge: 'Accessible',
+    plan_pro_name: 'Lexavo Pro',
+    plan_pro_subtitle: 'Avocats & juristes',
+    plan_pro_badge: 'Populaire',
+    plan_business_name: 'Lexavo Business',
+    plan_business_subtitle: 'PME (jusqu\'à 5 utilisateurs)',
+    plan_business_badge: 'Équipe',
+    plan_firm_name: 'Lexavo Firm',
+    plan_firm_subtitle: 'Petit cabinet (2-10 avocats)',
+    plan_firm_badge: 'Cabinets',
+    plan_firmp_name: 'Lexavo Firm+',
+    plan_firmp_subtitle: 'Cabinet moyen (10-30)',
+    plan_firmp_badge: 'Cabinets+',
+    plan_enterprise_name: 'Lexavo Enterprise',
+    plan_enterprise_subtitle: 'Grandes entreprises',
+    plan_enterprise_badge: 'Sur mesure',
+
+    // Features Free
+    feat_free_1: '7 questions / mois',
+    feat_free_2: 'Recherche vectorielle',
+    feat_free_3: 'Accès à la base juridique',
+    feat_free_4: 'Lexavo Score',
+    feat_free_5: 'Chat IA illimité',
+    feat_free_6: 'Analyse de contrats',
+    feat_free_7: 'Génération de documents',
+
+    // Features Basic
+    feat_basic_1: 'Chat IA illimité',
+    feat_basic_2: '15 branches du droit',
+    feat_basic_3: '3 modèles de contrats / mois',
+    feat_basic_4: 'Alertes législatives de base',
+    feat_basic_5: 'Lexavo Score',
+    feat_basic_6: 'Historique complet',
+    feat_basic_7: 'Analyse de contrats (Shield)',
+    feat_basic_8: 'Support prioritaire',
+
+    // Features Pro
+    feat_pro_1: 'Tout Basic inclus',
+    feat_pro_2: 'Base documentaire complète',
+    feat_pro_3: 'Documents illimités',
+    feat_pro_4: 'Analyse de contrats (Shield)',
+    feat_pro_5: 'Label Avocat certifié',
+    feat_pro_6: 'Leads qualifiés',
+    feat_pro_7: 'Statistiques profil',
+    feat_pro_8: 'Support prioritaire (48h)',
+
+    // Features Business
+    feat_business_1: 'Tout Pro inclus',
+    feat_business_2: 'Jusqu\'à 5 utilisateurs',
+    feat_business_3: 'Contrats illimités',
+    feat_business_4: 'Alertes RGPD & conformité',
+    feat_business_5: 'Export PDF & rapports',
+    feat_business_6: 'Support prioritaire',
+
+    // Features Firm
+    feat_firm_1: 'Tout Business inclus',
+    feat_firm_2: 'Jusqu\'à 10 utilisateurs',
+    feat_firm_3: 'Documents marqués (logo)',
+    feat_firm_4: 'Gestion dossiers',
+    feat_firm_5: 'Onboarding inclus',
+    feat_firm_6: 'Support dédié',
+
+    // Features Firm+
+    feat_firmp_1: 'Tout Firm inclus',
+    feat_firmp_2: 'Jusqu\'à 30 utilisateurs',
+    feat_firmp_3: 'API accès complet',
+    feat_firmp_4: 'Intégrations sur mesure',
+    feat_firmp_5: 'Account manager dédié',
+
+    // Features Enterprise
+    feat_enterprise_1: 'Tout Firm+ inclus',
+    feat_enterprise_2: 'Utilisateurs illimités',
+    feat_enterprise_3: 'SLA garanti',
+    feat_enterprise_4: 'Déploiement on-premise',
+    feat_enterprise_5: 'Support 24/7',
+
+    // Alertes & messages
+    sub_alert_enterprise_title: 'Lexavo Enterprise',
+    sub_alert_enterprise_msg: 'Contactez-nous à contact@lexavo.be pour un devis sur mesure.',
+    sub_alert_cancel_title: 'Annuler l\'abonnement',
+    sub_alert_cancel_msg: 'Vous gardez l\'accès jusqu\'à la fin de la période en cours.',
+    sub_alert_cancel_no: 'Non',
+    sub_alert_cancel_yes: 'Oui, annuler',
+    sub_alert_cancelled_title: 'Annulation confirmée',
+    sub_alert_cancelled_msg: 'Votre abonnement reste actif jusqu\'en fin de période.',
+    sub_alert_restored_title: 'Abonnement réactivé',
+    sub_founding_text: '🎖️ Founding Member : {{price}}€/mois à vie',
+    sub_cta_accessibility: 'Souscrire au plan {{name}}',
+    sub_error_load: 'Impossible de charger l\'abonnement.',
+    sub_error_payment: 'Impossible d\'ouvrir le paiement.',
   },
 
   /* ────────────────────────────  NL  ──────────────────────────── */
@@ -516,6 +612,102 @@ export const translations = {
     subscription_per_month: '/ maand',
     subscription_per_year: '/ jaar',
     subscription_legal: 'Beveiligde betalingen via Stripe (PCI-DSS)\nBelgische BTW-factuur beschikbaar\nHerroepingsrecht 14 dagen (Art. VI.47 WER)\nAutomatische verlenging — opzegbaar op elk moment',
+
+    // Plannen — namen, ondertitels, badges
+    plan_free_name: 'Lexavo Free',
+    plan_free_subtitle: 'Rechtenstudenten',
+    plan_basic_name: 'Lexavo Basic',
+    plan_basic_subtitle: 'Particulieren',
+    plan_basic_badge: 'Toegankelijk',
+    plan_pro_name: 'Lexavo Pro',
+    plan_pro_subtitle: 'Advocaten & juristen',
+    plan_pro_badge: 'Populair',
+    plan_business_name: 'Lexavo Business',
+    plan_business_subtitle: 'KMO (tot 5 gebruikers)',
+    plan_business_badge: 'Team',
+    plan_firm_name: 'Lexavo Firm',
+    plan_firm_subtitle: 'Klein kantoor (2-10 advocaten)',
+    plan_firm_badge: 'Kantoren',
+    plan_firmp_name: 'Lexavo Firm+',
+    plan_firmp_subtitle: 'Middelgroot kantoor (10-30)',
+    plan_firmp_badge: 'Kantoren+',
+    plan_enterprise_name: 'Lexavo Enterprise',
+    plan_enterprise_subtitle: 'Grote ondernemingen',
+    plan_enterprise_badge: 'Op maat',
+
+    // Features Free
+    feat_free_1: '7 vragen / maand',
+    feat_free_2: 'Vectorzoekopdracht',
+    feat_free_3: 'Toegang tot juridische databank',
+    feat_free_4: 'Lexavo Score',
+    feat_free_5: 'Onbeperkte AI-chat',
+    feat_free_6: 'Contractanalyse',
+    feat_free_7: 'Documentgeneratie',
+
+    // Features Basic
+    feat_basic_1: 'Onbeperkte AI-chat',
+    feat_basic_2: '15 rechtsdomeinen',
+    feat_basic_3: '3 contractmodellen / maand',
+    feat_basic_4: 'Basis wetgevingsalerts',
+    feat_basic_5: 'Lexavo Score',
+    feat_basic_6: 'Volledige geschiedenis',
+    feat_basic_7: 'Contractanalyse (Shield)',
+    feat_basic_8: 'Prioriteitsondersteuning',
+
+    // Features Pro
+    feat_pro_1: 'Alles van Basic inbegrepen',
+    feat_pro_2: 'Volledige documentendatabank',
+    feat_pro_3: 'Onbeperkte documenten',
+    feat_pro_4: 'Contractanalyse (Shield)',
+    feat_pro_5: 'Gecertificeerd Advocaatlabel',
+    feat_pro_6: 'Gekwalificeerde leads',
+    feat_pro_7: 'Profielstatistieken',
+    feat_pro_8: 'Prioriteitsondersteuning (48u)',
+
+    // Features Business
+    feat_business_1: 'Alles van Pro inbegrepen',
+    feat_business_2: 'Tot 5 gebruikers',
+    feat_business_3: 'Onbeperkte contracten',
+    feat_business_4: 'GDPR & conformiteitsalerts',
+    feat_business_5: 'PDF-export & rapporten',
+    feat_business_6: 'Prioriteitsondersteuning',
+
+    // Features Firm
+    feat_firm_1: 'Alles van Business inbegrepen',
+    feat_firm_2: 'Tot 10 gebruikers',
+    feat_firm_3: 'Documenten met logo',
+    feat_firm_4: 'Dossierbeheer',
+    feat_firm_5: 'Onboarding inbegrepen',
+    feat_firm_6: 'Toegewijde ondersteuning',
+
+    // Features Firm+
+    feat_firmp_1: 'Alles van Firm inbegrepen',
+    feat_firmp_2: 'Tot 30 gebruikers',
+    feat_firmp_3: 'Volledige API-toegang',
+    feat_firmp_4: 'Maatwerk integraties',
+    feat_firmp_5: 'Toegewijde accountmanager',
+
+    // Features Enterprise
+    feat_enterprise_1: 'Alles van Firm+ inbegrepen',
+    feat_enterprise_2: 'Onbeperkte gebruikers',
+    feat_enterprise_3: 'Gegarandeerde SLA',
+    feat_enterprise_4: 'On-premise implementatie',
+    feat_enterprise_5: 'Ondersteuning 24/7',
+
+    // Meldingen & berichten
+    sub_alert_enterprise_title: 'Lexavo Enterprise',
+    sub_alert_enterprise_msg: 'Contacteer ons via contact@lexavo.be voor een offerte op maat.',
+    sub_alert_cancel_title: 'Abonnement opzeggen',
+    sub_alert_cancel_msg: 'U behoudt toegang tot het einde van de huidige periode.',
+    sub_alert_cancel_no: 'Nee',
+    sub_alert_cancel_yes: 'Ja, opzeggen',
+    sub_alert_cancelled_title: 'Opzegging bevestigd',
+    sub_alert_cancelled_msg: 'Uw abonnement blijft actief tot het einde van de periode.',
+    sub_alert_restored_title: 'Abonnement hersteld',
+    sub_founding_text: '🎖️ Founding Member : {{price}}€/maand voor altijd',
+    sub_cta_accessibility: 'Abonneren op plan {{name}}',
+    sub_error_load: 'Kan abonnement niet laden.',
+    sub_error_payment: 'Kan betaling niet openen.',
   },
 
   /* ────────────────────────────  EN  ──────────────────────────── */
@@ -745,6 +937,101 @@ export const translations = {
     subscription_per_month: '/ month',
     subscription_per_year: '/ year',
     subscription_legal: 'Secure payments via Stripe (PCI-DSS)\nBelgian VAT invoice available\n14-day right of withdrawal (Art. VI.47 CDE)\nAuto-renewal — cancel anytime',
+
+    // Plans — names & subtitles
+    plan_free_name: 'Free',
+    plan_free_subtitle: 'Law students',
+    plan_basic_name: 'Basic',
+    plan_basic_subtitle: 'Individuals',
+    plan_basic_badge: 'Popular',
+    plan_pro_name: 'Pro',
+    plan_pro_subtitle: 'Independents & freelancers',
+    plan_pro_badge: 'Best value',
+    plan_business_name: 'Business',
+    plan_business_subtitle: 'SMEs & managers',
+    plan_business_badge: 'B2B',
+    plan_firm_name: 'Firm S',
+    plan_firm_subtitle: 'Small law firms (≤5 lawyers)',
+    plan_firm_badge: 'Legal',
+    plan_firmp_name: 'Firm M',
+    plan_firmp_subtitle: 'Mid-size firms (≤20 lawyers)',
+    plan_firmp_badge: 'Professional',
+    plan_enterprise_name: 'Enterprise',
+    plan_enterprise_subtitle: 'Large organisations & institutions',
+
+    // Features — Free plan
+    feat_free_1: '5 AI questions / month',
+    feat_free_2: 'Access to Belgian legal database',
+    feat_free_3: 'Basic legal search',
+    feat_free_4: 'Emergency guide',
+    feat_free_5: 'Student campus (limited)',
+    feat_free_6: 'App in 8 languages',
+    feat_free_7: 'Legal disclaimer included',
+
+    // Features — Basic plan
+    feat_basic_1: '30 AI questions / month',
+    feat_basic_2: 'Full legal database (3.49M docs)',
+    feat_basic_3: 'Contract analysis (1/month)',
+    feat_basic_4: 'Legal diagnostic',
+    feat_basic_5: 'Standard calculators',
+    feat_basic_6: 'Conversation history',
+    feat_basic_7: 'Priority email support',
+    feat_basic_8: 'VAT invoice',
+
+    // Features — Pro plan
+    feat_pro_1: 'Unlimited AI questions',
+    feat_pro_2: 'Advanced contract analysis',
+    feat_pro_3: 'Defend & appeal tool',
+    feat_pro_4: 'Tax copilot (PIT, CIT, VAT)',
+    feat_pro_5: 'Inheritance guide',
+    feat_pro_6: 'GDPR audit',
+    feat_pro_7: 'Contract generator',
+    feat_pro_8: 'Debt recovery module',
+
+    // Features — Business plan
+    feat_business_1: 'All Pro features',
+    feat_business_2: 'Multi-user (up to 5)',
+    feat_business_3: 'Company audit (30 questions)',
+    feat_business_4: 'Advanced GDPR compliance',
+    feat_business_5: 'Dedicated account manager',
+    feat_business_6: 'SLA 24h',
+
+    // Features — Firm S plan
+    feat_firm_1: 'All Business features',
+    feat_firm_2: '5 lawyer seats',
+    feat_firm_3: 'Collaborative case management',
+    feat_firm_4: 'Multi-source advanced search',
+    feat_firm_5: 'Priority API access',
+    feat_firm_6: 'Dedicated onboarding',
+
+    // Features — Firm M plan
+    feat_firmp_1: 'All Firm S features',
+    feat_firmp_2: '20 lawyer seats',
+    feat_firmp_3: 'Custom legal database',
+    feat_firmp_4: 'White-label API',
+    feat_firmp_5: 'SLA 4h + dedicated support',
+
+    // Features — Enterprise plan
+    feat_enterprise_1: 'Unlimited seats',
+    feat_enterprise_2: 'Private cloud deployment',
+    feat_enterprise_3: 'Custom AI model',
+    feat_enterprise_4: 'Full audit trail & compliance',
+    feat_enterprise_5: 'Dedicated SLA',
+
+    // Alerts & messages
+    sub_alert_enterprise_title: 'Enterprise contact',
+    sub_alert_enterprise_msg: 'Contact our team for a custom offer.',
+    sub_alert_cancel_title: 'Cancel subscription',
+    sub_alert_cancel_msg: 'Are you sure you want to cancel your subscription? You will keep access until end of billing period.',
+    sub_alert_cancel_no: 'Keep',
+    sub_alert_cancel_yes: 'Cancel',
+    sub_alert_cancelled_title: 'Subscription cancelled',
+    sub_alert_cancelled_msg: 'Your subscription has been cancelled. Access continues until end of period.',
+    sub_alert_restored_title: 'Subscription restored',
+    sub_founding_text: 'Founding member offer — {{price}}/month',
+    sub_cta_accessibility: 'Subscribe to {{name}} plan',
+    sub_error_load: 'Unable to load plans. Please try again.',
+    sub_error_payment: 'Payment error. Please try again or contact support.',
   },
 
   /* ────────────────────────────  DE  ──────────────────────────── */
@@ -983,6 +1270,101 @@ export const translations = {
     subscription_per_month: '/ Monat',
     subscription_per_year: '/ Jahr',
     subscription_legal: 'Sichere Zahlungen über Stripe (PCI-DSS)\nBelgische MwSt-Rechnung verfügbar\n14 Tage Widerrufsrecht (Art. VI.47 WGB)\nAutomatische Verlängerung — jederzeit kündbar',
+
+    // Pläne — Namen & Untertitel
+    plan_free_name: 'Kostenlos',
+    plan_free_subtitle: 'Jurastudenten',
+    plan_basic_name: 'Basic',
+    plan_basic_subtitle: 'Privatpersonen',
+    plan_basic_badge: 'Beliebt',
+    plan_pro_name: 'Pro',
+    plan_pro_subtitle: 'Selbstständige & Freiberufler',
+    plan_pro_badge: 'Bestes Angebot',
+    plan_business_name: 'Business',
+    plan_business_subtitle: 'KMU & Manager',
+    plan_business_badge: 'B2B',
+    plan_firm_name: 'Firm S',
+    plan_firm_subtitle: 'Kleine Kanzleien (≤5 Anwälte)',
+    plan_firm_badge: 'Legal',
+    plan_firmp_name: 'Firm M',
+    plan_firmp_subtitle: 'Mittelgroße Kanzleien (≤20 Anwälte)',
+    plan_firmp_badge: 'Professionell',
+    plan_enterprise_name: 'Enterprise',
+    plan_enterprise_subtitle: 'Großunternehmen & Institutionen',
+
+    // Features — Kostenlos
+    feat_free_1: '5 KI-Fragen / Monat',
+    feat_free_2: 'Zugang zur belgischen Rechtsdatenbank',
+    feat_free_3: 'Einfache Rechtssuche',
+    feat_free_4: 'Notfallleitfaden',
+    feat_free_5: 'Studentencampus (begrenzt)',
+    feat_free_6: 'App in 8 Sprachen',
+    feat_free_7: 'Rechtlicher Hinweis enthalten',
+
+    // Features — Basic
+    feat_basic_1: '30 KI-Fragen / Monat',
+    feat_basic_2: 'Vollständige Rechtsdatenbank (3,49M Dok.)',
+    feat_basic_3: 'Vertragsanalyse (1/Monat)',
+    feat_basic_4: 'Rechtsdiagnose',
+    feat_basic_5: 'Standard-Rechner',
+    feat_basic_6: 'Gesprächsverlauf',
+    feat_basic_7: 'Prioritäts-E-Mail-Support',
+    feat_basic_8: 'MwSt-Rechnung',
+
+    // Features — Pro
+    feat_pro_1: 'Unbegrenzte KI-Fragen',
+    feat_pro_2: 'Erweiterte Vertragsanalyse',
+    feat_pro_3: 'Widerspruchs- & Beschwerdewerkzeug',
+    feat_pro_4: 'Steuer-Copilot (EkSt, KöSt, MwSt)',
+    feat_pro_5: 'Erbschaftsleitfaden',
+    feat_pro_6: 'DSGVO-Audit',
+    feat_pro_7: 'Vertragsgenerator',
+    feat_pro_8: 'Inkasso-Modul',
+
+    // Features — Business
+    feat_business_1: 'Alle Pro-Features',
+    feat_business_2: 'Mehrbenutzer (bis zu 5)',
+    feat_business_3: 'Unternehmensaudit (30 Fragen)',
+    feat_business_4: 'Erweiterte DSGVO-Konformität',
+    feat_business_5: 'Persönlicher Account Manager',
+    feat_business_6: 'SLA 24h',
+
+    // Features — Firm S
+    feat_firm_1: 'Alle Business-Features',
+    feat_firm_2: '5 Anwaltslizenzen',
+    feat_firm_3: 'Kollaboratives Fallmanagement',
+    feat_firm_4: 'Erweiterte Multi-Quellen-Suche',
+    feat_firm_5: 'Priorisierter API-Zugang',
+    feat_firm_6: 'Dediziertes Onboarding',
+
+    // Features — Firm M
+    feat_firmp_1: 'Alle Firm S-Features',
+    feat_firmp_2: '20 Anwaltslizenzen',
+    feat_firmp_3: 'Benutzerdefinierte Rechtsdatenbank',
+    feat_firmp_4: 'White-Label-API',
+    feat_firmp_5: 'SLA 4h + dedizierter Support',
+
+    // Features — Enterprise
+    feat_enterprise_1: 'Unbegrenzte Lizenzen',
+    feat_enterprise_2: 'Private Cloud-Bereitstellung',
+    feat_enterprise_3: 'Benutzerdefiniertes KI-Modell',
+    feat_enterprise_4: 'Vollständiges Audit-Trail & Compliance',
+    feat_enterprise_5: 'Dediziertes SLA',
+
+    // Meldungen & Alerts
+    sub_alert_enterprise_title: 'Enterprise-Kontakt',
+    sub_alert_enterprise_msg: 'Kontaktieren Sie unser Team für ein individuelles Angebot.',
+    sub_alert_cancel_title: 'Abonnement kündigen',
+    sub_alert_cancel_msg: 'Möchten Sie Ihr Abonnement wirklich kündigen? Sie behalten den Zugang bis zum Ende des Abrechnungszeitraums.',
+    sub_alert_cancel_no: 'Behalten',
+    sub_alert_cancel_yes: 'Kündigen',
+    sub_alert_cancelled_title: 'Abonnement gekündigt',
+    sub_alert_cancelled_msg: 'Ihr Abonnement wurde gekündigt. Der Zugang läuft bis zum Ende des Zeitraums.',
+    sub_alert_restored_title: 'Abonnement wiederhergestellt',
+    sub_founding_text: 'Gründungsmitglieds-Angebot — {{price}}/Monat',
+    sub_cta_accessibility: 'Plan {{name}} abonnieren',
+    sub_error_load: 'Pläne konnten nicht geladen werden. Bitte erneut versuchen.',
+    sub_error_payment: 'Zahlungsfehler. Bitte erneut versuchen oder Support kontaktieren.',
   },
 };
 
