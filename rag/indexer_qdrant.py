@@ -134,6 +134,9 @@ def build_index(
                 indexing_threshold=20000,
             ),
         )
+        # Index payload : ~20× speedup sur les filtres source/jurisdiction/text
+        log.info("  Création des index payload (source, jurisdiction, doc_id, text)...")
+        create_payload_indexes(client=client, collection=COLLECTION_NAME)
 
     # Charger le modèle d'embedding
     log.info("Chargement modèle d'embedding...")
@@ -271,6 +274,78 @@ def build_index(
     log.info(f"  Total dans Qdrant : {count} points")
 
     return total_chunks
+
+
+def create_payload_indexes(client=None, collection: str = COLLECTION_NAME) -> Dict[str, str]:
+    """Crée les index payload sur les champs filtrés par le retriever.
+
+    Champs indexés :
+    - source       (KEYWORD) — Alt.6 SOURCE_TO_KEYWORDS, MatchValue + MatchAny
+    - jurisdiction (KEYWORD) — filtre régional bruxelles/wallonie/flandre
+    - text         (TEXT)    — Alt.3 MatchText full-text multilingue
+    - doc_id       (KEYWORD) — skip rapide à la ré-indexation
+
+    Idempotent : Qdrant ignore silencieusement si l'index existe déjà.
+    Coût : ~5-10% storage en plus, indexation initiale ~2-5 min sur 3,5M points.
+
+    Returns:
+        Dict {field_name: status} pour chaque index créé.
+    """
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import (
+        PayloadSchemaType,
+        TextIndexParams,
+        TokenizerType,
+    )
+
+    if client is None:
+        client = QdrantClient(url=QDRANT_URL, timeout=60)
+
+    results: Dict[str, str] = {}
+
+    keyword_fields = ["source", "jurisdiction", "doc_id"]
+    for field in keyword_fields:
+        try:
+            client.create_payload_index(
+                collection_name=collection,
+                field_name=field,
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            results[field] = "created"
+            log.info(f"  Index KEYWORD créé sur '{field}'")
+        except Exception as e:
+            msg = str(e).lower()
+            if "already exists" in msg or "exists" in msg:
+                results[field] = "already_exists"
+                log.info(f"  Index '{field}' déjà présent")
+            else:
+                results[field] = f"error: {e}"
+                log.warning(f"  Erreur index '{field}': {e}")
+
+    try:
+        client.create_payload_index(
+            collection_name=collection,
+            field_name="text",
+            field_schema=TextIndexParams(
+                type="text",
+                tokenizer=TokenizerType.MULTILINGUAL,
+                min_token_len=2,
+                max_token_len=20,
+                lowercase=True,
+            ),
+        )
+        results["text"] = "created"
+        log.info("  Index TEXT (multilingue) créé sur 'text'")
+    except Exception as e:
+        msg = str(e).lower()
+        if "already exists" in msg or "exists" in msg:
+            results["text"] = "already_exists"
+            log.info("  Index 'text' déjà présent")
+        else:
+            results["text"] = f"error: {e}"
+            log.warning(f"  Erreur index 'text': {e}")
+
+    return results
 
 
 def get_index_stats() -> Dict:
