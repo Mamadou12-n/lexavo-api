@@ -444,6 +444,101 @@ def _handle_payment_failed(invoice: dict):
 
 BETA_FREE_CAP = int(os.getenv("LEXAVO_BETA_FREE_CAP", "50"))
 
+# Paywall progressif — seuils en pourcentage du quota
+QUOTA_WARNING_SOFT_PCT = 0.50  # 50% : bandeau awareness
+QUOTA_WARNING_HARD_PCT = 0.80  # 80% : modal incitation
+
+
+def _compute_warning_level(used: int, limit: int) -> str:
+    """Determine le niveau de warning paywall progressif.
+
+    Returns:
+        'none' (<50%), 'soft' (50-79%), 'hard' (80-99%), 'blocked' (100%+)
+    """
+    if limit <= 0:
+        return "none"
+    pct = used / limit
+    if pct >= 1.0:
+        return "blocked"
+    if pct >= QUOTA_WARNING_HARD_PCT:
+        return "hard"
+    if pct >= QUOTA_WARNING_SOFT_PCT:
+        return "soft"
+    return "none"
+
+
+def _next_quota_reset_iso() -> str:
+    """Date du prochain reset mensuel (1er du mois suivant a 00:00 UTC)."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    if now.month == 12:
+        next_reset = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        next_reset = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    return next_reset.isoformat()
+
+
+def get_quota_status(user_id: int) -> dict:
+    """Retourne l'etat du quota sans increment ni exception.
+
+    Utilise par GET /quota/status pour le paywall progressif cote mobile.
+    Contrairement a check_quota(), ne raise jamais 429 — retourne juste l'etat.
+    """
+    sub = get_subscription(user_id)
+    plan = sub.get("plan", "free") if sub else "free"
+    questions_used = sub.get("questions_used", 0) if sub else 0
+    next_reset = _next_quota_reset_iso()
+
+    # Plans payants pendant beta : illimites
+    if is_beta_active() and plan != "free":
+        return {
+            "allowed": True,
+            "plan": plan,
+            "questions_used": questions_used,
+            "questions_limit": -1,
+            "questions_remaining": -1,
+            "warning_level": "none",
+            "upgrade_recommended": False,
+            "next_reset": next_reset,
+            "beta": True,
+            "beta_end": BETA_END_DATE,
+        }
+
+    # Limite effective
+    if is_beta_active():
+        limit = BETA_FREE_CAP
+    else:
+        plan_config = PLANS.get(plan, PLANS["free"])
+        limit = plan_config["questions_per_month"]
+
+    if limit == -1:
+        return {
+            "allowed": True,
+            "plan": plan,
+            "questions_used": questions_used,
+            "questions_limit": -1,
+            "questions_remaining": -1,
+            "warning_level": "none",
+            "upgrade_recommended": False,
+            "next_reset": next_reset,
+            "beta": is_beta_active(),
+            "beta_end": BETA_END_DATE if is_beta_active() else None,
+        }
+
+    warning_level = _compute_warning_level(questions_used, limit)
+    return {
+        "allowed": warning_level != "blocked",
+        "plan": plan,
+        "questions_used": questions_used,
+        "questions_limit": limit,
+        "questions_remaining": max(0, limit - questions_used),
+        "warning_level": warning_level,
+        "upgrade_recommended": warning_level in ("hard", "blocked"),
+        "next_reset": next_reset,
+        "beta": is_beta_active(),
+        "beta_end": BETA_END_DATE if is_beta_active() else None,
+    }
+
 
 def check_quota(user_id: int) -> dict:
     """

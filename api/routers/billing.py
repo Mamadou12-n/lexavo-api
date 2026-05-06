@@ -65,6 +65,22 @@ def get_my_subscription(current_user: Annotated[dict, Depends(_get_current_user)
     )
 
 
+@router.get("/quota/status")
+def get_quota_status_endpoint(
+    current_user: Annotated[dict, Depends(_get_current_user)],
+):
+    """Etat du quota avec niveau de warning paywall progressif.
+
+    Ne consomme pas de quota — pour le mobile (banner + modals).
+    Retourne :
+    - warning_level : 'none' | 'soft' (50%+) | 'hard' (80%+) | 'blocked' (100%)
+    - upgrade_recommended : True si warning_level in ('hard', 'blocked')
+    - next_reset : ISO datetime du prochain reset mensuel
+    """
+    from api.stripe_billing import get_quota_status
+    return get_quota_status(current_user["id"])
+
+
 @router.post("/checkout", response_model=CheckoutResponse)
 def create_checkout(
     request: CheckoutRequest,
