@@ -265,11 +265,11 @@ Vérifications Phase F :
 ### Findings architecture détaillés
 
 - `api/main.py` : 3045 L, 115 endpoints, **0 APIRouter** (sauf seo_router)
-- 14 duplications du pattern `json.loads(json_match.group())` dans 8 features
+- ~~14 duplications du pattern `json.loads(json_match.group())` dans 8 features~~ **✅ CORRIGÉ (2026-05-06)** — `api/utils/claude_json.py` commit ea50c85
 - 1 seule migration Alembic (schéma figé)
 - Mobile : god components (StudentScreen 2451 L, SubscriptionScreen, ShieldScreen)
-- ~~Pas de Sentry~~ **✅ Sentry React Native intégré (2026-05-04)** — pas de TypeScript, pas de linter/formatter, pas d'ADR
-- 30 fichiers de tests backend mais **0 test RAG**
+- ~~Pas de Sentry~~ **✅ Sentry React Native + Python backend intégrés** — pas de TypeScript, pas de linter/formatter, pas d'ADR
+- ~~30 fichiers de tests backend mais **0 test RAG**~~ **✅ CORRIGÉ** — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 
 ### Findings UX/A11y détaillés
 
@@ -293,7 +293,7 @@ Vérifications Phase F :
 ### Findings RAG/IA détaillés
 
 - Embeddings MiniLM-L12-v2 (384D) obsolète pour juridique → migrer BGE-M3 (1024D)
-- Aucun eval set Q/A gold standard, aucun nDCG/MRR/recall@K mesuré
+- ~~Aucun eval set Q/A gold standard~~ **✅ CORRIGÉ (2026-05-06)** — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
 - `verify_citations` ne vérifie que ECLI + `[n]`, **pas les numéros d'articles ni dates de lois**
 - Détection branche par keyword matching naïf (faux positifs garantis)
 - Doublon `indexer.py` (ChromaDB legacy) + `indexer_qdrant.py` (Qdrant actif) — drift silencieux
@@ -311,22 +311,23 @@ Vérifications Phase F :
 ### Quick wins 1 semaine (cibles 8.0/10)
 
 1. Rotation secrets + suppression `.env` disque (30 min) — **⏳ à faire par Mamadou**
-2. Cap quota beta dur (30 min) — **⏳ à faire**
-3. SSRF whitelist sur `lms.py` (1h) — **⏳ à faire**
-4. Prompt caching `ephemeral` Anthropic (2h) — **⏳ à faire**
-5. Pool DB PostgreSQL `asyncpg` ou `pool_size` (30 min) — **⏳ à faire**
-6. Pre-warm SentenceTransformer + Qdrant (2h) — **⏳ à faire**
-7. Streaming SSE sur `/ask` (1j) — **⏳ à faire**
+2. ~~Cap quota beta dur (30 min)~~ — **✅ FAIT** `stripe_billing.py:445` BETA_FREE_CAP=50 + check_quota() sur tous les endpoints
+3. ~~SSRF whitelist sur `lms.py` (1h)~~ — **✅ FAIT** `lms.py:19-33` _validate_lms_url() + blocage redirections
+4. ~~Prompt caching `ephemeral` Anthropic (2h)~~ — **✅ FAIT** `pipeline.py:301,441` cache_control: ephemeral
+5. ~~Pool DB PostgreSQL `asyncpg` ou `pool_size` (30 min)~~ — **✅ FAIT** `database.py:36-48` ThreadedConnectionPool
+6. ~~Pre-warm SentenceTransformer + Qdrant (2h)~~ — **✅ FAIT** `main.py:194-222` on_startup() précharge le modèle
+7. ~~Streaming SSE sur `/ask` (1j)~~ — **✅ FAIT** `routers/rag.py:207` StreamingResponse text/event-stream
 8. Payload index Qdrant + TextIndexParams (2h) — **⏳ à faire**
-9. Sentry SDK Python + React Native (4h) — **✅ FAIT (2026-05-04)** — React Native done, Python à faire
-10. Helper `extract_json_from_claude()` mutualisé (4h) — **⏳ à faire**
-11. Fix SafeAreaView iOS notch wrap (30 min) — **✅ FAIT (2026-05-04)** commit c90193a
-12. TextInput focus ring (Auth + Ask) (45 min) — **✅ FAIT (2026-05-04)** commit c90193a
+9. ~~Sentry SDK Python + React Native (4h)~~ — **✅ FAIT** React Native (d26f99e) + Python backend (main.py:58-67)
+10. ~~Helper `extract_json_from_claude()` mutualisé (4h)~~ — **✅ FAIT (2026-05-06)** commit ea50c85 — `api/utils/claude_json.py`
+11. ~~Fix SafeAreaView iOS notch wrap (30 min)~~ — **✅ FAIT (2026-05-04)** commit c90193a
+12. ~~TextInput focus ring (Auth + Ask) (45 min)~~ — **✅ FAIT (2026-05-04)** commit c90193a
 13. Cap quota free + paywall progressif (1j) — **⏳ à faire**
-14. CI GitHub Actions bloquante (1j) — **✅ FAIT (2026-05-04)** commit c90193a
-15. Eval set 50 Q/A gold + script `eval.py` (2j) — **⏳ à faire**
+14. ~~CI GitHub Actions bloquante (1j)~~ — **✅ FAIT (2026-05-04)** commit c90193a
+15. ~~Eval set 50 Q/A gold + script `eval.py` (2j)~~ — **✅ FAIT** `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
+16. ~~chromadb retiré de `requirements.txt`~~ — **✅ FAIT** absent du fichier
 
-**Total : 7-8 jours dev concentré → 6.6/10 → 8.0/10 = RELEASE-READY**
+**Score : 13/16 quick wins terminés. Restants : rotation secrets (Mamadou), payload index Qdrant, paywall progressif.**
 
 ---
 
@@ -373,20 +374,24 @@ Vérifications Phase F :
 ### Vrai DB vectorielle en prod
 
 **Qdrant** (pas ChromaDB). `rag/indexer_qdrant.py` est le fichier actif. `rag/indexer.py` (ChromaDB) = legacy non utilisé.
-**Note** : `chromadb>=0.5.0` est encore dans `requirements.txt` — à retirer au prochain nettoyage.
+**Note** : `chromadb` a été retiré de `requirements.txt` (2026-05-06) ✅
 
 ### Prochaines actions prioritaires (dans l'ordre)
 
 1. ~~Fix SafeAreaView iOS notch~~ ✅ FAIT 2026-05-04
 2. ~~Focus ring WCAG TextInput (Auth + Ask)~~ ✅ FAIT 2026-05-04
 3. ~~CI GitHub Actions bloquante~~ ✅ FAIT 2026-05-04
-4. ~~Sentry React Native SDK~~ ✅ FAIT 2026-05-04 — **⚠️ reste : `npx expo install @sentry/react-native` + DSN dans Railway**
-5. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars — **⏳ Mamadou**
-6. Cap quota beta dur (50 req/mois free)
-7. SSRF whitelist sur `/student/lms/connect` dans `api/features/lms.py`
-8. Retirer `chromadb` de `requirements.txt` (legacy)
-9. Prompt caching `ephemeral` Anthropic (économie 30-80€/mois)
-10. Pool DB PostgreSQL
-11. Streaming SSE `/ask` (UX 12s → <3s perceived)
-12. Sentry SDK Python (backend FastAPI)
-13. Eval set 50 Q/A gold standard + `eval.py`
+4. ~~Sentry React Native SDK~~ ✅ FAIT 2026-05-04
+5. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars — **⏳ Mamadou** (action manuelle)
+6. ~~Cap quota beta dur (50 req/mois free)~~ ✅ FAIT — `stripe_billing.py:445`
+7. ~~SSRF whitelist sur `/student/lms/connect`~~ ✅ FAIT — `lms.py:19-33`
+8. ~~Retirer `chromadb` de `requirements.txt`~~ ✅ FAIT — absent du fichier
+9. ~~Prompt caching `ephemeral` Anthropic~~ ✅ FAIT — `pipeline.py:301,441`
+10. ~~Pool DB PostgreSQL~~ ✅ FAIT — `database.py:36-48`
+11. ~~Streaming SSE `/ask`~~ ✅ FAIT — `routers/rag.py:207`
+12. ~~Sentry SDK Python (backend FastAPI)~~ ✅ FAIT — `main.py:58-67`
+13. ~~Eval set 50 Q/A gold standard + `eval.py`~~ ✅ FAIT — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
+14. ~~Helper `extract_json_from_claude()`~~ ✅ FAIT 2026-05-06 — commit ea50c85
+15. Payload index Qdrant + TextIndexParams (2h) — **⏳ à faire**
+16. Cap quota free + paywall progressif (1j) — **⏳ à faire**
+17. i18n SubscriptionScreen — **✅ FAIT 2026-05-06** commit 00feb75
