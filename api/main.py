@@ -241,6 +241,7 @@ from api.routers.calculators import router as calculators_router
 from api.routers.features import router as features_router
 from api.routers.student import router as student_router
 from api.routers.beta_funnel import router as beta_funnel_router
+from api.routers.admin import router as admin_router
 
 app.include_router(rag_router)
 app.include_router(auth_router)
@@ -252,6 +253,7 @@ app.include_router(calculators_router)
 app.include_router(features_router)
 app.include_router(student_router)
 app.include_router(beta_funnel_router)
+app.include_router(admin_router)
 
 # SEO router (existant avant le split)
 from fastapi.templating import Jinja2Templates  # noqa: E402

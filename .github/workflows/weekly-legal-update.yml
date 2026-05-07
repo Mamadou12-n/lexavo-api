@@ -1,8 +1,8 @@
-name: Weekly Legal Database Update
+name: Weekly Legal Database Update (Qdrant Cloud)
 
 on:
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '0 3 * * 1'   # Lundi 03:00 UTC
   workflow_dispatch:
     inputs:
       max_docs:
@@ -15,12 +15,12 @@ on:
         default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   update-legal-db:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -36,48 +36,81 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
-          pip install pdfplumber
+          pip install pdfplumber qdrant-client
 
-      - name: Download current ChromaDB index
-        run: |
-          mkdir -p output
-          gh release download v1.0-chroma --pattern "chroma_db.tar.gz" --dir /tmp --repo ${{ github.repository }} || echo "No existing release"
-          if [ -f /tmp/chroma_db.tar.gz ]; then
-            tar -xzf /tmp/chroma_db.tar.gz -C output/
-            [ -d output/chroma_db_new ] && [ ! -d output/chroma_db ] && mv output/chroma_db_new output/chroma_db
-            echo "ChromaDB loaded"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run incremental update
+      - name: Run incremental update (Qdrant cloud)
         id: update
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ENV: production
+          LEXAVO_INDEXER: qdrant
         run: |
           MAX_DOCS="${{ github.event.inputs.max_docs || '200' }}"
           SOURCES="${{ github.event.inputs.sources || '' }}"
+          mkdir -p logs
           if [ -n "$SOURCES" ]; then
             python cron_update.py --max-docs "$MAX_DOCS" --sources "$SOURCES" 2>&1 | tee /tmp/update.log
           else
             python cron_update.py --max-docs "$MAX_DOCS" 2>&1 | tee /tmp/update.log
           fi
-          NEW_DOCS=$(grep -oP '(\d+) nouveaux documents' /tmp/update.log | grep -oP '\d+' || echo "0")
+          NEW_DOCS=$(grep -oP '(\d+) nouveaux documents' /tmp/update.log | grep -oP '\d+' | head -1 || echo "0")
+          DURATION=$(grep -oP 'Duree totale.*?(\d+)' /tmp/update.log | grep -oP '\d+$' | head -1 || echo "0")
           echo "new_docs=$NEW_DOCS" >> $GITHUB_OUTPUT
+          echo "duration_sec=$DURATION" >> $GITHUB_OUTPUT
+          grep -oP "[a-z_]+: \d+ docs" /tmp/update.log | head -20 > /tmp/by_source.txt || true
 
-      - name: Package ChromaDB
+      - name: Run user alerts (push notif aux users avec alert_preferences)
         if: steps.update.outputs.new_docs != '0'
-        run: |
-          cd output && tar -czf /tmp/chroma_db.tar.gz chroma_db/
-
-      - name: Upload to GitHub Release
-        if: steps.update.outputs.new_docs != '0'
-        run: |
-          gh release upload v1.0-chroma /tmp/chroma_db.tar.gz --clobber --repo ${{ github.repository }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EXPO_ACCESS_TOKEN: ${{ secrets.EXPO_ACCESS_TOKEN }}
+        run: |
+          python cron_alerts.py --days 7 2>&1 | tee /tmp/alerts.log || true
+
+      - name: Notify Slack/Discord (optionnel)
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS="${{ steps.update.outcome }}"
+          NEW_DOCS="${{ steps.update.outputs.new_docs }}"
+          EMOJI=":white_check_mark:"
+          [ "$STATUS" != "success" ] && EMOJI=":x:"
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\":\"$EMOJI Lexavo Weekly Update : $NEW_DOCS nouveaux docs (status=$STATUS)\"}" \
+            "$SLACK_WEBHOOK_URL" || true
 
       - name: Job summary
+        if: always()
         run: |
-          echo "## Weekly Legal Update" >> $GITHUB_STEP_SUMMARY
-          echo "- **Date**: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "- **New documents**: ${{ steps.update.outputs.new_docs }}" >> $GITHUB_STEP_SUMMARY
-          tail -10 /tmp/update.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          {
+            echo "## Lexavo - Weekly Legal Update"
+            echo "- **Date** : $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo "- **Statut** : ${{ steps.update.outcome }}"
+            echo "- **Nouveaux documents** : ${{ steps.update.outputs.new_docs }}"
+            echo "- **Duree** : ${{ steps.update.outputs.duration_sec }}s"
+            echo ""
+            echo "### Par source"
+            echo '```'
+            cat /tmp/by_source.txt 2>/dev/null || echo "(aucune donnee)"
+            echo '```'
+            echo ""
+            echo "### Logs (50 dernieres lignes)"
+            echo '```'
+            tail -50 /tmp/update.log 2>/dev/null || echo "(log indisponible)"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-update-logs-${{ github.run_id }}
+          path: /tmp/update.log
+          retention-days: 30
