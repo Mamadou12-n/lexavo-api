@@ -1,38 +1,101 @@
 # CLAUDE.md — Lexavo "Le droit pour tous"
 
-## ⚠️ TODO MAMADOU — Actions manuelles à faire (hors code)
+> **Dernière mise à jour : 2026-05-08** (session pipeline prod auto-update validée)
 
-> **Code 100% release-ready (15/16 quick wins ✅).** Reste 2 actions manuelles côté infra Railway/Qdrant — rien à coder.
+## 🏆 ÉTAT DE LA PRODUCTION (2026-05-08)
 
-### 1. 🔐 Rotation des secrets `.env` (sécurité CRITIQUE)
-**Pourquoi** : les secrets live Stripe + Anthropic + JWT sont en clair sur disque Windows (audit 2026-05-02 — risque CVSS 9.1).
+| Composant | Statut | Détail |
+|-----------|--------|--------|
+| **Backend FastAPI** | ✅ Prod | Railway auto-deploy sur push main |
+| **PostgreSQL** | ✅ Prod | Railway, URL publique `crossover.proxy.rlwy.net:19223` |
+| **Qdrant cloud** | ✅ Prod | AWS eu-west-1, 3,49M chunks, 4 payload indexes (free tier 4 GiB) |
+| **Mobile Expo** | ✅ Build OK | New Architecture activée |
+| **Pipeline auto-update hebdo** | ✅ **VALIDÉE** | Workflow run #25523830967 success (07/05) |
+| **8 secrets GitHub Actions** | ✅ Configurés | ANTHROPIC, APIFY, QDRANT_URL/KEY, DATABASE_URL, EXPO, SENTRY_DSN/ENV |
+| **Audit score** | ✅ 8.10/10 | vs 6.6 baseline 2026-05-02 (+22.7%) |
+| **ChromaDB legacy** | ✅ Archivé | `rag/_archived/indexer_chromadb_legacy.py`, retiré requirements |
+| **Sentry observabilité** | ✅ Backend + Mobile | DSN + traces 10% |
+| **Phantom (autre projet)** | ❌ Désactivé | 7 cron jobs `enabled=0` (bouffait 40€/mois Anthropic) |
+| **Tests** | ✅ 93% | pytest 304/325 + jest 66/73 + simulations 40/42 |
+
+## 🔄 PIPELINE AUTO-UPDATE (chaque lundi 03h UTC, AUCUNE intervention requise)
 
 ```
-1. Aller sur https://railway.app → Lexavo project → Variables
-2. Régénérer chaque clé sur sa source officielle :
-   - STRIPE_SECRET_KEY      → https://dashboard.stripe.com/apikeys (Roll key)
-   - STRIPE_WEBHOOK_SECRET  → Régénérer dans webhook config
-   - ANTHROPIC_API_KEY      → https://console.anthropic.com/settings/keys
-   - LEXAVO_JWT_SECRET      → openssl rand -hex 64 (nouvelle clé)
-3. Coller les NOUVELLES valeurs dans Railway env vars
-4. Sur Windows : supprimer ~/.env du disque (les nouvelles vivent SEULEMENT sur Railway)
-5. Redéployer Railway (auto sur push) — vérifier health endpoint
-6. Invalider tous les JWT existants : tous les users devront se reconnecter (normal)
+Lundi 03h UTC  GitHub Actions (.github/workflows/weekly-legal-update.yml)
+       ↓
+   cron_update.py (17 sources : moniteur, justel, hudoc, eurlex, juridat,
+                   consconst, conseil_etat, cce, cnt, apd, gallilex, fsma,
+                   wallex, ccrek, chambre, codex_vlaanderen, bruxelles)
+       ↓
+   Indexation Qdrant cloud (skip docs déjà présents, dedup par doc_id)
+       ↓
+   cron_alerts.py (push notif Expo aux users avec alert_preferences,
+                   dedup via table alert_history)
+       ↓
+   Job summary + logs artifact (rétention 30j)
+       → ~150-450 nouveaux docs/semaine ajoutés à la base juridique
 ```
 
-⏱ Durée : 30 min · Bloquant prod : non · Risque sécurité : 🔴 critique
+## ⚠️ TODO MAMADOU — Actions manuelles restantes (sécurité hygiène)
 
-### 2. 🚀 Activer payload indexes Qdrant cloud (perf)
-**Pourquoi** : ~20× speedup sur les filtres source/jurisdiction/text. Code livré, reste à exécuter sur le Qdrant cloud prod.
+### 1. 🔐 Rotation secrets compromis dans transcript Claude Code (URGENT)
+Dans la session du 2026-05-08, ces secrets sont apparus en clair :
+- `EXPO_ACCESS_TOKEN` : `0pQ8OoGKh-...` → https://expo.dev → Settings → Access tokens → Revoke + Create
+- `QDRANT_API_KEY` : `eyJhbGciOiJIUzI1NiIs...` → https://cloud.qdrant.io → cluster → API Keys
+- `DATABASE_URL` password Railway : `KAOYLSb...` → Railway → Postgres → Settings → Reset password
+- `GH_TOKEN` (PAT lexav) : créé pour push secrets → https://github.com/settings/personal-access-tokens → Revoke
 
+⏱ Durée : 15 min · Risque : 🟡 moyen (transcript pas public mais logs Anthropic)
+
+### 2. 🔐 Rotation secrets `.env` historiques (audit 2026-05-02 CVSS 9.1)
+Stripe live + Anthropic + JWT en clair sur disque Windows.
+```
+1. https://railway.app → Lexavo → Variables
+2. Régénérer : STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ANTHROPIC_API_KEY, LEXAVO_JWT_SECRET
+3. Coller dans Railway env vars
+4. Supprimer ~/.env du disque local
+5. Redéployer Railway (auto sur push)
+```
+⏱ Durée : 30 min · Risque : 🔴 critique
+
+### 3. 📢 Surveillance pipeline weekly (Discord webhook recommandé)
+Pour recevoir une notif chaque lundi 03h UTC après run du cron :
+```
+1. Discord/Slack → créer webhook (3 min)
+2. gh secret set SLACK_WEBHOOK_URL --body "https://discord.com/api/webhooks/..."
+3. Aussi : GitHub Settings → Notifications → Actions → Failed workflows → ON
+```
+⏱ Durée : 5 min · Bénéfice : zéro effort lundi
+
+### 4. 🏛 Mentions légales BCE/TVA (post-immatriculation SRL)
+Placeholders `[NUMÉRO BCE À COMPLÉTER]` visibles dans 4 fichiers :
+- `mobile/src/components/ConsentModal.js:97`
+- `mobile/src/screens/CGUScreen.js:81`
+- `mobile/src/screens/MentionsLegalesScreen.js:23-24`
+- `mobile/src/screens/PrivacyScreen.js:45`
+
+⏱ Durée : 5 min · Risque légal : Art. III.74 CDE
+
+### 5. 💰 Alerte budget Anthropic <5$
+Pour éviter nouvelle surprise (40€ cramés en avril par Phantom) :
+```
+https://console.anthropic.com/settings/billing
+→ Email when credit balance drops below : 5 $
+```
+⏱ Durée : 2 min · Bénéfice : alerte préventive
+
+### 6. 🚀 Payload indexes Qdrant cloud (déjà déployé via cron — vérification)
+Le code `create_payload_indexes()` (`rag/indexer_qdrant.py:279`) est appelé automatiquement
+par le cron weekly. Si tu veux vérifier qu'ils sont bien là sur Qdrant prod :
 ```bash
-# Une seule fois, avec les credentials Qdrant cloud :
-QDRANT_URL=https://xxx.cloud.qdrant.io \
-QDRANT_API_KEY=ton_api_key \
+QDRANT_URL=https://f6bb6f1a-...aws.cloud.qdrant.io \
+QDRANT_API_KEY=eyJhbGc... \
 python scripts/create_qdrant_indexes.py
 ```
+4 indexes attendus : `source` (KEYWORD), `jurisdiction` (KEYWORD), `text` (TEXT), `doc_id` (KEYWORD).
+~20× speedup sur les filtres Alt.6/Alt.3/Alt.2 du retriever.
 
-⏱ Durée : 2-5 min (indexation 3,5M chunks) · Bloquant : non · Idempotent ✅
+⏱ Durée : 2-5 min · Idempotent ✅
 
 ---
 
@@ -397,37 +460,93 @@ Vérifications Phase F :
   - **Tâche 5** ✅ Sentry React Native SDK — `App.js` (init + wrap), `app.json` (plugin), `metro.config.js` (getSentryExpoConfig), `.env` (DSN)
   - Commit groupé fichiers source non trackés : api/routers/ (9 modules), tests/ (6 nouveaux), hooks/ (6), scripts racine, utils/
 
-### État Git
+- **Session 2026-05-08** : pipeline auto-update prod validée + 8 secrets GitHub Actions — 5 commits :
+  - **Audit v2 RÉVISÉ** ✅ — score 8.10/10 (vs 7.65 v2 initial), 14 angles vérifiés
+  - **Tests fonctionnels** ✅ — 410/440 (93%) : pytest 304/325 + jest 66/73 + simulations 40/42
+  - **Pipeline auto-update prod** ✅ — `weekly-legal-update.yml` migré ChromaDB → Qdrant cloud
+  - **`cron_alerts.py`** ✅ — push notif Expo (4 langues) aux users avec `alert_preferences`
+  - **`api/routers/admin.py`** ✅ — 2 endpoints `/admin/legal-update-status` + `/admin/alerts-status`
+  - **`docs/DEPLOYMENT.md`** ✅ — guide complet secrets Railway/GitHub/Expo, checklist mise en prod
+  - **`tests/verify_sources_10x.py`** ✅ — 10 passes vérification 27 scrapers BE+UE (181/270 PASS, 0 FAIL)
+  - **8 secrets GitHub Actions configurés** ✅ — ANTHROPIC, APIFY, QDRANT_URL/KEY, DATABASE_URL (URL publique Railway), EXPO_ACCESS_TOKEN, SENTRY_DSN/ENV
+  - **Phantom désactivé** ✅ — 7 cron jobs `enabled=0` dans `~/Downloads/phantom/data/phantom.db` (cause des 40€ Anthropic d'avril)
+  - **ChromaDB legacy archivé** ✅ — `rag/_archived/indexer_chromadb_legacy.py`, stub redirect Qdrant
+  - **Workflow weekly testé en prod** ✅ — run #25523830967 success (10 docs Moniteur, 4 min)
+  - Commits : `b33210d5d0` (pipeline prod), `429bf7f44c` (chore session), `963455c191` (audit v2 révisé)
+
+### État Git (2026-05-08)
 
 - Branche principale : `main`
 - Branche WIP sauvegarde : `wip/2026-05-02-avant-fixes-p0` (138 fichiers, hash 49db384)
-- Commit Phase H (v2.1.0) : d962312
-- Commit Phase F (92/100) : a046414
-- Commit quick wins mobile (tâches 2-4) : c90193a
-- Commit Sentry React Native : d26f99e
-- Commit fichiers source non trackés : 8ab51b5
+- HEAD distant + local : `429bf7f44c` (chore session 2026-05-08)
+- Commits clés session 2026-05-08 :
+  - `429bf7f44c` chore : finalisation session (verify_sources_10x, beta_funnel)
+  - `b33210d5d0` feat(prod) : pipeline auto-update Qdrant cloud + cron_alerts + admin router
+  - `963455c191` docs : audit v2 RÉVISÉ score 8.10/10
+- Commits historiques :
+  - `d962312` Phase H (v2.1.0)
+  - `a046414` Phase F (92/100)
+  - `c90193a` quick wins mobile (tâches 2-4)
+  - `d26f99e` Sentry React Native
 
 ### Vrai DB vectorielle en prod
 
-**Qdrant** (pas ChromaDB). `rag/indexer_qdrant.py` est le fichier actif. `rag/indexer.py` (ChromaDB) = legacy non utilisé.
-**Note** : `chromadb` a été retiré de `requirements.txt` (2026-05-06) ✅
+**Qdrant cloud** AWS eu-west-1 (`f6bb6f1a-cc6a-439e-a0ef-561251fce623.eu-west-1-0.aws.cloud.qdrant.io`) — 3,49M chunks.
+- Indexer actif : `rag/indexer_qdrant.py` (16 KB)
+- Stub legacy : `rag/indexer.py` (DeprecationWarning + redirect Qdrant)
+- Code archive : `rag/_archived/indexer_chromadb_legacy.py` (18 KB)
+- ChromaDB retiré de `requirements.txt` ✅
+- 4 payload indexes créés : `source`, `jurisdiction`, `text` (multilingue), `doc_id` → ~20× speedup filtres
+
+### Pipeline auto-update prod (TOTALEMENT AUTOMATIQUE — aucune action chaque lundi)
+
+```
+Lundi 03h UTC → GitHub Actions → cron_update.py + cron_alerts.py → Qdrant + push notifs
+```
+
+- Workflow : `.github/workflows/weekly-legal-update.yml` (8 steps, 90 min timeout)
+- 8 secrets configurés : `ANTHROPIC_API_KEY`, `APIFY_API_TOKEN`, `QDRANT_URL`, `QDRANT_API_KEY`, `DATABASE_URL` (URL publique Railway), `EXPO_ACCESS_TOKEN`, `SENTRY_DSN`, `SENTRY_ENV`
+- Validation prod : run `25523830967` success (07/05/2026)
+- 17 sources scrapées : moniteur, justel, hudoc, eurlex, juridat, consconst, conseil_etat, cce, cnt, apd, gallilex, fsma, wallex, ccrek, chambre, codex_vlaanderen, bruxelles
+- Logs artifact GitHub : rétention 30 jours
+- Surveillance recommandée : Discord webhook (5 min setup) + email GitHub Actions (failed only, gratuit)
 
 ### Prochaines actions prioritaires (dans l'ordre)
 
+#### ✅ COMPLÈTÉS (session 2026-05-04 → 2026-05-08)
 1. ~~Fix SafeAreaView iOS notch~~ ✅ FAIT 2026-05-04
 2. ~~Focus ring WCAG TextInput (Auth + Ask)~~ ✅ FAIT 2026-05-04
 3. ~~CI GitHub Actions bloquante~~ ✅ FAIT 2026-05-04
 4. ~~Sentry React Native SDK~~ ✅ FAIT 2026-05-04
-5. Rotation secrets `.env` (Stripe live + Anthropic + JWT) → Railway env vars — **⏳ Mamadou** (action manuelle)
-6. ~~Cap quota beta dur (50 req/mois free)~~ ✅ FAIT — `stripe_billing.py:445`
-7. ~~SSRF whitelist sur `/student/lms/connect`~~ ✅ FAIT — `lms.py:19-33`
-8. ~~Retirer `chromadb` de `requirements.txt`~~ ✅ FAIT — absent du fichier
-9. ~~Prompt caching `ephemeral` Anthropic~~ ✅ FAIT — `pipeline.py:301,441`
-10. ~~Pool DB PostgreSQL~~ ✅ FAIT — `database.py:36-48`
-11. ~~Streaming SSE `/ask`~~ ✅ FAIT — `routers/rag.py:207`
-12. ~~Sentry SDK Python (backend FastAPI)~~ ✅ FAIT — `main.py:58-67`
-13. ~~Eval set 50 Q/A gold standard + `eval.py`~~ ✅ FAIT — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
-14. ~~Helper `extract_json_from_claude()`~~ ✅ FAIT 2026-05-06 — commit ea50c85
-15. ~~Payload index Qdrant~~ ✅ FAIT 2026-05-06 — `rag/indexer_qdrant.py:create_payload_indexes()` + script `scripts/create_qdrant_indexes.py`
-16. ~~Cap quota free + paywall progressif (1j)~~ ✅ FAIT 2026-05-06 — backend (4 niveaux warning + endpoint + 17 tests) + mobile (3 composants RN + hook + i18n FR/NL/EN/DE)
-17. i18n SubscriptionScreen — **✅ FAIT 2026-05-06** commit 00feb75
+5. ~~Cap quota beta dur (50 req/mois free)~~ ✅ — `stripe_billing.py:445`
+6. ~~SSRF whitelist sur `/student/lms/connect`~~ ✅ — `lms.py:19-33`
+7. ~~Retirer `chromadb` de `requirements.txt`~~ ✅
+8. ~~Prompt caching `ephemeral` Anthropic~~ ✅ — `pipeline.py:301,441`
+9. ~~Pool DB PostgreSQL~~ ✅ — `database.py:36-48`
+10. ~~Streaming SSE `/ask`~~ ✅ — `routers/rag.py:207`
+11. ~~Sentry SDK Python (backend FastAPI)~~ ✅ — `main.py:58-67`
+12. ~~Eval set 50 Q/A gold standard + `eval.py`~~ ✅ — `tests/eval_rag_gold.json` + `tests/rag_quality_check.py`
+13. ~~Helper `extract_json_from_claude()`~~ ✅ FAIT 2026-05-06
+14. ~~Payload index Qdrant~~ ✅ FAIT 2026-05-06 — `rag/indexer_qdrant.py:create_payload_indexes()`
+15. ~~Cap quota free + paywall progressif~~ ✅ FAIT 2026-05-06 — backend + mobile + i18n 4 langues
+16. ~~i18n SubscriptionScreen~~ ✅ FAIT 2026-05-06 — commit 00feb75
+17. ~~Pipeline auto-update prod (workflow Qdrant + cron_alerts + admin router)~~ ✅ FAIT 2026-05-08
+18. ~~8 secrets GitHub Actions configurés~~ ✅ FAIT 2026-05-08
+19. ~~Phantom désactivé (40€/mois Anthropic récupérés)~~ ✅ FAIT 2026-05-08
+20. ~~Audit v2 RÉVISÉ score 8.10/10~~ ✅ FAIT 2026-05-08
+21. ~~Verification 10 passes scrapers BE+UE (181/270 PASS, 0 FAIL)~~ ✅ FAIT 2026-05-08
+
+#### ⏳ MAMADOU — Actions manuelles restantes
+22. **Rotation secrets compromis dans transcript Claude Code** (PAT GitHub `lexav`, EXPO_ACCESS_TOKEN, QDRANT_API_KEY, DATABASE_URL password Railway) — 15 min — voir TODO #1 en tête de fichier
+23. **Rotation secrets `.env` historiques** (Stripe live + Anthropic + JWT) → Railway env vars — 30 min — voir TODO #2
+24. **Configurer Discord webhook lundi** (5 min) — voir TODO #3
+25. **BCE/VAT mentions** (post-immatriculation SRL) — 5 min — voir TODO #4
+26. **Alerte budget Anthropic <5$** — 2 min — voir TODO #5
+
+#### 🚀 Améliorations futures (non bloquantes)
+27. Migration embeddings BGE-M3 (1024D) — 1j code + 8-12h ré-indexation Qdrant
+28. Tests pytest unitaires sur les 9 alternatives RAG (mitigé par benchmark `rag_quality_check.py`)
+29. `verify_citations` étendu (articles + dates de lois, pas juste ECLI)
+30. StudentScreen.js god component split (2153L → 5 sous-composants)
+31. Migration TypeScript incrémentale (15K LOC mobile JS pur)
+32. Langfuse/Langsmith pour observabilité IA
