@@ -22,7 +22,7 @@ jobs:
         env:
           DATABASE_URL: sqlite:///./test.db
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          JWT_SECRET: test-secret-for-ci
+          LEXAVO_JWT_SECRET: test-secret-for-ci
           ENVIRONMENT: test
 
   mobile:

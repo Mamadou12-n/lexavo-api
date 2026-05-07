@@ -51,7 +51,8 @@
           "cameraPermission": "Lexavo utilise la caméra pour photographier vos documents juridiques."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@sentry/react-native"
     ],
     "web": {
       "favicon": "./assets/favicon.png",
