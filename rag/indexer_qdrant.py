@@ -29,10 +29,12 @@ log = logging.getLogger("indexer_qdrant")
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 NORMALIZED_DIR = OUTPUT_DIR / "normalized"
-COLLECTION_NAME = "legal_docs_be"
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "legal_docs_be")
 EMBED_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 EMBED_DIM = 384
-QDRANT_URL = "http://localhost:6333"
+# Lit l'env (Railway, GitHub Actions, dev) — fallback localhost pour dev local
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
 
 # Paramètres de chunking (mêmes que indexer.py)
 CHUNK_SIZE = 512
@@ -106,7 +108,7 @@ def build_index(
     log.info(f"  Répertoire docs : {normalized_dir}")
 
     # Connexion Qdrant
-    client = QdrantClient(url=QDRANT_URL, timeout=60)
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=60)
     info = client.get_collections()
     existing_names = [c.name for c in info.collections]
 
@@ -299,7 +301,7 @@ def create_payload_indexes(client=None, collection: str = COLLECTION_NAME) -> Di
     )
 
     if client is None:
-        client = QdrantClient(url=QDRANT_URL, timeout=60)
+        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=60)
 
     results: Dict[str, str] = {}
 
@@ -351,7 +353,7 @@ def create_payload_indexes(client=None, collection: str = COLLECTION_NAME) -> Di
 def get_index_stats() -> Dict:
     from qdrant_client import QdrantClient
     try:
-        client = QdrantClient(url=QDRANT_URL, timeout=10)
+        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
         info = client.get_collection(COLLECTION_NAME)
         count = client.count(COLLECTION_NAME).count
 
@@ -390,7 +392,7 @@ def search(query: str, top_k: int = 10, source_filter: str = None) -> List[Dict]
     from qdrant_client.models import Filter, FieldCondition, MatchValue
     from sentence_transformers import SentenceTransformer
 
-    client = QdrantClient(url=QDRANT_URL, timeout=30)
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=30)
     model = SentenceTransformer(EMBED_MODEL)
 
     query_vec = model.encode(query).tolist()
