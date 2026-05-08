@@ -47,23 +47,11 @@ COPY rag/ ./rag/
 COPY processors/ ./processors/
 COPY config.py ./config.py
 
-# Download ChromaDB v2.0.1 legal index from GitHub Releases
-# 47,047 chunks — 8 sources officielles, 28 codes belges complets, vérifié 5x
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget && \
-    mkdir -p /app/output && \
-    wget -q --show-progress \
-      https://github.com/Mamadou12-n/lexavo-api/releases/download/v2.0-chroma/chroma_db_v2.tar.gz \
-      -O /tmp/chroma_db.tar.gz && \
-    tar -xzf /tmp/chroma_db.tar.gz -C /app/output/ && \
-    echo "2.0.1" > /app/output/chroma_db/.version && \
-    rm /tmp/chroma_db.tar.gz && \
-    apt-get remove -y wget && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
-
-# Note: embedding model telecharge au premier /ask (~60s) — retrait du pre-download
-# pour respecter la limite disque Railway (8GB build layer)
+# RAG actif en prod : Qdrant cloud (env vars QDRANT_URL + QDRANT_API_KEY).
+# ChromaDB legacy local (chroma_db.tar.gz 600 MB) retire 2026-05-08 :
+#   - empechait Qdrant de prendre la main au runtime (collision /app/output/chroma_db)
+#   - ajoutait 600 MB inutile a l'image (image 3.1 GB -> ~2.5 GB)
+#   - faisait crasher le healthcheck Railway au boot (workers init trop lents)
 
 # Runtime lib for psycopg2 + non-root user
 RUN apt-get update && \
@@ -71,13 +59,18 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser && \
+    mkdir -p /app/output && \
     chown -R appuser:appuser /app
 
 USER appuser
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+# Healthcheck Railway : start-period 240s pour laisser le pre-warm
+# SentenceTransformer (~60s premier dl + load) + Qdrant client init.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=240s --retries=3 \
     CMD python -c "import urllib.request,os; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT','8000') + '/health')" || exit 1
 
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-2}"]
+# Workers default 1 sur Railway Hobby (8 GB RAM, marge etroite avec 2).
+# Override possible via env var Railway UVICORN_WORKERS=2 quand monitoring stable.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-1}"]
