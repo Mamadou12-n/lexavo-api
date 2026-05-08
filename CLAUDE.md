@@ -84,6 +84,17 @@ https://console.anthropic.com/settings/billing
 ```
 ⏱ Durée : 2 min · Bénéfice : alerte préventive
 
+### 7. ⚡ Capacité simultanée — 2 actions Railway/Anthropic (5 min)
+Suite à l'analyse capacité 2026-05-08 (passe de **~50 → ~400 users actifs simultanés**) :
+- **Railway** → Lexavo → Variables → ajouter `DB_POOL_MAX=20` (défaut actuel 10).
+  Avec 2 workers uvicorn × 20 = 40 connexions Postgres (limite Railway 100, OK).
+- **Railway** (si monitoring RAM stable < 6 GB) → ajouter `UVICORN_WORKERS=4` pour
+  doubler encore. Tester d'abord avec valeur défaut 2.
+- **Anthropic** → https://console.anthropic.com/settings/limits → demander tier 2
+  (automatique sous 7j si > 5 $ déjà payés). Passe de 50 RPM → 1000 RPM.
+
+⏱ Durée : 5 min · Bénéfice : 8× capacité simultanée sans coût additionnel
+
 ### 6. 🚀 Payload indexes Qdrant cloud (déjà déployé via cron — vérification)
 Le code `create_payload_indexes()` (`rag/indexer_qdrant.py:279`) est appelé automatiquement
 par le cron weekly. Si tu veux vérifier qu'ils sont bien là sur Qdrant prod :
