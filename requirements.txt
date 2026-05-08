@@ -12,6 +12,7 @@ python-multipart>=0.0.26             # Form data support for FastAPI (CVE-2026-4
 # ─── LLM & Embeddings (RAG) ─────────────────────────────────────────────────
 anthropic>=0.87.0                    # Claude API (CVE-2026-34450/34452 fixed in 0.87.0)
 sentence-transformers>=2.7.0          # Embedding model (PyTorch CPU backend)
+qdrant-client>=1.9.0                  # Vector DB Qdrant cloud (3.5M chunks juridiques)
 
 # ─── Authentication ──────────────────────────────────────────────────────────
 pyjwt>=2.8.0                         # JWT token handling
