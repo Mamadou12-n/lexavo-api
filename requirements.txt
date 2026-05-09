@@ -51,6 +51,7 @@ jinja2>=3.1.0                        # Templates HTML pour SEO programmatique
 
 # ─── Observabilité ──────────────────────────────────────────────────────────
 sentry-sdk[fastapi]>=2.0.0           # Error tracking + performance monitoring
+langfuse>=2.0                         # IA observability — traces RAG, cost/qualité par question (audit #12 2026-05-09). Activation conditionnelle via LANGFUSE_PUBLIC_KEY env var.
 
 # ─── Testing ─────────────────────────────────────────────────────────────────
 pytest>=8.2.0
