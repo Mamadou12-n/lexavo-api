@@ -29,7 +29,7 @@ services:
       test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
       interval: 30s
       timeout: 10s
-      start_period: 30s
+      start_period: 120s
       retries: 3
 
   caddy:
@@ -58,7 +58,7 @@ networks:
 volumes:
   qdrant_data:
     external: true
-    name: lexavo-qdrant_qdrant_data
+    name: lexavo_qdrant_data
   caddy_data:
   caddy_config:
   caddy_logs:
