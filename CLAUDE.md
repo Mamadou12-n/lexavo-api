@@ -259,7 +259,7 @@ users, lawyers, conversations, messages, subscriptions, shield_analyses, newslet
 - **Sécurité** : api/security.py — HSTS/CSP/X-Frame-DENY/Referrer-Policy/Permissions-Policy, PII masking, CORS strict whitelist, MIME magic bytes upload, admin audit log
 - **Paiement** : Stripe live (7 plans : free/basic/pro/business/firm_s/firm_m/enterprise), webhooks idempotents, beta gratuit jusqu'au 2026-10-01
 - **Mobile** : React Native 0.81.5, Expo SDK ~54.0.34, React Navigation 7.x, expo-secure-store, Ionicons, react-native-reanimated ~4.1.1
-- **i18n** : ~680 clés × 9 langues (fr/nl/en/de/es/it/pt/ar/tr), 1700 L translations.js, coverage 70% sur 5 écrans principaux, RTL arabe
+- **i18n** : ~680 clés × **4 langues actives (fr/nl/en/de)** (refocalisation 2026-05-05, RTL arabe désactivé pour MVP — code conservé pour réactivation future). Audit 2026-05-09 : doc/code drift résolu
 - **Tests** : pytest 55+ tests backend (conftest.py, asyncio), jest 60 tests mobile (mocks expo-secure-store)
 - **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, Qdrant VPS Hostinger 46.202.168.185)
 - **CI** : GitHub Actions (emails beta), auto-deploy Railway sur push main
