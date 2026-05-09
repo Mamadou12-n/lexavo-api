@@ -1,9 +1,9 @@
-# docker-compose.vps.yml — Qdrant + Caddy sur VPS Hostinger
+# docker-compose.vps.yml — Qdrant + Traefik sur VPS Hostinger
 # Usage : docker compose -f docker-compose.vps.yml up -d
 #
 # Prérequis :
 #   - DNS A record : qdrant.lexavo.be → 46.202.168.185
-#   - Ports 80 et 443 ouverts dans le firewall VPS
+#   - Traefik déjà actif sur le VPS (ports 80/443, providers.docker=true)
 #   - Variable QDRANT_API_KEY définie dans l'environnement
 
 services:
@@ -31,25 +31,12 @@ services:
       timeout: 10s
       start_period: 120s
       retries: 3
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: lexavo-caddy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-      - caddy_logs:/var/log/caddy
-    networks:
-      - qdrant-net
-    restart: unless-stopped
-    depends_on:
-      qdrant:
-        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qdrant.rule=Host(`qdrant.lexavo.be`)"
+      - "traefik.http.routers.qdrant.entrypoints=websecure"
+      - "traefik.http.routers.qdrant.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qdrant.loadbalancer.server.port=6333"
 
 networks:
   qdrant-net:
@@ -59,6 +46,3 @@ volumes:
   qdrant_data:
     external: true
     name: lexavo_qdrant_data
-  caddy_data:
-  caddy_config:
-  caddy_logs:
