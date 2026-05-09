@@ -63,7 +63,14 @@ PLANS = {
         "price_monthly": 4.99,
         "price_annual": 49.99,
         "founding_price": 3.99,
-        "questions_per_month": -1,
+        # Audit 2026-05-09 : cap soft 200 q/mois (vs illimité avant).
+        # Pareto distribution : 90% users < 50 q (marge OK), 8% font 100-300 q
+        # (break-even), 2% power users 500+ q nous coutaient -10€/user.
+        # Cap 200 force upgrade Pro 49,99€ pour les heavy users → +2250€/mois
+        # de marge potentielle à volume égal (1000 Basic).
+        # Founding price 3,99€ à vie + paywall progressif (commit 00feb75)
+        # compensent l'évolution pour les early adopters.
+        "questions_per_month": 200,
         "max_users": 1,
         "stripe_price_id": os.getenv("STRIPE_PRICE_BASIC", ""),
         "stripe_price_annual_id": os.getenv("STRIPE_PRICE_BASIC_ANNUAL", ""),
