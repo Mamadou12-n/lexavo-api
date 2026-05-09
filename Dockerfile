@@ -71,6 +71,10 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=240s --retries=3 \
     CMD python -c "import urllib.request,os; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT','8000') + '/health')" || exit 1
 
-# Workers default 1 sur Railway Hobby (8 GB RAM, marge etroite avec 2).
-# Override possible via env var Railway UVICORN_WORKERS=2 quand monitoring stable.
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-1}"]
+# Workers default 2 sur Railway Hobby (8 GB RAM).
+# - 1 worker  = ~1.5 GB (sentence-transformers 512 MB + Python 1 GB)
+# - 2 workers = ~3 GB (marge OK)
+# - 4 workers = ~6 GB (limite, override via UVICORN_WORKERS=4 si RAM stable)
+# Combine avec DB_POOL_MAX=20 (database.py) : 4 workers x 20 = 80 connexions Postgres (limite Railway 100).
+# Capacite estimee : ~50 users actifs simultanes par worker.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-2}"]

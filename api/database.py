@@ -40,7 +40,9 @@ def _get_pg_pool():
     global _pg_connection_pool
     if _pg_connection_pool is None:
         minconn = int(os.getenv("DB_POOL_MIN", "2"))
-        maxconn = int(os.getenv("DB_POOL_MAX", "10"))
+        # Default 20 (vs Railway limit 100). Avec 4 workers uvicorn x 20 = 80 connexions max.
+        # Permet de servir ~400 users actifs simultanes vs ~50 avec maxconn=10.
+        maxconn = int(os.getenv("DB_POOL_MAX", "20"))
         _pg_connection_pool = _pg_pool.ThreadedConnectionPool(
             minconn, maxconn, DATABASE_URL, cursor_factory=RealDictCursor
         )
