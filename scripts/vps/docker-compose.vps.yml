@@ -10,9 +10,11 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.12.4
     container_name: lexavo-qdrant
-    expose:
-      - "6333"
-      - "6334"
+    ports:
+      # HTTP direct exposé : Railway s'y connecte via http://46.202.168.185:6333
+      # Quand DNS qdrant.lexavo.be sera achete, Traefik HTTPS ci-dessous prendra le relais
+      - "6333:6333"
+      - "6334:6334"
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
       - QDRANT__SERVICE__ENABLE_TLS=false
