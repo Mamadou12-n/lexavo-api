@@ -1,0 +1,64 @@
+# docker-compose.vps.yml — Qdrant + Caddy sur VPS Hostinger
+# Usage : docker compose -f docker-compose.vps.yml up -d
+#
+# Prérequis :
+#   - DNS A record : qdrant.lexavo.be → 46.202.168.185
+#   - Ports 80 et 443 ouverts dans le firewall VPS
+#   - Variable QDRANT_API_KEY définie dans l'environnement
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: lexavo-qdrant
+    expose:
+      - "6333"
+      - "6334"
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+      - QDRANT__SERVICE__ENABLE_TLS=false
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - qdrant-net
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: lexavo-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    networks:
+      - qdrant-net
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+
+networks:
+  qdrant-net:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+    external: true
+    name: lexavo-qdrant_qdrant_data
+  caddy_data:
+  caddy_config:
+  caddy_logs:

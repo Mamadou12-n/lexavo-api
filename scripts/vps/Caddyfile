@@ -1,0 +1,29 @@
+qdrant.lexavo.be {
+    # TLS automatique Let's Encrypt (email obligatoire pour notifs expiration)
+    tls bah.mamadou0912@gmail.com
+
+    # Reverse proxy vers Qdrant (réseau Docker interne)
+    reverse_proxy qdrant:6333 {
+        # Timeout genereux pour les gros scrolls de migration
+        transport http {
+            dial_timeout 10s
+            response_header_timeout 120s
+        }
+    }
+
+    # Logs structurés
+    log {
+        output file /var/log/caddy/qdrant.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+
+    # Headers sécurité
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}
