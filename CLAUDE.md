@@ -1,6 +1,25 @@
 # CLAUDE.md — Lexavo "Le droit pour tous"
 
-> **Dernière mise à jour : 2026-05-09 19h** (session suite : merge release/audit, Langfuse Railway, fixes tests, audit clés)
+> **Dernière mise à jour : 2026-05-09 22h** (hotfix Qdrant VPS : ports HTTP réexposés + Railway env sync, prod restaurée)
+
+## 🚑 HOTFIX 2026-05-09 22h — Qdrant VPS down → restauré
+
+**Symptôme** : app mobile affichait "Qdrant indisponible" / "Timed out" à chaque question depuis le commit Caddy → Traefik (`2c64b76218`).
+
+**Cause** : ce commit a remplacé `ports: - "6333:6333"` par `expose: - "6333"` dans `docker-compose.vps.yml` pour passer uniquement par Traefik HTTPS sur `qdrant.lexavo.be`. Mais le DNS lexavo.be n'a jamais été enregistré → NXDOMAIN, cert ACME échec, port 6333 exposé nulle part → Railway timeout 5s sur chaque appel Qdrant.
+
+**Fix** (commit `763d90fb5c`) : config hybride
+- `ports: - "6333:6333" - "6334:6334"` → HTTP direct exposé sur 0.0.0.0
+- Labels Traefik conservés → HTTPS auto dès que DNS lexavo.be sera acheté
+- Création `/root/.env` sur VPS avec `QDRANT_API_KEY` (manquait → container avait `QDRANT__SERVICE__API_KEY=` vide)
+- Push `QDRANT_URL=http://46.202.168.185:6333` + `QDRANT_API_KEY` sur Railway via API GraphQL `variableUpsert` (token `~/AppData/Roaming/railway/config.json`)
+- Force redeploy Railway via `serviceInstanceRedeploy` mutation
+
+**Vérification post-fix** : `https://lexavo-api-production.up.railway.app/health` → `{"status":"ok","index":{"status":"ok","backend":"qdrant","total_chunks":3488986,"total_documents":4681}}`
+
+---
+
+> **Précédente mise à jour : 2026-05-09 19h** (session suite : merge release/audit, Langfuse Railway, fixes tests, audit clés)
 
 ## 🔁 SESSION 2026-05-09 (suite, 16h-20h)
 
