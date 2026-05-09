@@ -17,8 +17,14 @@ router = APIRouter(prefix="/billing", tags=["billing"])
 
 @router.get("/plans", response_model=PlansResponse)
 def list_plans():
-    """Liste les plans tarifaires disponibles."""
+    """Liste les plans tarifaires disponibles.
+
+    Action #24 audit 2026-05-09 : firm_s/firm_m masques (positionnement faible
+    vs Doctrine/Lexis 360 sur ce segment 500EUR+/mois). 5 plans visibles : free,
+    basic, pro, business, enterprise. Toujours dans PLANS pour compat backend.
+    """
     from api.stripe_billing import PLANS, is_beta_active, BETA_END_DATE
+    HIDDEN_PLANS = {"firm_s", "firm_m"}
     plans = [
         PlanInfo(
             key=key,
@@ -32,6 +38,7 @@ def list_plans():
             features=cfg["features"],
         )
         for key, cfg in PLANS.items()
+        if key not in HIDDEN_PLANS
     ]
     return PlansResponse(
         plans=plans,
