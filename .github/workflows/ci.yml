@@ -18,12 +18,19 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
-      - run: pytest tests/ -v --tb=short
+      - run: pip install pytest-cov
+      - run: pytest tests/ -v --tb=short --cov=api --cov=rag --cov-report=term-missing --cov-report=xml --cov-fail-under=40
         env:
           DATABASE_URL: sqlite:///./test.db
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LEXAVO_JWT_SECRET: test-secret-for-ci
           ENVIRONMENT: test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend
+          path: coverage.xml
+          retention-days: 30
 
   mobile:
     name: Mobile (Node 20 / Jest)
@@ -38,5 +45,11 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
         working-directory: mobile
-      - run: npx jest --ci --passWithNoTests
+      - run: npx jest --ci --passWithNoTests --coverage --coverageReporters=text --coverageReporters=lcov
         working-directory: mobile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-mobile
+          path: mobile/coverage/
+          retention-days: 30
