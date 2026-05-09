@@ -80,7 +80,9 @@ PLANS = {
         "label": "Lexavo Pro",
         "subtitle": "Avocats & juristes",
         "price_monthly": 49.99,
-        "price_annual": 499.99,
+        # Audit 2026-05-09 #26 : -20% standard SaaS (vs -16% pre-audit).
+        # 49.99 * 12 * 0.80 = 479.90 (avant : 499.99).
+        "price_annual": 479.99,
         "founding_price": 39.99,
         "questions_per_month": -1,
         "max_users": 1,
