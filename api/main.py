@@ -102,8 +102,9 @@ app = FastAPI(
         "Toutes les données sont 100% réelles."
     ),
     version="2.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if os.getenv("DATABASE_URL") else "/docs",
+    redoc_url=None if os.getenv("DATABASE_URL") else "/redoc",
+    openapi_url=None if os.getenv("DATABASE_URL") else "/openapi.json",
 )
 
 # Origines autorisées — strict whitelist, jamais de "*", jamais de regex permissive.
