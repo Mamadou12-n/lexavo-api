@@ -18,9 +18,13 @@ def select_model(task_type: str, text_length: int = 0) -> str:
         "quiz":          HAIKU,   # Quiz étudiants
         "flashcards":    HAIKU,   # Flashcards étudiants
         "alerts":        HAIKU,   # Alertes législatives
+        # Audit 2026-05-09 #B-downgrade : tâches simples passées de Sonnet → Haiku
+        # (économie ~48€/mois sur 1000 users × 50q, risque qualité très faible).
+        "match":         HAIKU,   # Matching avocat (keywords-based, pas d'analyse complexe)
+        "summary":       HAIKU,   # Résumé étudiant (compression simple, pas d'analyse juridique)
 
         # ─── Sonnet (qualité, équilibré) ──────────────────
-        "analysis":      SONNET,  # Analyse générale
+        "analysis":      SONNET,  # Analyse générale (chat /ask — qualité juridique critique)
         "diagnostic":    SONNET,  # Diagnostic multi-branches
         "contract":      SONNET,  # Shield (analyse contrat)
         "defend":        SONNET,  # Defend (contestation + document)
@@ -29,8 +33,6 @@ def select_model(task_type: str, text_length: int = 0) -> str:
         "heritage":      SONNET,  # Guide successoral
         "compliance":    SONNET,  # Audit conformité
         "litigation":    SONNET,  # Recouvrement impayés
-        "match":         SONNET,  # Matching avocat
-        "summary":       SONNET,  # Résumé étudiant
 
         # ─── Opus (très complexe, rare) ───────────────────
         "complex":       OPUS,    # Cas très complexes

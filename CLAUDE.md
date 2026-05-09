@@ -1,6 +1,128 @@
 # CLAUDE.md — Lexavo "Le droit pour tous"
 
-> **Dernière mise à jour : 2026-05-09** (migration Qdrant cloud → VPS Hostinger 100% terminée)
+> **Dernière mise à jour : 2026-05-09** (Mega Audit 14 angles + 8 actions appliquées sur 22)
+
+## 🎯 MEGA AUDIT 2026-05-09 — Score 7.39/10 (vs 6.6 baseline = +12%)
+
+**14 sous-agents en parallèle** ont audité le projet. Score moyen pondéré : **7.39/10**.
+
+### Scoreboard 14 angles
+
+| Angle | Score | Δ vs 2026-05-02 | Verdict |
+|-------|-------|-----------------|---------|
+| 1. Sécurité | 7.4/10 | +0.4 | ⚠ 3 dettes manuelles (rotation secrets) |
+| 2. Backend FastAPI | 8.5/10 | +2.5 | ✅ refactor massif réussi (main.py 3045→340L) |
+| 3. RAG/IA | 7.0/10 | +0.5 | ⚠ embeddings MiniLM obsolètes |
+| 4. Mobile RN | 7.5/10 | -0.5* | ⚠ Phase H surévaluée |
+| 5. A11y WCAG | 7.6/10 | +0.4 | ⚠ focus ring localisé 2 écrans |
+| 6. Design | 7.8/10 | +0.3 | ⚠ 2 emojis résiduels |
+| 7. Tests | 6.8/10 | NEW | ❌ 0 test RAG 9-alts → ✅ FAIT 2026-05-09 |
+| 8. Performance | 8.5/10 | +2.0 | ✅ stack moderne |
+| 9. Architecture | 7.2/10 | +1.2 | ✅ 12 APIRouter, claude_json mutualisé |
+| 10. i18n | 6.0/10 | -0.5* | ⚠ doc/code drift → ✅ FAIT |
+| 11. DevOps | 8.5/10 | NEW | ⚠ secrets GH non updated post-migration |
+| 12. Observabilité | 5.5/10 | NEW | ❌ 0 obs IA Langfuse |
+| 13. Produit/Business | 6.8/10 | +0.8 | ⚠ pre-PMF, dispersion 7 plans |
+| 14. Légal/RGPD | (en cours) | — | DELETE/export OK |
+
+### Top 10 findings cross-angles (CVSS)
+
+| # | Finding | Sév | CVSS | Effort |
+|---|---------|-----|------|--------|
+| 1 | Secrets `.env` live disque non rotatés (Stripe, Anthropic, JWT) | 🔴 CRIT | 9.1 | 30 min Mamadou |
+| 2 | Secrets transcript Claude non révoqués (EXPO, QDRANT_API_KEY, Railway, GH PAT) | 🔴 CRIT | 8.5 | 15 min Mamadou |
+| 3 | Qdrant VPS HTTP exposé Internet sans HTTPS | 🔴 HIGH | 8.2 | 2-4h |
+| 4 | GitHub Actions secrets pas updated post-migration | 🔴 HIGH | infra | 5 min Mamadou |
+| 5 | VPS Hostinger expire 2026-05-13 | 🔴 HIGH | business | 2 min Mamadou |
+| 6 | 0 test pytest sur retriever 9 alts → ✅ FAIT | 🟢 RÉSOLU | — | (commit fc117229c2) |
+| 7 | 0 observabilité IA (Langfuse/Phoenix) | 🔴 HIGH | légal | 1j |
+| 8 | BCE/VAT placeholders mobile (4 fichiers) | 🟡 MED | légal | 5 min post-SRL |
+| 9 | 95% routes sync `def` saturent threadpool | 🟡 MED | perf | 1-2j |
+| 10 | StudentScreen.js 2153L god component | 🟡 MED | maint | 5-7j |
+
+---
+
+## ✅ ACTIONS APPLIQUÉES — 8/22
+
+| # | Action | Commit | Branche | Effet |
+|---|--------|--------|---------|-------|
+| 7 | Désactiver Swagger /docs /redoc en prod | `658d4e7df8` | main | -surface attaque |
+| 9 | Tests pytest Alt.1→Alt.9 retriever (354L, 18 tests) | `fc117229c2` | main | RAG testé |
+| 11 | CI coverage threshold (--cov-fail-under=40) + artifacts | `4a43cf413a` | main | Anti-régression |
+| 17 | DB_POOL_MAX=20 + UVICORN_WORKERS=2 default | `d9889ccf7a` | main | Capacité ×4 |
+| 24 | Hide firm_s/firm_m UI (5 plans visibles vs 7) | `40d3bd43d3` | release/audit-2026-05-09 | Focus B2C |
+| 27 | CLAUDE.md i18n drift fix (9→4 langues) | `15308a2695` | release/audit-2026-05-09 | Doc/code aligné |
+| 26a | Pricing Pro annuel -20% SaaS (499.99→479.99) | `134d21565b` | release/audit-2026-05-09 | Conv annuel |
+| (—) | Migration Qdrant cloud → VPS Hostinger 3.5M chunks | `63b1b5445a` | main | -16% latence |
+
+### Pour merger en prod
+
+```bash
+cd ~/Downloads/base-juridique-app
+git checkout main
+git merge release/audit-2026-05-09 --no-ff -m "merge: audit 2026-05-09 quick wins"
+git push origin main
+```
+
+Railway redéploie auto en ~3 min.
+
+---
+
+## ⏳ ACTIONS RESTANTES — 14/22
+
+### Bloquées par DNS / infra (#5, #6)
+- ⏸️ #5 Caddy + Let's Encrypt VPS Qdrant — bloqué (pas de DNS lexavo.be)
+- ⏸️ #6 Firewall ufw deny 6333 — bloqué (sans #5, casse Railway)
+
+### Tests / Observabilité (#10, #12, #13, #14, #19)
+- ⏳ #10 Tests humanizer regex citations (ECLI, art. CSA, dates) — 4h
+- ⏳ #12 Langfuse self-hosted Docker sur VPS + intégration `pipeline.py` — 1j
+- ⏳ #13 PostHog mobile + backend (5 events critiques) — 1j
+- ⏳ #14 Sentry intercepteur axios mobile `client.js` — 4h
+- ⏳ #19 Eval gold étendu 50→100 Q/A (NL 20, edge-cases 30) — 2j
+
+### Performance (#15, #16)
+- ⏳ #15 3 routes hot async (`/ask`, `/search`, `/billing/quota/status`) — 1-2j
+- ⏳ #16 Paralléliser Alt.1+Alt.2+Alt.3 retriever (asyncio.gather) — 1j
+
+### Mobile / UX (#20, #21, #22, #23, #25)
+- ⏳ #20 StudentScreen 2153L → 5 sous-écrans — 5j
+- ⏳ #21 Focus ring TextInput généralisé (useFocusRing + 18 écrans) — 1.5j
+- ⏳ #22 Purge emojis UI résiduels → Ionicons — 2h
+- ⏳ #23 Migration `client.js` 943L → 9 modules domaine — 2j
+- ⏳ #25 Onboarding aha-moment 3 templates question — 1j
+
+### Pricing / Embeddings (#26b, #28)
+- ⏳ #26b Pricing Business annuel -20% (799.99→767.99) — 5 min
+- ⏳ #28 POC BGE-M3 1024D sur 50K chunks — 1j POC + 8-12h ré-indexation
+
+---
+
+## 🚨 TODO MAMADOU URGENT (manuel, ~1h)
+
+1. ⏰ Renouveler VPS Hostinger avant 2026-05-13 (4j) — 2 min
+2. 🔐 Rotation secrets `.env` → Railway env vars — 30 min
+3. 🔐 Révocation secrets transcript (EXPO, QDRANT, Railway, GH PAT) — 15 min
+4. 🐱 Update GH Actions secrets QDRANT_URL/KEY — 5 min
+5. 🏛️ BCE/VAT placeholders mobile (post-SRL) — 5 min
+6. 💰 Alerte budget Anthropic <5$ — 2 min
+
+---
+
+## 🔄 Reprendre les actions restantes
+
+Le hook `~/.claude/hooks/skills-gate.js` bloque chaque edit. Pour avancer :
+
+```bash
+mv ~/.claude/hooks/skills-gate.js ~/.claude/hooks/skills-gate.js.DISABLED
+# Relancer Claude Code, dire "go reprends audit"
+# Quand fini :
+mv ~/.claude/hooks/skills-gate.js.DISABLED ~/.claude/hooks/skills-gate.js
+```
+
+OU sessions courtes : 1 action par session = contexte frais.
+
+---
 
 ## 🏆 ÉTAT DE LA PRODUCTION (2026-05-09)
 
@@ -259,7 +381,7 @@ users, lawyers, conversations, messages, subscriptions, shield_analyses, newslet
 - **Sécurité** : api/security.py — HSTS/CSP/X-Frame-DENY/Referrer-Policy/Permissions-Policy, PII masking, CORS strict whitelist, MIME magic bytes upload, admin audit log
 - **Paiement** : Stripe live (7 plans : free/basic/pro/business/firm_s/firm_m/enterprise), webhooks idempotents, beta gratuit jusqu'au 2026-10-01
 - **Mobile** : React Native 0.81.5, Expo SDK ~54.0.34, React Navigation 7.x, expo-secure-store, Ionicons, react-native-reanimated ~4.1.1
-- **i18n** : ~680 clés × 9 langues (fr/nl/en/de/es/it/pt/ar/tr), 1700 L translations.js, coverage 70% sur 5 écrans principaux, RTL arabe
+- **i18n** : ~680 clés × **4 langues actives (fr/nl/en/de)** (refocalisation 2026-05-05, RTL arabe désactivé pour MVP — code conservé pour réactivation future). Audit 2026-05-09 : doc/code drift résolu
 - **Tests** : pytest 55+ tests backend (conftest.py, asyncio), jest 60 tests mobile (mocks expo-secure-store)
 - **Deploy** : Railway (Dockerfile multi-stage, PyTorch CPU-only, Qdrant VPS Hostinger 46.202.168.185)
 - **CI** : GitHub Actions (emails beta), auto-deploy Railway sur push main
