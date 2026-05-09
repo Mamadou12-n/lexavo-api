@@ -47,6 +47,41 @@ def adaptive_top_k(question: str) -> int:
     return TOP_K_CHUNKS
 
 
+# Audit 2026-05-09 #12 : observabilite IA via Langfuse (cost/qualite per query).
+# Activation conditionnelle : si LANGFUSE_PUBLIC_KEY env var define, on trace.
+# Sinon noop silencieux — pas de dependance forcee.
+# Setup VPS Hostinger Docker recommandé : voir TODO #12 dans CLAUDE.md.
+_langfuse_client = None
+
+
+def _get_langfuse():
+    """Lazy init du client Langfuse. Retourne None si non configure."""
+    global _langfuse_client
+    if _langfuse_client is not None:
+        return _langfuse_client if _langfuse_client is not False else None
+    pub_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+    if not pub_key:
+        _langfuse_client = False
+        return None
+    try:
+        from langfuse import Langfuse
+        _langfuse_client = Langfuse(
+            public_key=pub_key,
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
+        )
+        log.info("Langfuse observabilite IA active")
+        return _langfuse_client
+    except ImportError:
+        log.info("LANGFUSE_PUBLIC_KEY defini mais 'langfuse' pas installe — pip install langfuse")
+        _langfuse_client = False
+        return None
+    except Exception as e:
+        log.warning(f"Langfuse init echec : {e}")
+        _langfuse_client = False
+        return None
+
+
 BASE_SYSTEM_PROMPT = """Tu es Lexavo, un assistant juridique specialise en droit belge.
 Tu reponds aux questions juridiques en te basant UNIQUEMENT sur les extraits de jurisprudence et de legislation fournis dans le contexte.
 
@@ -331,12 +366,45 @@ Question : {question}"""
 
     log.info(f"  Appel Claude {model}... ({len(messages)} messages)")
     system_blocks = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+
+    # Audit 2026-05-09 #12 : trace Langfuse (silencieux si non configure)
+    _lf = _get_langfuse()
+    _lf_trace = None
+    if _lf is not None:
+        try:
+            _lf_trace = _lf.trace(
+                name="rag.ask",
+                input={"question": question, "branch": detected_branch, "top_k": top_k, "chunks": len(chunks)},
+                metadata={"model": model, "language": language, "region": region},
+            )
+        except Exception as e:
+            log.debug(f"Langfuse trace start fail (non bloquant) : {e}")
+
     message = client.messages.create(
         model=model,
         max_tokens=MAX_TOKENS_OUT,
         system=system_blocks,
         messages=messages,
     )
+
+    # Trace Langfuse : tokens + cost (calcul coté Langfuse via model name)
+    if _lf_trace is not None:
+        try:
+            usage = getattr(message, "usage", None)
+            _lf_trace.generation(
+                name="claude.messages.create",
+                model=model,
+                input=messages[-1].get("content", "")[:500] if messages else "",
+                output=message.content[0].text if message.content else "",
+                usage={
+                    "input": getattr(usage, "input_tokens", 0) if usage else 0,
+                    "output": getattr(usage, "output_tokens", 0) if usage else 0,
+                    "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) if usage else 0,
+                    "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0) if usage else 0,
+                },
+            )
+        except Exception as e:
+            log.debug(f"Langfuse generation log fail (non bloquant) : {e}")
 
     if not message.content:
         return {
