@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 
@@ -82,9 +83,12 @@ def mock_qdrant_client(mock_qdrant_point):
 
 @pytest.fixture
 def mock_embed_model():
-    """Mock du modèle SentenceTransformer."""
+    """Mock du modèle SentenceTransformer.
+
+    encode() retourne un numpy array (le code appelle .tolist() dessus).
+    """
     model = MagicMock()
-    model.encode.return_value = [[0.1] * 384]
+    model.encode.return_value = np.array([[0.1] * 384], dtype=np.float32)
     return model
 
 

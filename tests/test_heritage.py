@@ -13,7 +13,7 @@ def test_basic_guide():
 def test_with_estimated_value():
     guide = generate_heritage_guide(region="wallonie", estimated_value=200000)
     assert "estimated_duties" in guide
-    assert guide["estimated_duties"]["total_duty"] > 0
+    assert guide["estimated_duties"]["result"] > 0
 
 def test_with_testament():
     guide = generate_heritage_guide(region="flandre", has_testament=True)
